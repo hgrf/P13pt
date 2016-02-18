@@ -120,3 +120,5 @@ if __name__ == '__main__':
         spectrum = measurement(filename)
         spectrum.s2y()
         spectrum.plot_mat_spec("y",ylim = 1)
+
+    # test
