@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from math import pi
-from numpy import exp
 import matplotlib.pyplot as plt
 from glob import glob
-
-
-    
 
 # Definition of constants:
 EPSILON_0 = 8.854187e-12  # Farads per meter.
@@ -23,36 +19,12 @@ class measurement(object):
 
     Methods:
     
-    scattering: Extracts useful information from the data.
+    s2y: Extracts Y parameter from the data.
         
         Created attributes:
         
-            freq: The frequencies from the measurement.
-        
-            w: The corresponding angular frequencies.
-        
-            s11, s12, s21, s22: The complex scattering parameters.
-    
-    admittance: Transforms the scattering parameters to admittance parameters.
-        
-        Created attributes:
-        
-            y11, y12, y21, y22: The complex admittance parameters.
-        
-    impedance: Transforms the scattering parameters to impedance parameters.
-        Created attributes:
-        
-            z11, z12, z21, z22: The complex admittance parameters. 
-        
-    direct_fit: Performs a fit to the data based on a model 
-        consisting of a parallel reistance, the AlOx capacitance, 
-        a capacitive contribution from the BiTe and a frequency dependent 
-        resistance of the BiTe. 
-        (The frequency dependence is based on a Drude model.)
-        
-        Created attributes: 
-        
-            c_alox, r_par, g0, tau, c_bite
+            y: A 2x2 matrix where each element contains a vector with the corresponding
+               Y_11, Y_12 etc. for each frequency
     '''
     
     def __init__(self,filename):
@@ -83,14 +55,6 @@ class measurement(object):
                                     
             self.v_ds = float(filename[filename.find('Vyoko=')+6:
                                     filename.find('Vyoko=')+14]) 
-
-    def scattering(self):
-        self.freq = self.raw[0]
-        self.w = 2. * pi * self.freq
-        self.s11 =  (self.raw[1] + 1j * self.raw[2])
-        self.s12 =  (self.raw[3] + 1j * self.raw[4])
-        self.s21 =  (self.raw[5] + 1j * self.raw[6])
-        self.s22 =  (self.raw[7] + 1j * self.raw[8])
     
     def s2y(self):
         '''
@@ -102,68 +66,57 @@ class measurement(object):
         s12 = self.s[0,1]
         s21 = self.s[1,0]
         s22 = self.s[1,1]
-        d1 = (1.0+s11)*(1.0+s22) - (s12*s21)
-        self.y[0,0] = y0*((1.0-s11)*(1.0+s22) + s12*s21)/d1
-        self.y[0,1] = y0*(-2.0*s12)/d1
-        self.y[1,0] = y0*(-2.0*s21)/d1
-        self.y[1,1] = y0*((1.0+s11)*(1.0-s22) + s12*s21)/d1
-        
-    def admittance(self):
-        self.scattering()
-        delta_s = (1 + self.s11) * (1 + self.s22) - self.s12 * self.s21
-        self.y11 = (((1 - self.s11) * (1 + self.s22) + self.s12 * self.s21) 
-                       / (Z0 * delta_s))         
-        self.y12 =  -2 * self.s12 / (Z0 * delta_s) 
-        self.y21 =  -2 * self.s21 / (Z0 * delta_s)
-        self.y22 = (((1 + self.s11) * (1 - self.s22) + self.s12 * self.s21) 
-                       / (Z0 * delta_s))
+        delta_s = (1.0+s11)*(1.0+s22) - (s12*s21)
+        self.y[0,0] = y0*((1.0-s11)*(1.0+s22) + s12*s21)/delta_s
+        self.y[0,1] = y0*(-2.0*s12)/delta_s
+        self.y[1,0] = y0*(-2.0*s21)/delta_s
+        self.y[1,1] = y0*((1.0+s11)*(1.0-s22) + s12*s21)/delta_s
     
-    def impedance(self):
-        self.scattering()    
-        delta_s = (1 - self.s11) * (1 - self.s22) - self.s12 * self.s21
-        self.z11 = Z0 * (((1 + self.s11) * 
-            (1 - self.s22) + self.s12 * self.s21) / delta_s)
-        self.z12 = 2 * Z0 * self.s12 / delta_s
-        self.z21 = 2 * Z0 * self.s21 / delta_s
-        self.z22 = Z0 * (((1 - self.s11) * 
-            (1 + self.s22) + self.s12 * self.s21) / delta_s)
-    
-    def plot_mat_spec(self,mat_type,pltnum=1,matname='M',ylim=1.1,showlabel = True, 
-                      legendlabel=0.0,xlabel_str='f [GHz]', ylabel_str=' ',
-                        savedir=r'D:\\test.png'):
+    def plot_mat_spec(self,mat_type,pltnum=1,ylim=1.1,legendlabel=0.0):
         mattype_dict = {"y" : self.y,
-                        "s" : self.s,
-                        }
+                        "s" : self.s}
                         
         mat = mattype_dict[mat_type]
         
-        fig2 = plt.figure(pltnum,figsize=(15.0, 10.0))
-        plt.suptitle(matname +'-spectrum')
+        fig = plt.figure(pltnum,figsize=(15.0, 10.0))
         for i in range(2):
             for j in range(2):
                 plotnum = 2*i+j+1 #add_subplot needs the +1 as indexing starts with 1
-                ax = fig2.add_subplot(2,2,plotnum)
+                ax = fig.add_subplot(2,2,plotnum)
                 ax.plot(self.freq/1e9, mat[i,j].real, label = 'Real, V$_g$=%.2fV'%legendlabel)
                 ax.plot(self.freq/1e9, mat[i,j].imag, label = 'Imag, V$_g$=%.2fV'%legendlabel)
-                ax.set_xlabel(xlabel_str)
-                ax.set_ylabel(ylabel_str)
-                ax.set_ylim([-ylim,ylim]) 
-                ax.set_title(matname + '$_\mathrm{%d%d}$'%(i+1,j+1))                
-        
-        if showlabel == True:
-            lgd = plt.gcf().get_axes()[0].legend()
+                ax.set_xlabel('f [GHz]')
+                ax.set_ylabel(mat_type.upper() + '$_\mathrm{%d%d}$'%(i+1,j+1))
+                ax.set_ylim([-ylim,ylim])             
+                
         plt.tight_layout()               
 
 
-
-              
 if __name__ == '__main__':
+    dir_sample = r'../TR10/Janis 11K 2016-01-21/RF/recalibre/2016-01-21_21h11m21s_Vg_sweep'
+    
+    f_list = (glob(dir_sample + '/*/S-parameter/*.txt') + glob(dir_sample + '/S-parameter/*.txt'))
+    
+    # helper function to enable sorting by Vg in filename
+    def sorting(name):
+        if name.find('Vg1=')!=-1:
+            vg = float(name[name.find('Vg1=')+4:
+                                    name.find('Vg1=')+12])
+        else: 
+            vg = float(name[name.find('Vgate=')+6:
+                                    name.find('Vgate=')+14])
+        if 'return' in name: vg += 1000         # shift up return sweep
+        return vg    
+    
+    # use helper function to sort file list
+    f_list = sorted(f_list, key=sorting)
+    
     plt.close('all')
-    dir_sample = r'D:\Measurement Andreas\HgTe CAPA wet\2016-02-01_test_before_cooldown\HfO2\2016-02-01_17h43m46s_fullS_-25dBm'
-    f_list = (glob(dir_sample + '/*/S-parameter/*.txt') +
-                glob(dir_sample + '/S-parameter/*.txt'))
-
-    for filename in f_list[0:1]:
+    v_g = []
+    r = []
+    
+    # iterate over all gate voltages
+    for filename in f_list:
         spectrum = measurement(filename)
         spectrum.s2y()
-        spectrum.plot_mat_spec("y",ylim = 0.14,ylabel_str="Y",showlabel=True)
+        spectrum.plot_mat_spec("y",ylim = 1)
