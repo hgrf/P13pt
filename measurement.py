@@ -62,9 +62,17 @@ class measurement(object):
                                     filename.find('Vyoko=')+14]) 
     
     def s2y(self):
-        '''
-        Creates the y matrices from s-matrices
-        '''
+        """Computes the Y matrices from the S matrices for each frequency.
+    
+        Arguments
+        ----------
+        none
+    
+        Returns
+        -------
+        nothing
+    
+        """
         self.y = np.zeros((2,2), dtype= np.ndarray)
         y0 = 0.02
         s11 = self.s[0,0]
@@ -78,7 +86,25 @@ class measurement(object):
         self.y[1,1] = y0*((1.0+s11)*(1.0-s22) + s12*s21)/delta_s
     
     def plot_mat_spec(self,mat_type,pltnum=1,ylim=1.1,legendlabel=0.0):
-        # might want to include options with **kwargs
+        """Plots selected parameter (S, Y) in a 2x2 panel.
+    
+        Arguments
+        ----------
+        mat_type : string
+            Select 'y' or 's' for the corresponding parameter to plot.
+        pltnum : int
+            The number of the plot. Defaults to 1. Choose other number if you want
+            to plot in a different figure.
+        ylim : float
+            The limits (positive and negative) for the y-axis.
+        legendlabel : float
+            Define if you are plotting for different Vg.
+    
+        Returns
+        -------
+        nothing
+    
+        """
         mattype_dict = {"y" : self.y,
                         "s" : self.s}
                         
@@ -99,6 +125,10 @@ class measurement(object):
 
 
 if __name__ == '__main__':
+    """
+        Example of how to use the measurement class.    
+        Plots all spectra obtained for a sweep in Vgate.
+    """
     dir_sample = r'../TR10/Janis 11K 2016-01-21/RF/recalibre/2016-01-21_21h11m21s_Vg_sweep'
     
     f_list = (glob(dir_sample + '/*/S-parameter/*.txt') + glob(dir_sample + '/S-parameter/*.txt'))
