@@ -10,22 +10,27 @@ EPSILON_0 = 8.854187e-12  # Farads per meter.
 Z0 = 50.0  # Ohms
 
 class measurement(object):
-    '''Defines the class of measurements.
+    """Defines the class of measurements.
     
-    The object is initialised the raw S-measurement data. 
+    The object is initialised with the raw S-measurement data. 
     The data filename needs to be passed as argument.
-    
-    *********
 
-    Methods:
+    Parameters
+    ----------
+    s : ndarray (2x2)
+        A 2x2 matrix where each element contains a vector with the corresponding
+        S_11, S_12 etc. for each frequency
+    y : ndarray (2x2)
+        A 2x2 matrix where each element contains a vector with the corresponding
+        Y_11, Y_12 etc. for each frequency
+
+    Methods
+    -------
+    s2y :
+        Compute Y parameter from the S parameter data and store in attribute y.
+
+    """
     
-    s2y: Extracts Y parameter from the data.
-        
-        Created attributes:
-        
-            y: A 2x2 matrix where each element contains a vector with the corresponding
-               Y_11, Y_12 etc. for each frequency
-    '''
     
     def __init__(self,filename):
         with open(filename, 'r') as current_file:
@@ -73,6 +78,7 @@ class measurement(object):
         self.y[1,1] = y0*((1.0+s11)*(1.0-s22) + s12*s21)/delta_s
     
     def plot_mat_spec(self,mat_type,pltnum=1,ylim=1.1,legendlabel=0.0):
+        # might want to include options with **kwargs
         mattype_dict = {"y" : self.y,
                         "s" : self.s}
                         
