@@ -21,15 +21,6 @@ class measurement(object):
     s : ndarray (2x2)
         A 2x2 matrix where each element contains a vector with the corresponding
         S_11, S_12 etc. for each frequency
-    y : ndarray (2x2)
-        A 2x2 matrix where each element contains a vector with the corresponding
-        Y_11, Y_12 etc. for each frequency
-
-    Methods
-    -------
-    s2y :
-        Compute Y parameter from the S parameter data and store in attribute y.
-
     """
     
     def __init__(self,filename):
@@ -129,7 +120,7 @@ class measurement(object):
         abcd = np.empty((2,2,len(s[0,0])), dtype= complex)
         y0 = 0.02
         z0 = 50.0
-        s11,s12,s21,s22 = s[0][0],s[0][1],s[1][0],s[1][1]
+        s11, s12, s21, s22 = s[0,0], s[0,1], s[1,0], s[1,1]
         abcd[0,0] = ((1.0+s11)*(1.0-s22) + s12*s21)/(2.0*s21)
         abcd[0,1] = z0 * ((1.0+s11)*(1.0+s22) - s12*s21)/(2.0*s21)
         abcd[1,0] = y0 * ((1.0-s11)*(1.0-s22) - s12*s21)/(2.0*s21)
@@ -200,10 +191,53 @@ class measurement(object):
         """Create the Y matrices as an attribute of the measurement object.
         """
         self.y = self.s2y(self.s)
+
+    def mov2vom(self, mat): 
+        """Transform matrix of vectors to vector of matrices.
         
+        This method is useful for the deembedding procedure. 
+        RF-data (S,Y,etc.) is usually stored as a matrix containing the 
+        vectors Mat11, Mat22, etc. where each vector element corresponds to 
+        a given frequency. This method transforms the data into a vector 
+        (each element corresponds to a given frequency) whose elements are 
+        the matrices.
+        
+        Parameters
+        ----------
+        mat: numpy.array
+            The matrix of vectors.
+        
+        Returns
+        -------
+        vec: numpy.array
+            The vector of matrices.
+        """
+        return np.array([mat[:,:,i] for i in range(len(mat[0,0]))])
+    
+    def vom2mov(self, vec):
+        """Transform a vector of matrices to a matrix of vectors.
+        
+        Inverse method to mov2vom.
+        
+        Parameters
+        ----------
+        vec: numpy.array
+            A vector of matrices.
+            
+        Returns
+        -------
+        mat: numpy.array
+            A matrix of vectors.
+        """
+        num = len(vec)
+        mat = np.empty((2,2,num), dtype= complex)
+        for row in range(2):
+            for column in range(2):
+                mat[row, column] = np.array([vec[i, row, column] for i in range(num)])
+        return mat
     
     def plot_mat_spec(self,mat_type,pltnum=1,ylim=1.1,legendlabel=0.0):
-        """Plots selected parameter (S, Y) in a 2x2 panel.
+        """Plot selected parameter (S, Y) in a 2x2 panel.
     
         Arguments
         ----------
