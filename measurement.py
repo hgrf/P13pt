@@ -9,6 +9,7 @@ EPSILON_0 = 8.854187e-12  # Farads per meter.
 
 Z0 = 50.0  # Ohms
 
+
 class measurement(object):
     """Defines the class of measurements.
     
@@ -20,17 +21,7 @@ class measurement(object):
     s : ndarray (2x2)
         A 2x2 matrix where each element contains a vector with the corresponding
         S_11, S_12 etc. for each frequency
-    y : ndarray (2x2)
-        A 2x2 matrix where each element contains a vector with the corresponding
-        Y_11, Y_12 etc. for each frequency
-
-    Methods
-    -------
-    s2y :
-        Compute Y parameter from the S parameter data and store in attribute y.
-
     """
-    
     
     def __init__(self,filename):
         with open(filename, 'r') as current_file:
@@ -41,7 +32,7 @@ class measurement(object):
         self.w = 2. * pi * self.freq
         
         # S-matrix is created as a 2x2 matrix containing vectors.
-        self.s = np.zeros((2,2), dtype= np.ndarray)
+        self.s = np.empty((2,2,len(self.freq)), dtype= complex)
         self.s[0,0] = self.raw[1] + 1j*self.raw[2]
         self.s[0,1] = self.raw[3] + 1j*self.raw[4]
         self.s[1,0] = self.raw[5] + 1j*self.raw[6]
@@ -61,32 +52,192 @@ class measurement(object):
             self.v_ds = float(filename[filename.find('Vyoko=')+6:
                                     filename.find('Vyoko=')+14]) 
     
-    def s2y(self):
-        """Computes the Y matrices from the S matrices for each frequency.
+    def s2y(self, s):
+        """Compute the Y matrices from the S matrices for each frequency.
     
         Arguments
         ----------
-        none
+        s: numpy.array
+            An array containing complex S parameters in the format 
+            defined by the __init__ method.
     
         Returns
         -------
-        nothing
-    
+        y: numpy.array
+            An array containing complex Y parameters in the format 
+            defined by the __init__ method.
         """
-        self.y = np.zeros((2,2), dtype= np.ndarray)
+        y = np.empty((2,2,len(s[0,0])), dtype= complex)
         y0 = 0.02
-        s11 = self.s[0,0]
-        s12 = self.s[0,1]
-        s21 = self.s[1,0]
-        s22 = self.s[1,1]
+        s11, s12, s21, s22 = s[0,0], s[0,1], s[1,0], s[1,1]
         delta_s = (1.0+s11)*(1.0+s22) - (s12*s21)
-        self.y[0,0] = y0*((1.0-s11)*(1.0+s22) + s12*s21)/delta_s
-        self.y[0,1] = y0*(-2.0*s12)/delta_s
-        self.y[1,0] = y0*(-2.0*s21)/delta_s
-        self.y[1,1] = y0*((1.0+s11)*(1.0-s22) + s12*s21)/delta_s
+        y[0,0] = y0*((1.0-s11)*(1.0+s22) + s12*s21)/delta_s
+        y[0,1] = y0*(-2.0*s12)/delta_s
+        y[1,0] = y0*(-2.0*s21)/delta_s
+        y[1,1] = y0*((1.0+s11)*(1.0-s22) + s12*s21)/delta_s
+        return y
+        
+    def y2s(self,y):
+        """Compute the S matrices from the Y matrices for each frequency.
+    
+        Arguments
+        ----------
+        y: numpy.array
+            An array containing complex Y parameters in the format 
+            defined by the __init__ method.
+    
+        Returns
+        -------
+        s: numpy.array
+            An array containing complex S parameters in the format 
+            defined by the __init__ method.
+        """
+        s = np.empty((2,2,len(y[0,0])), dtype= complex)
+        y0 = 0.02
+        y11, y12, y21, y22 = y[0,0], y[0,1], y[1,0], y[1,1]
+        d = (y0 + y11)*(y0+y22) - (y12*y21)
+        s[0,0]= ((y0-y11)*(y0+y22) + y12*y21)/d
+        s[0,1]= (-2.0*y12*y0)/d
+        s[1,0]= (-2.0*y21*y0)/d
+        s[1,1]= ((y0+y11)*(y0-y22) + y12*y21)/d
+        return s
+        
+    def s2abcd(self,s):
+        """Compute the ABCD matrices from the S matrices for each frequency.
+    
+        Arguments
+        ----------
+        s: numpy.array
+            An array containing complex Y parameters in the format 
+            defined by the __init__ method.
+    
+        Returns
+        -------
+        abcd: numpy.array
+            An array containing complex ABCD parameters in the format 
+            defined by the __init__ method.
+        """   
+        abcd = np.empty((2,2,len(s[0,0])), dtype= complex)
+        y0 = 0.02
+        z0 = 50.0
+        s11, s12, s21, s22 = s[0,0], s[0,1], s[1,0], s[1,1]
+        abcd[0,0] = ((1.0+s11)*(1.0-s22) + s12*s21)/(2.0*s21)
+        abcd[0,1] = z0 * ((1.0+s11)*(1.0+s22) - s12*s21)/(2.0*s21)
+        abcd[1,0] = y0 * ((1.0-s11)*(1.0-s22) - s12*s21)/(2.0*s21)
+        abcd[1,1] = ((1.0-s11)*(1.0+s22) + s12*s21)/(2.0*s21)
+        return abcd
+    
+    def abcd2s(self,abcd):
+        """Compute the S matrices from the ABCD matrices for each frequency.
+    
+        Arguments
+        ----------
+        abcd: numpy.array
+            An array containing complex Y parameters in the format 
+            defined by the __init__ method.
+    
+        Returns
+        -------
+        s: numpy.array
+            An array containing complex ABCD parameters in the format 
+            defined by the __init__ method.
+        """    
+        s = np.empty((2,2,len(abcd[0,0])), dtype= complex)
+        y0 = 0.02
+        z0 = 50.0
+        a, b, c, d = abcd[0,0], abcd[0,1], abcd[1,0], abcd[1,1]
+        d = a + b*y0 + c*z0 + d
+        s[0,0] = (a + b*y0 - c*z0 - d)/d
+        s[0,1] = (2.0*(a*d - b*c))/d
+        s[1,0] = 2.0/d
+        s[1,1] = (-a + b*y0 - c*z0 + d)/d
+        return s
+        
+    def y2abcd(self,y):
+        """Compute the ABCD matrices from the Y matrices for each frequency.
+    
+        Arguments
+        ----------
+        y: numpy.array
+            An array containing complex Y parameters in the format 
+            defined by the __init__ method.
+    
+        Returns
+        -------
+        abcd: numpy.array
+            An array containing complex ABCD parameters in the format 
+            defined by the __init__ method.
+        """            
+        return self.s2abcd(self.y2s(y))
+        
+    def abcd2y(self,abcd):
+        """Compute the Y matrices from the ABCD matrices for each frequency.
+    
+        Arguments
+        ----------
+        abcd: numpy.array
+            An array containing complex Y parameters in the format 
+            defined by the __init__ method.
+    
+        Returns
+        -------
+        y: numpy.array
+            An array containing complex ABCD parameters in the format 
+            defined by the __init__ method.
+        """            
+        return self.s2y(self.abcd2s(abcd))
+    
+    def create_y(self):
+        """Create the Y matrices as an attribute of the measurement object.
+        """
+        self.y = self.s2y(self.s)
+
+    def mov2vom(self, mat): 
+        """Transform matrix of vectors to vector of matrices.
+        
+        This method is useful for the deembedding procedure. 
+        RF-data (S,Y,etc.) is usually stored as a matrix containing the 
+        vectors Mat11, Mat22, etc. where each vector element corresponds to 
+        a given frequency. This method transforms the data into a vector 
+        (each element corresponds to a given frequency) whose elements are 
+        the matrices.
+        
+        Parameters
+        ----------
+        mat: numpy.array
+            The matrix of vectors.
+        
+        Returns
+        -------
+        vec: numpy.array
+            The vector of matrices.
+        """
+        return np.array([mat[:,:,i] for i in range(len(mat[0,0]))])
+    
+    def vom2mov(self, vec):
+        """Transform a vector of matrices to a matrix of vectors.
+        
+        Inverse method to mov2vom.
+        
+        Parameters
+        ----------
+        vec: numpy.array
+            A vector of matrices.
+            
+        Returns
+        -------
+        mat: numpy.array
+            A matrix of vectors.
+        """
+        num = len(vec)
+        mat = np.empty((2,2,num), dtype= complex)
+        for row in range(2):
+            for column in range(2):
+                mat[row, column] = np.array([vec[i, row, column] for i in range(num)])
+        return mat
     
     def plot_mat_spec(self,mat_type,pltnum=1,ylim=1.1,legendlabel=0.0):
-        """Plots selected parameter (S, Y) in a 2x2 panel.
+        """Plot selected parameter (S, Y) in a 2x2 panel.
     
         Arguments
         ----------
@@ -125,11 +276,10 @@ class measurement(object):
 
 
 if __name__ == '__main__':
-    """
-        Example of how to use the measurement class.    
+    """Example of how to use the measurement class.    
         Plots all spectra obtained for a sweep in Vgate.
     """
-    dir_sample = r'../TR10/Janis 11K 2016-01-21/RF/recalibre/2016-01-21_21h11m21s_Vg_sweep'
+    dir_sample = r'C:\Users\Andreas\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
     
     f_list = (glob(dir_sample + '/*/S-parameter/*.txt') + glob(dir_sample + '/S-parameter/*.txt'))
     
@@ -154,5 +304,5 @@ if __name__ == '__main__':
     # iterate over all gate voltages
     for filename in f_list:
         spectrum = measurement(filename)
-        spectrum.s2y()
+        spectrum.create_y()
         spectrum.plot_mat_spec("y",ylim = 1)
