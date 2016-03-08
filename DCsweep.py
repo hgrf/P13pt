@@ -61,6 +61,18 @@ class DCsweep(object):
         plt.grid(b=True)
         plt.xlabel('Vg1 [V]')
         plt.ylabel('Rsample [Ohm]')
+    
+    def plot2DColor(self, ax=None):
+        if ax==None:
+            ax = plt.gca()
+
+        grid = self.Rsample.reshape((len(self.Vg2unique), len(self.Vg1unique)))
+        grid = grid[::-1,:]
+        
+        plt.imshow(grid, extent=(self.Vg1unique.min(), self.Vg1unique.max(), self.Vg2unique.min(), self.Vg2unique.max()))
+        plt.colorbar()
+        plt.xlabel("Vg1 [V]")
+        plt.ylabel("Vg2 [V]")
         
     def plotIV(self, ax=None):
         if ax==None:
