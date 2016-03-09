@@ -33,6 +33,8 @@ class DCsweep(object):
         self.W = W
         self.d = d
         self.eps = eps
+        self.filename = filename
+        self.label = None
 
         with open(filename, 'r') as current_file:
             self.raw = np.genfromtxt(current_file).T
@@ -56,10 +58,20 @@ class DCsweep(object):
             ax = plt.gca()
             
         for v in self.Vg2unique:
-            ax.plot(self.Vg1[self.Vg2bilt == v], self.Rsample[self.Vg2bilt == v])
-            
+            ax.plot(self.Vg1[self.Vg2bilt == v], self.Rsample[self.Vg2bilt == v], label=None if self.label == None else self.label)
         plt.grid(b=True)
         plt.xlabel('Vg1 [V]')
+        plt.ylabel('Rsample [Ohm]')
+        
+    def plotTransferVg2(self, ax=None):
+        if ax==None:
+            ax = plt.gca()
+            
+        for v in self.Vg1unique:
+            ax.plot(self.Vg2[self.Vg1bilt == v], self.Rsample[self.Vg1bilt == v], label=None if self.label == None else self.label)
+            
+        plt.grid(b=True)
+        plt.xlabel('Vg2 [V]')
         plt.ylabel('Rsample [Ohm]')
     
     def plot2DColor(self, ax=None):
@@ -105,3 +117,23 @@ class DCsweep(object):
             Rc = self.Rc
         
         ax.plot(self.Vg1, self.diffusiveModel(self.Vg1-Vdp, (mu, n0, Rc)), label="model")
+    
+    def labelFromFilename(self):
+        # assuming that the filename has the following structure:
+        # some_path/measurement_folder/DC[_return]/measurement_file.txt
+        # where measurement_folder is YYYY-MM-DD_HHhMMnSSs_chipname
+        f_elms = self.filename.rsplit('/', 3) # elements of the filename
+        c_elms = f_elms[-3].split('_', 2)
+
+        self.label = c_elms[1][:-4]      # only HHhMM part of chip name
+        self.label += ' return' if 'return' in f_elms[-2] else ''
+
+    def labelFromVg1(self):
+        # assuming that there is only one unique Vg1
+        assert len(self.Vg1unique) == 1
+        self.label = 'Vg1=%.2f V'%self.Vg1unique[0]
+        
+    def labelFromVg2(self):
+        # assuming that there is only one unique Vg2
+        assert len(self.Vg2unique) == 1
+        self.label = 'Vg2=%.2f V'%self.Vg2unique[0]
