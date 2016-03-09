@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 import numpy as np
+import copy
 
 # fundamental constants
 e = 1.6021766208e-19 # C
@@ -44,6 +45,7 @@ class DCsweep(object):
             self.Vg1 = self.raw[3]
             self.Vg2 = self.raw[4]
             self.Vds = self.raw[5]
+            self.length = len(self.Vg1)
             
             self.Ileak1 = (self.Vg1bilt-self.Vg1)/self.Rg1
             self.Ileak2 = (self.Vg2bilt-self.Vg2)/self.Rg2
@@ -52,23 +54,58 @@ class DCsweep(object):
             
             self.Vg1unique = np.unique(self.Vg1bilt) # get sorted unique Vg1 values
             self.Vg2unique = np.unique(self.Vg2bilt) # get sorted unique Vg2 values        
+
+    def select(self, condition):
+        '''
+            usage e.g.: s_cropped = s.select(Vg2bilt > 0.2)
+        '''
+        s = copy.deepcopy(self) # make a copy of this instance
+        # not taking care of raw data
+        s.Vg1bilt = s.Vg1bilt[condition]
+        s.Vg2bilt = s.Vg2bilt[condition]
+        s.Vdsbilt = s.Vdsbilt[condition]
+        s.Vg1 = s.Vg1[condition]
+        s.Vg2 = s.Vg2[condition]
+        s.Vds = s.Vds[condition]
+        s.Ileak1 = s.Ileak1[condition]
+        s.Ileak2 = s.Ileak2[condition]
+        s.Ids = s.Ids[condition]
+        s.Rsample = s.Rsample[condition]
+        s.Vg1unique = np.unique(s.Vg1bilt)
+        s.Vg2unique = np.unique(s.Vg2bilt)
+        s.length = len(s.Vg1)
+        return s
+
+    def selectVg1(self, selectedVg1):
+        return self.select(np.asarray([v in selectedVg1 for v in self.Vg1bilt]))    
     
-    def plotTransferVg1(self, ax=None):
+    def selectVg2(self, selectedVg2):
+        '''
+            usage e.g.: s_reduced = s.selectVg2(s.Vg2unique[::4])
+            this would reduce the dataset to every fourth unique Vg2bilt value
+        '''
+        return self.select(np.asarray([v in selectedVg2 for v in self.Vg2bilt]))
+    
+    def plotTransferVg1(self, ax=None, labelsfromVg2 = False):
         if ax==None:
             ax = plt.gca()
             
         for v in self.Vg2unique:
-            ax.plot(self.Vg1[self.Vg2bilt == v], self.Rsample[self.Vg2bilt == v], label=None if self.label == None else self.label)
+            label=None if self.label == None else self.label
+            label='Vg2=%.2f'%v if labelsfromVg2 else label
+            ax.plot(self.Vg1[self.Vg2bilt == v], self.Rsample[self.Vg2bilt == v], label=label)
         plt.grid(b=True)
         plt.xlabel('Vg1 [V]')
         plt.ylabel('Rsample [Ohm]')
         
-    def plotTransferVg2(self, ax=None):
+    def plotTransferVg2(self, ax=None, labelsfromVg1 = False):
         if ax==None:
             ax = plt.gca()
             
         for v in self.Vg1unique:
-            ax.plot(self.Vg2[self.Vg1bilt == v], self.Rsample[self.Vg1bilt == v], label=None if self.label == None else self.label)
+            label=None if self.label == None else self.label
+            label='Vg1=%.2f'%v if labelsfromVg1 else label
+            ax.plot(self.Vg2[self.Vg1bilt == v], self.Rsample[self.Vg1bilt == v], label=label)
             
         plt.grid(b=True)
         plt.xlabel('Vg2 [V]')
@@ -102,7 +139,7 @@ class DCsweep(object):
     def fitModelVg1(self):
         idp = np.argmax(self.Rsample) # get index of max. resistance
         self.Vdp = self.Vg1[idp]
-        self.mu, self.n0, self.Rc = complex_fit(self.Vg1[idp:]-self.Vdp, self.Rsample[idp:], self.diffusiveModel, (1., 1e15, 1e3))
+        self.mu, self.n0, self.Rc = complex_fit(self.Vg1-self.Vdp, self.Rsample, self.diffusiveModel, (1., 1e15, 1e3))
         print "Fit result:"
         print "mu =", self.mu, " n0 =", self.n0, " Rc =", self.Rc
     
@@ -128,7 +165,7 @@ class DCsweep(object):
         self.label = c_elms[1][:-4]      # only HHhMM part of chip name
         self.label += ' return' if 'return' in f_elms[-2] else ''
 
-    def labelFromVg1(self):
+    def labelFromVg1(self): # TODO: this function is a bit superfluous seeing that the plot functions also have such an argument
         # assuming that there is only one unique Vg1
         assert len(self.Vg1unique) == 1
         self.label = 'Vg1=%.2f V'%self.Vg1unique[0]
