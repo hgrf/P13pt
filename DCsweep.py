@@ -174,3 +174,13 @@ class DCsweep(object):
         # assuming that there is only one unique Vg2
         assert len(self.Vg2unique) == 1
         self.label = 'Vg2=%.2f V'%self.Vg2unique[0]
+
+    def legendOutside(self):
+        '''
+            shows the legend outside the plotting area and resizes the axes
+            to fit in the window
+        '''
+        ax = plt.gca()
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
