@@ -86,25 +86,25 @@ class DCsweep(object):
         '''
         return self.select(np.asarray([v in selectedVg2 for v in self.Vg2bilt]))
     
-    def plotTransferVg1(self, ax=None, labelsfromVg2 = False):
+    def plotTransferVg1(self, ax=None, labelsfromVg2 = False, Vg2label="Vg2"):
         if ax==None:
             ax = plt.gca()
             
         for v in self.Vg2unique:
             label=None if self.label == None else self.label
-            label='Vg2=%.2f'%v if labelsfromVg2 else label
+            label=Vg2label+'=%.2f V'%v if labelsfromVg2 else label
             ax.plot(self.Vg1[self.Vg2bilt == v], self.Rsample[self.Vg2bilt == v], label=label)
         plt.grid(b=True)
         plt.xlabel('Vg1 [V]')
         plt.ylabel('Rsample [Ohm]')
         
-    def plotTransferVg2(self, ax=None, labelsfromVg1 = False):
+    def plotTransferVg2(self, ax=None, labelsfromVg1 = False, Vg1label="Vg1"):
         if ax==None:
             ax = plt.gca()
             
         for v in self.Vg1unique:
             label=None if self.label == None else self.label
-            label='Vg1=%.2f'%v if labelsfromVg1 else label
+            label=Vg1label+'=%.2f V'%v if labelsfromVg1 else label
             ax.plot(self.Vg2[self.Vg1bilt == v], self.Rsample[self.Vg1bilt == v], label=label)
             
         plt.grid(b=True)
