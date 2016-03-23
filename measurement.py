@@ -16,7 +16,7 @@ class measurement(object):
     The object is initialised with the raw S-measurement data. 
     The data filename needs to be passed as argument.
 
-    Parameters
+    Attributes
     ----------
     s : ndarray (2x2)
         A 2x2 matrix where each element contains a vector with the corresponding
@@ -189,6 +189,11 @@ class measurement(object):
     
     def create_y(self):
         """Create the Y matrices as an attribute of the measurement object.
+        
+        Attributes
+        ----------
+        self.y: numpy.array
+            The y-matrices as an atribute in the format "Matrix of vectors".
         """
         self.y = self.s2y(self.s)
 
@@ -235,6 +240,44 @@ class measurement(object):
             for column in range(2):
                 mat[row, column] = np.array([vec[i, row, column] for i in range(num)])
         return mat
+
+    def deembed_thru(self, thru):
+        """Deembed the propagation along a measured thruline.
+        
+        Parameters
+        ----------
+        thru: measurement object
+            The thru object that shall be used for deembedding. 
+            Must be created in the main program prior to 
+            execution of this function.
+            
+        Attributes
+        ----------
+        All created attributes are in the "Matrix of vectors("mov")"-format.
+        
+        self.deembeded_s: numpy.array
+            The samples' S-parameters after thruline deembedding.
+            
+        self.deembeded_y: numpy.array
+            The samples' Y-parameters after thruline deembedding.
+        """
+        thru_abcd = self.mov2vom(self.s2abcd(thru.s))
+        # Get the ABCD matric in Vector of matrix form for the thru.
+        sample_abcd = self.mov2vom(self.s2abcd(self.s))
+        # Get the ABCD matric in Vector of matrix form for the measurement.
+        half_thru = np.array(map(sqrtm,thru_abcd))
+        # The ABCD matrix of "half a thruline".
+        inv_half_thru = np.array(map(inv,half_thru))
+        # Invert the ABCD matrix of "half a thruline" for each frequency.
+        three_mat_multiplication = lambda x,y,z: np.dot(np.dot(x,y),z)
+        deembeded_abcd = self.vom2mov(np.array(map(three_mat_multiplication,
+                                      inv_half_thru,sample_abcd, inv_half_thru)))
+        # Multiply the inverse of the "half-thrus" on both sides to the 
+        # samples' ABCD matrix and store the result in mov-format.
+        self.deembeded_s = self.abcd2s(deembeded_abcd)
+        # Create the deembedded S parameters as an attribute in mov-format.
+        self.deembeded_y = self.s2y(self.deembeded_s)
+        # Create the deembedded Y parameters as an attribute in mov-format.
     
     def plot_mat_spec(self,mat_type,pltnum=1,ylim=1.1,legendlabel=0.0):
         """Plot selected parameter (S, Y) in a 2x2 panel.
@@ -279,9 +322,16 @@ if __name__ == '__main__':
     """Example of how to use the measurement class.    
         Plots all spectra obtained for a sweep in Vgate.
     """
-    dir_sample = r'C:\Users\Andreas\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
+    dir_sample = r'D:\Users\inhofer\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
     
     f_list = (glob(dir_sample + '/*/S-parameter/*.txt') + glob(dir_sample + '/S-parameter/*.txt'))
+
+
+    # Import thru    
+    dir_thru = r'D:\Users\inhofer\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
+    thru_list = (glob(dir_thru + '/*/S-parameter/*.txt') + glob(dir_thru + '/S-parameter/*.txt'))
+    thru = measurement(thru_list[0])
+
     
     # helper function to enable sorting by Vg in filename
     def sorting(name):
@@ -297,12 +347,19 @@ if __name__ == '__main__':
     # use helper function to sort file list
     f_list = sorted(f_list, key=sorting)
     
+    print f_list
     plt.close('all')
     v_g = []
     r = []
     
     # iterate over all gate voltages
-    for filename in f_list:
+    for filename in f_list[:1:]:
+        print filename
         spectrum = measurement(filename)
         spectrum.create_y()
         spectrum.plot_mat_spec("y",ylim = 1)
+        spectrum.deembed_thru(thru)
+        
+        
+        
+        
