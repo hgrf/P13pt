@@ -3,6 +3,8 @@ import numpy as np
 from math import pi
 import matplotlib.pyplot as plt
 from glob import glob
+from scipy.linalg import sqrtm
+from numpy.linalg import inv
 
 # Definition of constants:
 EPSILON_0 = 8.854187e-12  # Farads per meter.
