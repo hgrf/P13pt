@@ -57,6 +57,3 @@ def unrollback():
 # would be nicer to create a new folder with a clone
 # of the repository and the right version instead of
 # changing the "main" copy all the time
-
-# I have no idea what happens if you are currently editing
-# a branch other than the master branch (of RFLPA)
