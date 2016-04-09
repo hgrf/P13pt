@@ -72,19 +72,17 @@ class AnritsuVNA(visa.Instrument):
         self.write(':SENS:HOLD:FUNC SING;')       # single sweep with hold
         self.write(':TRIG:SING;')                 # trigger single sweep
         
+        n = 0       # number of times we ask for status
         while True:
             try:
+                n = n+1
                 self.ask(':STAT:OPER:COND?')
             except visa.VisaIOError:
                 print 'Still sweeping or connection lost'
                 continue
             break
         
-        # clear buffer workaround (self.clear does not work)
-        try:
-            self.read_raw()
-        except visa.VisaIOError:
-            pass
+        for i in range(n-1): self.read()  # workaround that empties the read buffer
         
         print 'Sweep is done'
         
