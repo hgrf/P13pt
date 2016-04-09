@@ -9,8 +9,6 @@ Minimal script for communicationwith anritsu VNA
 
 import visa
 import struct
-import matplotlib.pyplot as plt
-import numpy as np
 
 class AnritsuVNA(visa.Instrument):
     def __init__(self, connection):
@@ -19,6 +17,8 @@ class AnritsuVNA(visa.Instrument):
         print self.ask('*idn?')
         # Initialisation that apparently is needed. We should check the doc what the different commands do.
         self.write('*ESE 60;*SRE 48;*CLS;:FORM:BORD NORM;')
+        # Make sure Data is communicated in the correct format.
+        self.write(r':FORM:DATA ASC;') 
         # Check that everything works fine for the moment.
         print self.ask('SYST:ERR?')
 
@@ -110,6 +110,9 @@ class AnritsuVNA(visa.Instrument):
 if __name__ == '__main__':
     """Example of how to use this driver
     """
+    import numpy as np    
+    from measurement import measurement
+    
     vna = AnritsuVNA('TCPIP::192.168.0.3::5001::SOCKET')
     freqs = vna.get_freq_list()         # get frequency list
     vna.set_average(1, vna.AVG_POINT_BY_POINT)
@@ -125,7 +128,6 @@ if __name__ == '__main__':
     datafile = '2016-01-21_14h57m22s_test_Vds=-0.000029_Vg1=0.003376.txt'
     np.savetxt(datafile, np.transpose(table))
     
-    from measurement import measurement
     spectrum = measurement(datafile)
     spectrum.create_y()
     spectrum.plot_mat_spec("s",ylim = 1)
