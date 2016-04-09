@@ -10,6 +10,7 @@ Minimal script for communicationwith anritsu VNA
 import visa
 import struct
 import matplotlib.pyplot as plt
+import numpy as np
 
 class AnritsuVNA(visa.Instrument):
     def __init__(self, connection):
@@ -33,7 +34,6 @@ class AnritsuVNA(visa.Instrument):
         # receive data
         self.term_chars = ''                # switch off termination char.
         header = visa.vpp43.read(self.vi, 2) # read header-header
-        print header
         assert header[0] == '#'             # check if format is OK
         count = int(header[1])              # read length of header
         #print "Reading {} bytes header from Anritsu".format(count)
@@ -107,12 +107,25 @@ class AnritsuVNA(visa.Instrument):
         self.set_average_count(count)
         self.set_average_type(typ)
 
-
-vna = AnritsuVNA('TCPIP::192.168.0.3::5001::SOCKET')
-freqs = vna.get_freq_list()         # get frequency list
-vna.set_average(20, vna.AVG_POINT_BY_POINT)
-vna.single_sweep()
-sreal, simag = vna.get_trace(2)     # get real and imag part of 1st trace
-
-plt.plot(freqs, sreal)
-plt.plot(freqs, simag)
+if __name__ == '__main__':
+    """Example of how to use this driver
+    """
+    vna = AnritsuVNA('TCPIP::192.168.0.3::5001::SOCKET')
+    freqs = vna.get_freq_list()         # get frequency list
+    vna.set_average(1, vna.AVG_POINT_BY_POINT)
+    vna.single_sweep()
+    
+    table = []
+    table.append(freqs)
+    for i in range(4):
+        sreal, simag = vna.get_trace(i+1)     # get real and imag part of i-th trace
+        table.append(sreal)
+        table.append(simag)
+    
+    datafile = '2016-01-21_14h57m22s_test_Vds=-0.000029_Vg1=0.003376.txt'
+    np.savetxt(datafile, np.transpose(table))
+    
+    from measurement import measurement
+    spectrum = measurement(datafile)
+    spectrum.create_y()
+    spectrum.plot_mat_spec("s",ylim = 1)
