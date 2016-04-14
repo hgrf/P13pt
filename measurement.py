@@ -148,11 +148,11 @@ class measurement(object):
         y0 = 0.02
         z0 = 50.0
         a, b, c, d = abcd[0,0], abcd[0,1], abcd[1,0], abcd[1,1]
-        d = a + b*y0 + c*z0 + d
-        s[0,0] = (a + b*y0 - c*z0 - d)/d
-        s[0,1] = (2.0*(a*d - b*c))/d
-        s[1,0] = 2.0/d
-        s[1,1] = (-a + b*y0 - c*z0 + d)/d
+        delta = a + b*y0 + c*z0 + d
+        s[0,0] = (a + b*y0 - c*z0 - d)/delta
+        s[0,1] = (2.0*(a*d - b*c))/delta
+        s[1,0] = 2.0/delta
+        s[1,1] = (-a + b*y0 - c*z0 + d)/delta
         return s
         
     def y2abcd(self,y):
@@ -281,13 +281,13 @@ class measurement(object):
         self.deembeded_y = self.s2y(self.deembeded_s)
         # Create the deembedded Y parameters as an attribute in mov-format.
     
-    def plot_mat_spec(self,mat_type,pltnum=1,ylim=1.1,legendlabel=0.0):
+    def plot_mat_spec(self,matrix,pltnum=1,ylim=1.1,legendlabel=0.0,ylabel="M"):
         """Plot selected parameter (S, Y) in a 2x2 panel.
     
         Arguments
         ----------
-        mat_type : string
-            Select 'y' or 's' for the corresponding parameter to plot.
+        matrix : matrix of vectors
+            For example measurement.s or measurement.y
         pltnum : int
             The number of the plot. Defaults to 1. Choose other number if you want
             to plot in a different figure.
@@ -295,28 +295,24 @@ class measurement(object):
             The limits (positive and negative) for the y-axis.
         legendlabel : float
             Define if you are plotting for different Vg.
+        ylabel : string
+            Define the label of the y-axes.
     
         Returns
         -------
         nothing
     
         """
-        mattype_dict = {"y" : self.y,
-                        "s" : self.s}
-                        
-        mat = mattype_dict[mat_type]
-        
         fig = plt.figure(pltnum,figsize=(15.0, 10.0))
         for i in range(2):
             for j in range(2):
                 plotnum = 2*i+j+1 #add_subplot needs the +1 as indexing starts with 1
                 ax = fig.add_subplot(2,2,plotnum)
-                ax.plot(self.freq/1e9, mat[i,j].real, label = 'Real, V$_g$=%.2fV'%legendlabel)
-                ax.plot(self.freq/1e9, mat[i,j].imag, label = 'Imag, V$_g$=%.2fV'%legendlabel)
+                ax.plot(self.freq/1e9, matrix[i,j].real, label = 'Real, V$_g$=%.2fV'%legendlabel)
+                ax.plot(self.freq/1e9, matrix[i,j].imag, label = 'Imag, V$_g$=%.2fV'%legendlabel)
                 ax.set_xlabel('f [GHz]')
-                ax.set_ylabel(mat_type.upper() + '$_\mathrm{%d%d}$'%(i+1,j+1))
+                ax.set_ylabel(ylabel)
                 ax.set_ylim([-ylim,ylim])             
-                
         plt.tight_layout()               
 
 
@@ -359,7 +355,7 @@ if __name__ == '__main__':
         print filename
         spectrum = measurement(filename)
         spectrum.create_y()
-        spectrum.plot_mat_spec("y",ylim = 1)
+        spectrum.plot_mat_spec(self.y,ylim = 1,ylabel="Y")
         spectrum.deembed_thru(thru)
         
         
