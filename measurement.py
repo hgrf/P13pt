@@ -15,8 +15,16 @@ Z0 = 50.0  # Ohms
 class measurement(object):
     """Defines the class of measurements.
     
-    The object is initialised with the raw S-measurement data. 
-    The data filename needs to be passed as argument.
+    Parameters
+    ----------
+    from_file : path
+        A file-path containing the S parameters from a VNA measurement.
+    from_s : np.array
+        The S parameters from which a new measurement instance should be 
+        created. Requires to pass parent_meas.
+    parent_meas : measurement instance
+        When creating an instance using calculated S-parameters, 
+        pass the original measurement instance.
 
     Attributes
     ----------
@@ -25,35 +33,54 @@ class measurement(object):
         S_11, S_12 etc. for each frequency
     """
     
-    def __init__(self,filename):
-        with open(filename, 'r') as current_file:
-            self.raw = np.genfromtxt(current_file).T
-
-        # Frequencies
-        self.freq = self.raw[0]
-        self.w = 2. * pi * self.freq
-        
-        # S-matrix is created as a 2x2 matrix containing vectors.
-        self.s = np.empty((2,2,len(self.freq)), dtype= complex)
-        self.s[0,0] = self.raw[1] + 1j*self.raw[2]
-        self.s[0,1] = self.raw[3] + 1j*self.raw[4]
-        self.s[1,0] = self.raw[5] + 1j*self.raw[6]
-        self.s[1,1] = self.raw[7] + 1j*self.raw[8]
-        
-        # DC data read from filename
-        if filename.find('Vg1=')!=-1:
-            self.v_g = float(filename[filename.find('Vg1=')+4:
-                                    filename.find('Vg1=')+12])
-                                    
-            self.v_ds = float(filename[filename.find('Vds=')+4:
-                                    filename.find('Vds=')+12])
-        else: 
-            self.v_g = float(filename[filename.find('Vgate=')+6:
-                                    filename.find('Vgate=')+14])
-                                    
-            self.v_ds = float(filename[filename.find('Vyoko=')+6:
-                                    filename.find('Vyoko=')+14]) 
+    def __init__(self,from_file = None, from_s = None, parent_meas = None):
+        if from_file:   
+            filename = from_file
+            with open(filename, 'r') as current_file:
+                self.raw = np.genfromtxt(current_file).T
     
+            # Frequencies
+            self.freq = self.raw[0]
+            self.w = 2. * pi * self.freq
+            
+            # S-matrix is created as a 2x2 matrix containing vectors.
+            self.s = np.empty((2,2,len(self.freq)), dtype= complex)
+            self.s[0,0] = self.raw[1] + 1j*self.raw[2]
+            self.s[0,1] = self.raw[3] + 1j*self.raw[4]
+            self.s[1,0] = self.raw[5] + 1j*self.raw[6]
+            self.s[1,1] = self.raw[7] + 1j*self.raw[8]
+            
+            # DC data read from filename
+            if filename.find('Vg1=')!=-1:
+                self.v_g = float(filename[filename.find('Vg1=')+4:
+                                        filename.find('Vg1=')+12])
+                                        
+                self.v_ds = float(filename[filename.find('Vds=')+4:
+                                        filename.find('Vds=')+12])
+            else: 
+                self.v_g = float(filename[filename.find('Vgate=')+6:
+                                        filename.find('Vgate=')+14])
+                                        
+                self.v_ds = float(filename[filename.find('Vyoko=')+6:
+                                        filename.find('Vyoko=')+14]) 
+        
+        elif from_s is not None:
+            # Check that a parent measurement is passed.
+            assert parent_meas != None
+            # Inherit frequencies from parent
+            self.freq = parent_meas.freq
+            self.w = parent_meas.w
+            
+            # Create S-matrix from passed argument
+            self.s = from_s
+            
+            # Inherit DC data
+            self.v_g = parent_meas.v_g
+            self.v_ds = parent_meas.v_ds
+        
+        else: 
+            print "Too few parameters. Cannot create measurement instance."
+
     def s2y(self, s):
         """Compute the Y matrices from the S matrices for each frequency.
     
@@ -253,33 +280,27 @@ class measurement(object):
             Must be created in the main program prior to 
             execution of this function.
             
-        Attributes
+        Returns
         ----------
-        All created attributes are in the "Matrix of vectors("mov")"-format.
-        
-        self.deembeded_s: numpy.array
+        deembeded_s: numpy.array
             The samples' S-parameters after thruline deembedding.
-            
-        self.deembeded_y: numpy.array
-            The samples' Y-parameters after thruline deembedding.
         """
-        thru_abcd = self.mov2vom(self.s2abcd(thru.s))
         # Get the ABCD matric in Vector of matrix form for the thru.
-        sample_abcd = self.mov2vom(self.s2abcd(self.s))
+        thru_abcd = self.mov2vom(self.s2abcd(thru.s))
         # Get the ABCD matric in Vector of matrix form for the measurement.
-        half_thru = np.array(map(sqrtm,thru_abcd))
+        sample_abcd = self.mov2vom(self.s2abcd(self.s))
         # The ABCD matrix of "half a thruline".
-        inv_half_thru = np.array(map(inv,half_thru))
+        half_thru = np.array(map(sqrtm,thru_abcd))
         # Invert the ABCD matrix of "half a thruline" for each frequency.
+        inv_half_thru = np.array(map(inv,half_thru))
+        # Multiply the inverse of the "half-thrus" on both sides to the 
+        # samples' ABCD matrix and store the result in mov-format.
         three_mat_multiplication = lambda x,y,z: np.dot(np.dot(x,y),z)
         deembeded_abcd = self.vom2mov(np.array(map(three_mat_multiplication,
                                       inv_half_thru,sample_abcd, inv_half_thru)))
-        # Multiply the inverse of the "half-thrus" on both sides to the 
-        # samples' ABCD matrix and store the result in mov-format.
-        self.deembeded_s = self.abcd2s(deembeded_abcd)
-        # Create the deembedded S parameters as an attribute in mov-format.
-        self.deembeded_y = self.s2y(self.deembeded_s)
-        # Create the deembedded Y parameters as an attribute in mov-format.
+        # Calculate the deembedded S parameters as an attribute in mov-format.
+        deembeded_s = self.abcd2s(deembeded_abcd)
+        return measurement(from_s = deembeded_s, parent_meas = self)
     
     def plot_mat_spec(self,matrix,pltnum=1,ylim=1.1,legendlabel=0.0,ylabel="M"):
         """Plot selected parameter (S, Y) in a 2x2 panel.
@@ -355,7 +376,7 @@ if __name__ == '__main__':
         print filename
         spectrum = measurement(filename)
         spectrum.create_y()
-        spectrum.plot_mat_spec(self.y,ylim = 1,ylabel="Y")
+        spectrum.plot_mat_spec(spectrum.y,ylim = 1,ylabel="Y")
         spectrum.deembed_thru(thru)
         
         
