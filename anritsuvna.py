@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Minimal script for communicationwith anritsu VNA
+Minimal script for communication with anritsu VNA
 
 @author: Holger Graef and Andreas Inhofer
 """
@@ -15,7 +15,11 @@ class AnritsuVNA(visa.Instrument):
         visa.Instrument.__init__(self, connection)
         self.term_chars = '\n'
         print self.ask('*idn?')
-        # Initialisation that apparently is needed. We should check the doc what the different commands do.
+        # Initialisation that apparently is needed.
+        # ESE: Something with the Standard event status register
+        # SRE: Something with the service enable register (switch to remote?)
+        # CLS: Clear all status bytes
+        # FORM:BORD NORM - sets the most significant byte first.
         self.write('*ESE 60;*SRE 48;*CLS;:FORM:BORD NORM;')
         # Make sure Data is communicated in the correct format.
         self.write(r':FORM:DATA ASC;') 
@@ -110,8 +114,8 @@ if __name__ == '__main__':
     """
     import numpy as np    
     from measurement import measurement
-    
-    vna = AnritsuVNA('TCPIP::192.168.0.3::5001::SOCKET')
+    vna = AnritsuVNA('GPIB::6::INSTR') #for GPIB
+#    vna = AnritsuVNA('TCPIP::192.168.0.3::5001::SOCKET')#for TCPIP
     freqs = vna.get_freq_list()         # get frequency list
     vna.set_average(1, vna.AVG_POINT_BY_POINT)
     vna.single_sweep()
