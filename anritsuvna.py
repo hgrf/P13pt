@@ -9,6 +9,7 @@ Minimal script for communication with anritsu VNA
 
 import visa
 import struct
+import warnings
 
 class AnritsuVNA(visa.Instrument):
     def __init__(self, connection):
@@ -31,26 +32,29 @@ class AnritsuVNA(visa.Instrument):
         This function sends a query to the VNA and retrieves the returned values
         in the binary format that is specified in the Anritsu documentation.
         '''
-        # make sure Data is communicated in the correct format.
-        self.write(':FORM:DATA REAL;')      # switch data transmission to binary     
-        # send query
-        self.write(query_str)               # send query string
-        # receive data
-        self.term_chars = ''                # switch off termination char.
-        header = visa.vpp43.read(self.vi, 2) # read header-header
-        assert header[0] == '#'             # check if format is OK
-        count = int(header[1])              # read length of header
-        #print "Reading {} bytes header from Anritsu".format(count)
-        header = visa.vpp43.read(self.vi, count) # read header
-        count = int(header)                 # read length of binary data
-        #print "Reading {} bytes data from Anritsu".format(count)
-        self.term_chars = ''
-        data = visa.vpp43.read(self.vi, count)     # this crashes Spyder if variable explorer is open !!
-        visa.vpp43.read(self.vi, 1)    # read the termination character (do not do this when using GPIB)
-        #print 'Successfully read {} bytes'.format(len(data))
-        assert len(data) == count            # check all data was read
-        self.term_chars = '\n'               # switch on term char
-        self.write(':FORM:DATA ASC;')        # read data in ASCII format
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",category=visa.VisaIOWarning)           # because we often leave data in buffer
+            
+            # make sure Data is communicated in the correct format.
+            self.write(':FORM:DATA REAL;')      # switch data transmission to binary     
+            # send query
+            self.write(query_str)               # send query string
+            # receive data
+            self.term_chars = ''                # switch off termination char.
+            header = visa.vpp43.read(self.vi, 2) # read header-header
+            assert header[0] == '#'             # check if format is OK
+            count = int(header[1])              # read length of header
+            #print "Reading {} bytes header from Anritsu".format(count)
+            header = visa.vpp43.read(self.vi, count) # read header
+            count = int(header)                 # read length of binary data
+            #print "Reading {} bytes data from Anritsu".format(count)
+            self.term_chars = ''
+            data = visa.vpp43.read(self.vi, count)     # this crashes Spyder if variable explorer is open !!
+            visa.vpp43.read(self.vi, 1)    # read the termination character (do not do this when using GPIB)
+            #print 'Successfully read {} bytes'.format(len(data))
+            assert len(data) == count            # check all data was read
+            self.term_chars = '\n'               # switch on term char
+            self.write(':FORM:DATA ASC;')        # read data in ASCII format
         return struct.unpack('!'+'d'*(count/8), data) # convert data from big-endian binary doubles to array of python doubles
 
     def get_freq_list(self):
@@ -73,22 +77,15 @@ class AnritsuVNA(visa.Instrument):
         This function starts a single sweep (VNA will hold at the end of the
         sweep) and waits for the sweep to be done.
         '''
-        self.write(':SENS:HOLD:FUNC SING;')       # single sweep with hold
+        self.write(':SENS1:HOLD:FUNC SING;')       # single sweep with hold
         self.write(':TRIG:SING;')                 # trigger single sweep
+
+        timeout = self.timeout
+        self.timeout = 120.
         
-        n = 0       # number of times we ask for status
-        while True:
-            try:
-                n = n+1
-                self.ask(':STAT:OPER:COND?')
-            except visa.VisaIOError:
-                print 'Still sweeping or connection lost'
-                continue
-            break
+        self.ask('*STB?')           # ask for status byte (or whatever)        
         
-        for i in range(n-1): self.read()  # workaround that empties the read buffer
-        
-        print 'Sweep is done'
+        self.timeout = timeout
         
     def enable_averaging(self):
         self.write(':SENS1:AVER ON;')
