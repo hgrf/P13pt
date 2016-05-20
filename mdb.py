@@ -11,10 +11,10 @@ from PyQt4.QtGui import (QApplication, QFileSystemModel,
 from PyQt4.QtCore import QDir, Qt, pyqtSlot
 
 from plotter import Plotter
+from analyser import Analyser
 
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 import ConfigParser
 import random
 
@@ -36,115 +36,6 @@ def scan():
 
 def clear():
     listw.clear()
-
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
-html_escape_table = {
-    "&": "&amp;",
-    '"': "&quot;",
-    "'": "&apos;",
-    ">": "&gt;",
-    "<": "&lt;",
-    }
-
-def html_escape(text):
-    """Produce entities within text."""
-    return "".join(html_escape_table.get(c,c) for c in text)
-
-def loadinfo(item):
-    filename = str(item.text())
-
-    analyserw.clear()
-    with open(filename) as f:
-        analyserw.append('<h1>Comments</h1>')
-        # search for comments
-        comments = '<p>'
-        lastcomment = ''
-        ignorelines = 0          # number of lines that won't be considered for data import
-        while True:
-            line = f.readline()
-            if line.startswith('#'):
-                comments += html_escape(line)+'<br>'
-                lastcomment = line
-                ignorelines += 1
-            else:
-                break
-        comments += '</p>'
-        analyserw.append(comments)
-
-        # now try to find header, if there is none, check last comment line
-        analyserw.append('<h1>Header</h1>')
-        cols = line.split('\t')         # line is the last non-comment line (s.a.)
-
-        if not is_number(cols[0]):      # check if line does not start with a number
-            header = line               # in this case this is the header line...
-            dataline1 = f.readline()    # ...and the next one is the 1st data line
-            ignorelines += 1
-        else:
-            dataline1 = line            # otherwise the line we read before is already the first data line...
-            header = lastcomment[1:]    # ...and we will see if last comment qualifies as header (strip the hash)
-
-        if len(header.split('\t')) == len(dataline1.split('\t')):       # see if "field number" is compatible with data
-            analyserw.append('<p>{}</p>'.format(html_escape(header)))
-            header = header.strip('\r\n').split('\t') # also removes CR and LF characters
-        else:
-            header = ['Col {}'.format(i) for i in range(len(dataline1))]
-
-    plotterw.setheader(header)
-
-    try:
-        data = np.loadtxt(filename, skiprows=ignorelines).T
-        plotterw.setdata(data)
-    except ValueError:      # if we cannot read numbers
-        analyserw.append('<h1>Data not numpy compatible!</h1>')
-        plotterw.setdata(None) # TODO: need something more specific here
-        return
-
-    analyserw.append('<h1>Constants detected</h1>')
-    for i, col in enumerate(data):
-        if len(set(col)) == 1 and header:
-            analyserw.append('{}={}<br>'.format(header[i], col[0]))
-
-    # The algorithm below detects sweeps on "imposed" variables (e.g. voltage
-    # set points) that are swept with a constant step. If the sweep step is
-    # varied during the sweep, it won't work.
-    analyserw.append('<h1>Sweeps detected</h1>')
-    for i, col in enumerate(data):
-        # get sorted unique abs diff values
-        s = np.unique(np.abs(np.diff(col)))
-        # remove zero
-        s = s[s != 0]
-        # check if there is a large jump at the end (happens for nested sweeps)
-        if len(s) > 1 and (s[-1]-s[-2])/s[-2] > 1e-12:
-            s = np.delete(s, -1)
-        # check if we have a sweep
-        if len(s) and np.mean(np.diff(s))/s[0] < 1e-12:
-            analyserw.append('{}={}:{}:{}<br>'.format(header[i], np.min(col), s[0], np.max(col)))
-
-    analyserw.append('<h1>Data</h1>')
-    table = '<table border="1" width="100%"><tr>'
-    if header:
-        for col in header:
-            table += '<td>'+col+'</td>'
-        table += '</tr>'
-
-    # max 20 data points
-    for i in range(min(20, len(data[0]))):
-        table += '<tr>'
-        for col in data[:,i]:
-            table += '<td>'+str(col)+'</td>'
-        table += '</tr>'
-
-    table += '</table>'
-
-    analyserw.append(table)
-    if len(data[0]) > 20:
-        analyserw.append('<b>... more data available ...</b>')
 
 def setroot():
     i = treev.selectedIndexes()[0]
@@ -218,7 +109,6 @@ if __name__ == '__main__':
     hl = QHBoxLayout()
 
     listw = QListWidget(scannerw)
-    listw.itemClicked.connect(loadinfo)
 
     btnscan = QPushButton(scannerw)
     btnscan.setText("Scan")
@@ -237,11 +127,13 @@ if __name__ == '__main__':
     # Create widget to host the information and add it to the splitter
     infow = QTabWidget(splitter)
 
-    analyserw = QTextEdit(splitter)
     plotterw = Plotter()
+    analyserw = Analyser(plotterw)
 
     infow.addTab(analyserw, "Analyser")
     infow.addTab(plotterw, "Plotter")
+
+    listw.itemClicked.connect(analyserw.loadinfo)
 
     # Show the splitter.
     splitter.setStretchFactor(1, 3)        # make folder tree view small
