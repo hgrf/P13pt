@@ -67,6 +67,10 @@ class Plotter(QWidget):
         self.xvar.clear()
         self.yvar.clear()
         self.selectvar.clear()
+        self.selectval.clear()
+        ax = self.figure.add_subplot(111)
+        ax.clear()
+        self.canvas.draw()
         for col in header:
             self.xvar.addItem(col)
             self.yvar.addItem(col)

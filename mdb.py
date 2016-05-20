@@ -30,9 +30,12 @@ def scan():
 
     for fo in folders:
         for root, dirnames, filenames in os.walk(str(fo)):
+            filenames.sort()        # sort files by name
             for fi in filenames:
                 if fi.endswith(('.txt', '.csv')):
-                    listw.addItem(os.path.join(root, fi))
+                    abspath = os.path.join(root, fi)
+                    relpath = abspath[len(model.rootPath())+1:]
+                    listw.addItem(relpath)
 
 def clear():
     listw.clear()
@@ -128,7 +131,7 @@ if __name__ == '__main__':
     infow = QTabWidget(splitter)
 
     plotterw = Plotter()
-    analyserw = Analyser(plotterw)
+    analyserw = Analyser(plotterw, model)
 
     infow.addTab(analyserw, "Analyser")
     infow.addTab(plotterw, "Plotter")

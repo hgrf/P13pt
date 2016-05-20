@@ -4,6 +4,8 @@ from PyQt4.QtCore import pyqtSlot
 
 import numpy as np
 
+import os
+
 #### helper functions
 def is_number(s):
     try:
@@ -25,13 +27,14 @@ def html_escape(text):
     return "".join(html_escape_table.get(c,c) for c in text)
 
 class Analyser(QTextEdit):
-    def __init__(self, plotter, parent=None):
+    def __init__(self, plotter, fsmodel, parent=None):
         super(Analyser, self).__init__(parent)
-        self.plotter = plotter
+        self.plotter = plotter      # Plotter (so we can send the header and the data to the plotting widget)
+        self.fsmodel = fsmodel      # QFileSystemModel (need this to get root path)
 
     @pyqtSlot(QListWidgetItem)
     def loadinfo(self, item):
-        filename = str(item.text())
+        filename = os.path.join(str(self.fsmodel.rootPath()), str(item.text()))
 
         self.clear()
         with open(filename) as f:
