@@ -2,10 +2,26 @@ from PyQt4.QtGui import (QWidget, QTextEdit, QVBoxLayout, QHBoxLayout,
                          QPushButton, QFont, QFontMetrics, QComboBox,
                          QLineEdit, QLabel)
 
+from PyQt4.Qt import QObject, pyqtSignal
+
 import os
+import sys
 
 import ConfigParser
 import pickle
+
+class ConsoleStream(QObject):
+    messageWritten = pyqtSignal(str)
+
+    def flush( self ):
+        pass
+
+    def fileno( self ):
+        return -1
+
+    def write( self, msg ):
+        if ( not self.signalsBlocked() ):
+            self.messageWritten.emit(unicode(msg))
 
 class Modifier(QWidget):
     def __init__(self, plotter, parent=None):
@@ -19,10 +35,14 @@ class Modifier(QWidget):
         self.txtcreate = QLineEdit('Modifier name')
         self.btncreate = QPushButton('Create')
         self.editor = QTextEdit()
+        self.console = QTextEdit()
         self.btnapply = QPushButton('Apply')
         self.btndelete = QPushButton('Delete modifier')
         self.btnmakedefault = QPushButton('Make default')
         self.btnsave = QPushButton('Save modifier')
+
+        # disable editing console
+        self.console.setReadOnly(True)
 
         # configure "code" font
         font = QFont()
@@ -61,6 +81,7 @@ class Modifier(QWidget):
         l.addWidget(self.cmbselect)
         l.addLayout(h2)
         l.addWidget(self.editor)
+        l.addWidget(self.console)
         l.addLayout(h)
 
         self.setLayout(l)
@@ -120,8 +141,21 @@ class Modifier(QWidget):
         header = self.orgheader
         data = self.orgdata
 
+        # back up stdout and stderr
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+
+        s = ConsoleStream()
+        s.messageWritten.connect(self.console.insertPlainText)
+        sys.stdout = s
+        sys.stderr = s
+
         # execute user code
         exec(str(self.editor.toPlainText()))
+
+        # restore stdout and stderr
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
 
         # update plot
         self.plotter.setheader(header)
