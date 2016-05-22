@@ -27,10 +27,10 @@ def html_escape(text):
     return "".join(html_escape_table.get(c,c) for c in text)
 
 class Analyser(QTextEdit):
-    def __init__(self, plotter, fsmodel, parent=None):
+    def __init__(self, modifier, fsmodel, parent=None):
         super(Analyser, self).__init__(parent)
-        self.plotter = plotter      # Plotter (so we can send the header and the data to the plotting widget)
-        self.fsmodel = fsmodel      # QFileSystemModel (need this to get root path)
+        self.modifier = modifier      # Modifier: the instance before plotting the data
+        self.fsmodel = fsmodel        # QFileSystemModel (need this to get root path)
 
     @pyqtSlot(QListWidgetItem)
     def loadinfo(self, item):
@@ -72,14 +72,15 @@ class Analyser(QTextEdit):
             else:
                 header = ['Col {}'.format(i) for i in range(len(dataline1))]
 
-        self.plotter.setheader(header)
+        self.modifier.setfile(filename)
+        self.modifier.setheader(header)
 
         try:
             data = np.loadtxt(filename, skiprows=ignorelines).T
-            self.plotter.setdata(data)
+            self.modifier.setdata(data)
         except ValueError:      # if we cannot read numbers
             self.append('<h1>Data not numpy compatible!</h1>')
-            self.plotter.setdata(None) # TODO: need something more specific here
+            self.modifier.setdata(None) # TODO: need something more specific here
             return
 
         self.append('<h1>Constants detected</h1>')

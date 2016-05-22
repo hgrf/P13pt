@@ -13,6 +13,7 @@ from PyQt4.QtCore import QDir, Qt, pyqtSlot
 
 from plotter import Plotter
 from analyser import Analyser
+from modifier import Modifier
 
 import os
 import numpy as np
@@ -132,9 +133,11 @@ if __name__ == '__main__':
     infow = QTabWidget(splitter)
 
     plotterw = Plotter()
-    analyserw = Analyser(plotterw, model)
+    modifierw = Modifier(plotterw)
+    analyserw = Analyser(modifierw, model)
 
     infow.addTab(analyserw, "Analyser")
+    infow.addTab(modifierw, "Modifier")
     infow.addTab(plotterw, "Plotter")
 
     listw.itemClicked.connect(analyserw.loadinfo)
@@ -150,7 +153,7 @@ if __name__ == '__main__':
     # Start the main loop.
     ret = app.exec_()
 
-    # Writing our configuration file to 'example.cfg'
+    # Writing our configuration file to 'mdb.cfg'
     with open('mdb.cfg', 'wb') as configfile:
         config.write(configfile)
 
