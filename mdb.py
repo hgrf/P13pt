@@ -36,7 +36,7 @@ def scan():
             for fi in filenames:
                 if fi.endswith(('.txt', '.csv')):
                     abspath = os.path.join(root, fi)
-                    relpath = abspath[len(model.rootPath())+1:]
+                    relpath = abspath[len(model.rootPath()):]
                     listw.addItem(relpath)
 
 def clear():
@@ -51,9 +51,13 @@ def setroot():
 
 def forgetroot():
     root = None
-    model.setRootPath(QDir.rootPath())
-    treev.setRootIndex(model.index(QDir.rootPath()))
+    rPath = model.myComputer().toString()
+    #model.setRootPath(QDir.rootPath())
+    #treev.setRootIndex(model.index(QDir.rootPath()))
     config.remove_option('main', 'root')
+    model.setRootPath(rPath)
+    treev.setRootIndex(model.index(rPath))
+
 
 if __name__ == '__main__':
     # CD into directory where this script is saved
@@ -77,7 +81,9 @@ if __name__ == '__main__':
 
     # Set up file system model for tree view
     model = QFileSystemModel()
-    model.setRootPath(root if root else QDir.rootPath())
+    rPath = model.myComputer().toString()
+    #model.setRootPath(root if root else QDir.rootPath())
+    model.setRootPath(root if root else rPath)
     model.setFilter(QDir.Dirs|QDir.Drives|QDir.NoDotAndDotDot|QDir.AllDirs)
 
     # Create the view in the splitter.
@@ -87,7 +93,8 @@ if __name__ == '__main__':
 
     treev = QTreeView(browserw)
     treev.setModel(model)
-    treev.setRootIndex(model.index(root if root else QDir.rootPath()))
+    #treev.setRootIndex(model.index(root if root else QDir.rootPath()))
+    treev.setRootIndex(model.index(root if root else rPath))
 
     # Hide other columns
     treev.setColumnHidden(1, True)
