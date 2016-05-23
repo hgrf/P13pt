@@ -36,7 +36,9 @@ def scan():
             for fi in filenames:
                 if fi.endswith(('.txt', '.csv')):
                     abspath = os.path.join(root, fi)
-                    relpath = abspath[len(model.rootPath()):]
+                    skiplen = len(model.rootPath())
+                    if skiplen: skiplen += 1        # workaround for windows if root is "My Computer" (empty string)
+                    relpath = abspath[skiplen:]
                     listw.addItem(relpath)
 
 def clear():
