@@ -25,8 +25,11 @@ def complex_fit(x, y_meas, function, guessed_parameters, **kwargs):
 class DCsweep(object):
     """Defines the class of DCsweep
     """    
+
+    default_map = {'Vg1bilt': 0, 'Vg2bilt': 1, 'Vdsbilt': 2,
+                   'Vg1': 3, 'Vg2': 4, 'Vds': 5}    
     
-    def __init__(self,filename, Rg1, Rg2, Rds, L, W, d, eps):        # another variable (with a default value) in the initialisation could be used to define the table format of the input file
+    def __init__(self,filename, Rg1, Rg2, Rds, L, W, d, eps, ignorelines=0, m=default_map):        # another variable (with a default value) in the initialisation could be used to define the table format of the input file
         self.Rg1 = Rg1
         self.Rg2 = Rg2
         self.Rds = Rds
@@ -38,13 +41,13 @@ class DCsweep(object):
         self.label = None
 
         with open(filename, 'r') as current_file:
-            self.raw = np.genfromtxt(current_file).T
-            self.Vg1bilt = self.raw[0]
-            self.Vg2bilt = self.raw[1]
-            self.Vdsbilt = self.raw[2]
-            self.Vg1 = self.raw[3]
-            self.Vg2 = self.raw[4]
-            self.Vds = self.raw[5]
+            self.raw = np.genfromtxt(current_file, skip_header=ignorelines).T
+            self.Vg1bilt = self.raw[m['Vg1bilt']]
+            self.Vg2bilt = self.raw[m['Vg2bilt']]
+            self.Vdsbilt = self.raw[m['Vdsbilt']]
+            self.Vg1 = self.raw[m['Vg1']]
+            self.Vg2 = self.raw[m['Vg2']]
+            self.Vds = self.raw[m['Vds']]
             self.length = len(self.Vg1)
             
             self.Ileak1 = (self.Vg1bilt-self.Vg1)/self.Rg1

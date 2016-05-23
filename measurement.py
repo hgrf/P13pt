@@ -57,12 +57,21 @@ class measurement(object):
                                         
                 self.v_ds = float(filename[filename.find('Vds=')+4:
                                         filename.find('Vds=')+12])
-            else: 
+            elif filename.find('Vgate=')!=-1: 
                 self.v_g = float(filename[filename.find('Vgate=')+6:
                                         filename.find('Vgate=')+14])
                                         
                 self.v_ds = float(filename[filename.find('Vyoko=')+6:
-                                        filename.find('Vyoko=')+14]) 
+                                        filename.find('Vyoko=')+14])
+            elif filename.find('Vg1_')!=-1:
+                toks = filename.split('_')
+                for i, t in enumerate(toks):
+                    if t=='Vg1': self.v_g = toks[i+1]
+                    if t=='Vds': self.v_ds = toks[i+1]
+            else:
+                raise Exception
+            
+                
         
         elif from_s is not None:
             # Check that a parent measurement is passed.
