@@ -41,7 +41,7 @@ class Analyser(QTextEdit):
             self.append('<h1>Comments</h1>')
             # search for comments
             comments = '<p>'
-            lastcomment = ''
+            lastcomment = None
             ignorelines = 0          # number of lines that won't be considered for data import
             while True:
                 line = f.readline()
@@ -64,13 +64,16 @@ class Analyser(QTextEdit):
                 ignorelines += 1
             else:
                 dataline1 = line            # otherwise the line we read before is already the first data line...
-                header = lastcomment[1:]    # ...and we will see if last comment qualifies as header (strip the hash)
+                if lastcomment:
+                    header = lastcomment[1:]    # ...and we will see if last comment qualifies as header (strip the hash)
+                else:                           # if there is no comment at all, make default header
+                    header = '\t'.join(['Col {}'.format(i) for i in range(len(dataline1.split('\t')))])
 
             if len(header.split('\t')) == len(dataline1.split('\t')):       # see if "field number" is compatible with data
                 self.append('<p>{}</p>'.format(html_escape(header)))
                 header = header.strip('\r\n').split('\t') # also removes CR and LF characters
             else:
-                header = ['Col {}'.format(i) for i in range(len(dataline1))]
+                header = ['Col {}'.format(i) for i in range(len(dataline1.split('\t')))]
 
         self.modifier.setfile(filename)
         self.modifier.setheader(header)
