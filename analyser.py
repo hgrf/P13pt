@@ -104,7 +104,9 @@ class Analyser(QTextEdit):
             if len(s) > 1 and (s[-1]-s[-2])/s[-2] > 1e-12:
                 s = np.delete(s, -1)
             # check if we have a sweep
-            if len(s) and np.mean(np.diff(s))/s[0] < 1e-12:
+            if len(s) == 1:
+                self.append('{}={}:{}:{}<br>'.format(header[i], np.min(col), s[0], np.max(col)))
+            if len(s) > 1 and np.mean(np.diff(s))/s[0] < 1e-12:
                 self.append('{}={}:{}:{}<br>'.format(header[i], np.min(col), s[0], np.max(col)))
 
         self.append('<h1>Data</h1>')
