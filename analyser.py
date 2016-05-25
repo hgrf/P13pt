@@ -86,9 +86,15 @@ class Analyser(QTextEdit):
             self.modifier.setdata(None) # TODO: need something more specific here
             return
 
+        # this list stores the columns we already "understood"
+        analysed_cols = []
+
+        # The section below detects columns in the data that stay constant
+        # throughout the file
         self.append('<h1>Constants detected</h1>')
         for i, col in enumerate(data):
-            if len(set(col)) == 1 and header:
+            if len(set(col)) == 1:
+                analysed_cols.append(i)
                 self.append('{}={}<br>'.format(header[i], col[0]))
 
         # The algorithm below detects sweeps on "imposed" variables (e.g. voltage
@@ -104,11 +110,18 @@ class Analyser(QTextEdit):
             if len(s) > 1 and (s[-1]-s[-2])/s[-2] > 1e-12:
                 s = np.delete(s, -1)
             # check if we have a sweep
-            if len(s) == 1:
+            if (len(s) == 1) or (len(s) > 1 and np.mean(np.diff(s))/s[0] < 1e-12):
                 self.append('{}={}:{}:{}<br>'.format(header[i], np.min(col), s[0], np.max(col)))
-            if len(s) > 1 and np.mean(np.diff(s))/s[0] < 1e-12:
-                self.append('{}={}:{}:{}<br>'.format(header[i], np.min(col), s[0], np.max(col)))
+                analysed_cols.append(i)
 
+        # For all columns that were not successfully analysed above, show min
+        # and max values
+        self.append('<h1>Other variables</h1>')
+        for i, col in enumerate(data):
+            if i not in analysed_cols:
+                self.append('{}={}:{}<br>'.format(header[i], np.min(col), np.max(col)))
+
+        # In this section we show the data in a table (max. 20 lines)
         self.append('<h1>Data</h1>')
         table = '<table border="1" width="100%"><tr>'
         if header:
