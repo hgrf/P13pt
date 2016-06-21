@@ -341,7 +341,7 @@ class measurement(object):
                 ax.plot(self.freq/1e9, matrix[i,j].real, label = 'Real, V$_g$=%.2fV'%legendlabel)
                 ax.plot(self.freq/1e9, matrix[i,j].imag, label = 'Imag, V$_g$=%.2fV'%legendlabel)
                 ax.set_xlabel('f [GHz]')
-                ax.set_ylabel(ylabel)
+                ax.set_ylabel(ylabel+r'$_{%d%d}$'%(i+1,j+1))
                 ax.set_ylim([-ylim,ylim])             
         plt.tight_layout()               
 
