@@ -56,7 +56,14 @@ class Analyser(QTextEdit):
 
             # now try to find header, if there is none, check last comment line
             self.append('<h1>Header</h1>')
-            cols = line.split('\t')         # line is the last non-comment line (s.a.)
+            cols_tab = line.split('\t')         # line is the last non-comment line (s.a.)
+            cols_space = line.split(' ')
+            if len(cols_tab) > len(cols_space):
+                cols = cols_tab
+                delim = '\t'
+            else:
+                cols = cols_space
+                delim = ' '
 
             if not is_number(cols[0]):      # check if line does not start with a number
                 header = line               # in this case this is the header line...
@@ -67,13 +74,13 @@ class Analyser(QTextEdit):
                 if lastcomment:
                     header = lastcomment[1:]    # ...and we will see if last comment qualifies as header (strip the hash)
                 else:                           # if there is no comment at all, make default header
-                    header = '\t'.join(['Col {}'.format(i) for i in range(len(dataline1.split('\t')))])
+                    header = delim.join(['Col {}'.format(i) for i in range(len(dataline1.split('\t')))])
 
-            if len(header.split('\t')) == len(dataline1.split('\t')):       # see if "field number" is compatible with data
+            if len(header.split(delim)) == len(dataline1.split(delim)):       # see if "field number" is compatible with data
                 self.append('<p>{}</p>'.format(html_escape(header)))
-                header = header.strip('\r\n').split('\t') # also removes CR and LF characters
+                header = header.strip('\r\n').split(delim) # also removes CR and LF characters
             else:
-                header = ['Col {}'.format(i) for i in range(len(dataline1.split('\t')))]
+                header = ['Col {}'.format(i) for i in range(len(dataline1.split(delim)))]
 
         self.modifier.setfile(filename)
         self.modifier.setheader(header)
