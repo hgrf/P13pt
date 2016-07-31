@@ -10,6 +10,8 @@ import sys
 import ConfigParser
 import pickle
 
+from mdbinfo import FileInfo, Mod
+
 class ConsoleStream(QObject):
     messageWritten = pyqtSignal(str)
 
@@ -24,10 +26,11 @@ class ConsoleStream(QObject):
             self.messageWritten.emit(unicode(msg))
 
 class Modifier(QWidget):
-    def __init__(self, plotter, parent=None):
+    def __init__(self, parent=None):
         super(Modifier, self).__init__(parent)
 
-        self.plotter = plotter      # This is where the plotting takes place (need to inform this widget about changes in the data)
+        self.plotter = parent.plotterw      # This is where the plotting takes place (need to inform this widget about changes in the data)
+        self.mdbinfo = parent.mdbinfo
 
         self.lblselect = QLabel('Select modifier:')
         self.cmbselect = QComboBox()
@@ -98,13 +101,16 @@ class Modifier(QWidget):
         self.cmbselect.addItem('None')
 
         # load existing modifiers
-        self.loadpickle()      # sets up self.mdbinfo
-        for mod in self.mdbinfo['modifiers']:
-            self.cmbselect.addItem(mod['name'])
+        if filename in self.mdbinfo.files:
+            self.fileinfo = self.mdbinfo.files[filename]
+        else:
+            self.fileinfo = FileInfo()
+        for mod in self.fileinfo.modifiers:
+            self.cmbselect.addItem(mod.name)
 
         self.cmbselect.blockSignals(False)
 
-        self.changemod(self.mdbinfo['defaultmod'])
+        self.changemod(self.fileinfo.defaultmod)
 
     def setheader(self, header):
         self.orgheader = header             # save original header
@@ -122,7 +128,7 @@ class Modifier(QWidget):
     def changemod(self, i):                 # i referring to index in Combobox!
         if i:
             self.cmbselect.setCurrentIndex(i)         # (first entry is "None")
-            self.editor.setText(self.mdbinfo['modifiers'][i-1]['code'])
+            self.editor.setText(self.fileinfo.modifiers[i-1].code)
             self.editor.setEnabled(True)
             self.btnsave.setEnabled(True)
             self.btndelete.setEnabled(True)
@@ -133,8 +139,9 @@ class Modifier(QWidget):
             self.btndelete.setEnabled(False)
 
     def makedefault(self):
-        self.mdbinfo['defaultmod'] = self.cmbselect.currentIndex()
-        self.savepickle()
+        self.fileinfo.defaultmod = self.cmbselect.currentIndex()
+        self.mdbinfo.files[self.filename] = self.fileinfo
+        self.mdbinfo.save()
 
     def apply(self):
         # restore original header and data
@@ -161,50 +168,28 @@ class Modifier(QWidget):
         self.plotter.setheader(header)
         self.plotter.setdata(data)
 
-    def loadpickle(self):
-        path, filename = os.path.split(os.path.abspath(self.filename))
-        self.picklename = os.path.join(path, 'mdbinfo.pickle')
-
-        # initialise mdbinfo / find existing config
-        try:
-            picklefile = open(self.picklename, 'rb')
-            self.mdbinfo_allfiles = pickle.load(picklefile)
-            picklefile.close()
-        except (IOError, EOFError):                # file does not exist or is empty
-            self.mdbinfo_allfiles = dict()
-            pass
-
-        # set up mdbinfo if not already done
-        if not filename in self.mdbinfo_allfiles:
-            self.mdbinfo_allfiles[filename] = dict()
-        self.mdbinfo = self.mdbinfo_allfiles[filename]
-        if not 'modifiers' in self.mdbinfo:
-            self.mdbinfo['modifiers'] = list()
-        if not 'defaultmod' in self.mdbinfo:
-            self.mdbinfo['defaultmod'] = 0     # no modifier as default
-
-    def savepickle(self):
-        path, filename = os.path.split(os.path.abspath(self.filename))
-        self.mdbinfo_allfiles[filename] = self.mdbinfo
-
-        picklefile = open(self.picklename, 'wb')
-        pickle.dump(self.mdbinfo_allfiles, picklefile)
-        picklefile.close()
-
     def save(self):
-        self.mdbinfo['modifiers'][self.cmbselect.currentIndex()-1] = {'name': str(self.cmbselect.currentText()), 'code': self.editor.toPlainText()}
-        self.savepickle()
+        mod = Mod()
+        mod.name = str(self.cmbselect.currentText())
+        mod.code = self.editor.toPlainText()
+        self.fileinfo.modifiers[self.cmbselect.currentIndex()-1] = mod
+        self.mdbinfo.files[self.filename] = self.fileinfo
+        self.mdbinfo.save()
 
     def delete(self):
         i = self.cmbselect.currentIndex()
-        del self.mdbinfo['modifiers'][i-1]
-        if self.mdbinfo['defaultmod'] == i:     # check if we're deleting the default modifier
-            self.mdbinfo['defaultmod'] = 0      # if true, set default modifier to "None"
-        self.savepickle()
+        del self.fileinfo.modifiers[i-1]
+        if self.fileinfo.defaultmod == i:     # check if we're deleting the default modifier
+            self.fileinfo.defaultmod = 0      # if true, set default modifier to "None"
+        self.mdbinfo.files[self.filename] = self.fileinfo
         self.setfile(self.filename)     # re-initialise
 
     def create(self):
-        self.mdbinfo['modifiers'].append({'name': str(self.txtcreate.text()), 'code': ''})
-        self.savepickle()
+        mod = Mod()
+        mod.name = str(self.txtcreate.text())
+        mod.code = ''
+        self.fileinfo.modifiers.append(mod)
+        self.mdbinfo.files[self.filename] = self.fileinfo
+        self.mdbinfo.save()
         self.cmbselect.addItem(self.txtcreate.text())
         self.changemod(self.cmbselect.count()-1)

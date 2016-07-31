@@ -1,64 +1,193 @@
 #!/usr/bin/python
 import sys
 
-import numpy as np
-
 from PyQt4.QtGui import (QApplication, QFileSystemModel,
                          QSplitter, QTreeView, QVBoxLayout,
                          QHBoxLayout, QListWidgetItem,
                          QListWidget, QPushButton, QWidget,
                          QSizePolicy, QMessageBox, QLabel,
-                         QTextEdit, QTabWidget, QComboBox)
-from PyQt4.QtCore import QDir, Qt, pyqtSlot
+                         QTextEdit, QTabWidget, QComboBox, QTextEdit,
+                         QAbstractItemDelegate, QPen, QColor, QFont,
+                         QStyle, QBrush, QPalette)
+from PyQt4.QtCore import QDir, Qt, pyqtSlot, QSize
 
 from plotter import Plotter
 from analyser import Analyser
 from modifier import Modifier
 
 import os
-import numpy as np
 import ConfigParser
-import random
+from glob import glob
 
-def scan():
-    folders = []
-    for i in treev.selectedIndexes():
-        folders.append(model.fileInfo(i).absoluteFilePath())
+from mdbinfo import FolderInfo
 
-    if not len(folders):
-        QMessageBox.information(splitter, "No folders selected",
-            "Please select folders to scan")
-        return
+class FileListDelegate(QAbstractItemDelegate):
+    def __init__(self):
+        super(FileListDelegate, self).__init__()
 
-    for fo in folders:
-        for root, dirnames, filenames in os.walk(str(fo)):
-            filenames.sort()        # sort files by name
-            for fi in filenames:
-                if fi.endswith(('.txt', '.csv')):
-                    abspath = os.path.join(root, fi)
-                    skiplen = len(model.rootPath())
-                    if skiplen: skiplen += 1        # workaround for windows if root is "My Computer" (empty string)
-                    relpath = abspath[skiplen:]
-                    listw.addItem(relpath)
+    def paint(self, painter, option, index):
+        r = option.rect
+        fontPen = QPen(QColor.fromRgb(0, 0, 0), 1, Qt.SolidLine)
+        selectedBrush = QBrush(QApplication.palette().color(QPalette.Highlight))
+        selectedFontPen = QPen(QApplication.palette().color(QPalette.HighlightedText))
 
-def clear():
-    listw.clear()
+        # alternating background
+        painter.setBrush(Qt.white if (index.row() % 2) else QColor(240, 240, 240))
+        painter.drawRect(r)
 
-def setroot():
-    i = treev.selectedIndexes()[0]
-    root = model.fileInfo(i).absoluteFilePath()
-    model.setRootPath(root)
-    treev.setRootIndex(i)
-    config.set('main', 'root', root)
+        if(option.state & QStyle.State_Selected):
+            painter.setBrush(selectedBrush)
+            painter.drawRect(r)
+            fontPen = selectedFontPen
 
-def forgetroot():
-    root = None
-    rPath = model.myComputer().toString()
-    #model.setRootPath(QDir.rootPath())
-    #treev.setRootIndex(model.index(QDir.rootPath()))
-    config.remove_option('main', 'root')
-    model.setRootPath(rPath)
-    treev.setRootIndex(model.index(rPath))
+        filename = index.data(Qt.DisplayRole).toString()
+        #description = index.data(Qt::UserRole + 1).toString();
+
+        painter.setPen(fontPen)
+        painter.setFont(QFont(QFont.defaultFamily(QFont()), 12, QFont.Normal))
+        # returns bounding rect br
+        br = painter.drawText(r.left(), r.top(), r.width(), r.height(), Qt.AlignTop | Qt.AlignLeft | Qt.TextWrapAnywhere, filename)
+
+        if(index.data(Qt.UserRole+1).toBool()):
+            painter.drawText(r.left(), br.bottom(), r.width(), r.height()-br.height(), Qt.AlignTop | Qt.AlignLeft, '!')
+        else:
+            painter.drawText(r.left(), br.bottom(), r.width(), r.height() - br.height(), Qt.AlignTop | Qt.AlignLeft,
+                             '?')
+
+    def sizeHint(self, option, index):
+        return QSize(200, 60);  #  very dumb value
+
+
+class MainWindow(QSplitter):
+    def scan(self, index):
+        # empty list view
+        self.listw.clear()
+
+        # determine chosen folder from active tree view item
+        folder = str(self.model.fileInfo(index).absoluteFilePath())
+
+        # initialise folder info
+        self.mdbinfo.load(folder)
+        self.descriptionw.setText(self.mdbinfo.description)
+
+        # look for data files
+        extensions = ["txt", "csv"]
+        files = []
+        for e in extensions:
+            files.extend(glob(os.path.join(folder, "*." + e)))
+
+        for f in sorted(files):
+            item = QListWidgetItem()
+            item.setText(os.path.basename(f))
+            if f in self.mdbinfo.files:
+                item.setData(Qt.UserRole+1, True)
+            self.listw.addItem(item)
+
+    def setroot(self):
+        i = self.treev.selectedIndexes()[0]
+        root = self.model.fileInfo(i).absoluteFilePath()
+        self.model.setRootPath(root)
+        self.treev.setRootIndex(i)
+        config.set('main', 'root', root)
+
+    def forgetroot(self):
+        rPath = self.model.myComputer().toString()
+        config.remove_option('main', 'root')
+        self.model.setRootPath(rPath)
+        self.treev.setRootIndex(self.model.index(rPath))
+
+    def initfolderview(self):
+        # Set up file system model for tree view
+        self.model = QFileSystemModel()
+        model = self.model
+        rPath = model.myComputer().toString()
+        model.setRootPath(root if root else rPath)
+        model.setFilter(QDir.Dirs | QDir.Drives | QDir.NoDotAndDotDot | QDir.AllDirs)
+
+        # Create the tree view in the splitter.
+        browserw = QWidget(self)
+        vl = QVBoxLayout(browserw)
+        hl = QHBoxLayout()
+
+        self.treev = QTreeView(browserw)
+        treev = self.treev
+        treev.setModel(model)
+        treev.setRootIndex(model.index(root if root else rPath))
+
+        treev.clicked.connect(self.scan)
+
+        # Hide other columns
+        treev.setColumnHidden(1, True)
+        treev.setColumnHidden(2, True)
+        treev.setColumnHidden(3, True)
+
+        btnsetroot = QPushButton(browserw)
+        btnsetroot.setText("Set root")
+        btnsetroot.clicked.connect(self.setroot)
+
+        btnforgetroot = QPushButton(browserw)
+        btnforgetroot.setText("Forget root")
+        btnforgetroot.clicked.connect(self.forgetroot)
+
+        hl.addWidget(btnsetroot)
+        hl.addWidget(btnforgetroot)
+
+        vl.addWidget(treev)
+        vl.addLayout(hl)
+
+    def savedescription(self):
+        self.mdbinfo.description = self.descriptionw.toPlainText()
+        self.mdbinfo.save()
+
+    def initfilesview(self):
+        # Create widget to host the scanner and add it to the splitter
+        scannerw = QWidget(self)
+        vl = QVBoxLayout(scannerw)
+
+        self.descriptionw = QTextEdit(scannerw)
+        btnsave = QPushButton("Save description")
+        self.listw = QListWidget(scannerw)
+
+        self.listw.setItemDelegate(FileListDelegate())
+
+        btnsave.clicked.connect(self.savedescription)
+
+        vl.addWidget(self.descriptionw)
+        vl.addWidget(btnsave)
+        vl.addWidget(self.listw)
+
+        vl.setStretchFactor(self.listw, 10)
+
+    def initinfoview(self):
+        # Create widget to host the information and add it to the splitter
+        infow = QTabWidget(self)
+
+        self.plotterw = Plotter()
+        self.modifierw = Modifier(self)
+        self.analyserw = Analyser(self)
+
+        infow.addTab(self.analyserw, "Analyser")
+        infow.addTab(self.modifierw, "Modifier")
+        infow.addTab(self.plotterw, "Plotter")
+
+        self.listw.itemClicked.connect(self.analyserw.loadinfo)
+
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent)
+
+        self.mdbinfo = FolderInfo()
+
+        self.initfolderview()
+        self.initfilesview()
+        self.initinfoview()
+
+        # Show the splitter.
+        self.setStretchFactor(1, 3)        # make folder tree view small
+        self.setStretchFactor(2, 3)        # make folder tree view small
+        self.show()
+
+        # Maximize the splitter.
+        self.setWindowState(Qt.WindowMaximized)
 
 
 if __name__ == '__main__':
@@ -79,85 +208,7 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
 
-    splitter = QSplitter()
-
-    # Set up file system model for tree view
-    model = QFileSystemModel()
-    rPath = model.myComputer().toString()
-    #model.setRootPath(root if root else QDir.rootPath())
-    model.setRootPath(root if root else rPath)
-    model.setFilter(QDir.Dirs|QDir.Drives|QDir.NoDotAndDotDot|QDir.AllDirs)
-
-    # Create the view in the splitter.
-    browserw = QWidget(splitter)
-    vl = QVBoxLayout(browserw)
-    hl = QHBoxLayout()
-
-    treev = QTreeView(browserw)
-    treev.setModel(model)
-    #treev.setRootIndex(model.index(root if root else QDir.rootPath()))
-    treev.setRootIndex(model.index(root if root else rPath))
-
-    # Hide other columns
-    treev.setColumnHidden(1, True)
-    treev.setColumnHidden(2, True)
-    treev.setColumnHidden(3, True)
-
-    btnsetroot = QPushButton(browserw)
-    btnsetroot.setText("Set root")
-    btnsetroot.clicked.connect(setroot)
-
-    btnforgetroot = QPushButton(browserw)
-    btnforgetroot.setText("Forget root")
-    btnforgetroot.clicked.connect(forgetroot)
-
-    hl.addWidget(btnsetroot)
-    hl.addWidget(btnforgetroot)
-
-    vl.addWidget(treev)
-    vl.addLayout(hl)
-
-    # Create widget to host the scanner and add it to the splitter
-    scannerw = QWidget(splitter)
-    vl = QVBoxLayout(scannerw)
-    hl = QHBoxLayout()
-
-    listw = QListWidget(scannerw)
-
-    btnscan = QPushButton(scannerw)
-    btnscan.setText("Scan")
-    btnscan.clicked.connect(scan)
-
-    btnclear = QPushButton(scannerw)
-    btnclear.setText("Clear")
-    btnclear.clicked.connect(clear)
-
-    hl.addWidget(btnclear)
-    hl.addWidget(btnscan)
-
-    vl.addLayout(hl)
-    vl.addWidget(listw)
-
-    # Create widget to host the information and add it to the splitter
-    infow = QTabWidget(splitter)
-
-    plotterw = Plotter()
-    modifierw = Modifier(plotterw)
-    analyserw = Analyser(modifierw, model)
-
-    infow.addTab(analyserw, "Analyser")
-    infow.addTab(modifierw, "Modifier")
-    infow.addTab(plotterw, "Plotter")
-
-    listw.itemClicked.connect(analyserw.loadinfo)
-
-    # Show the splitter.
-    splitter.setStretchFactor(1, 3)        # make folder tree view small
-    splitter.setStretchFactor(2, 3)        # make folder tree view small
-    splitter.show()
-
-    # Maximize the splitter.
-    splitter.setWindowState(Qt.WindowMaximized)
+    mainwindow = MainWindow()
 
     # Start the main loop.
     ret = app.exec_()

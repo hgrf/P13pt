@@ -27,14 +27,15 @@ def html_escape(text):
     return "".join(html_escape_table.get(c,c) for c in text)
 
 class Analyser(QTextEdit):
-    def __init__(self, modifier, fsmodel, parent=None):
+    def __init__(self, parent=None):
         super(Analyser, self).__init__(parent)
-        self.modifier = modifier      # Modifier: the instance before plotting the data
-        self.fsmodel = fsmodel        # QFileSystemModel (need this to get root path)
+        self.modifier = parent.modifierw     # Modifier: the instance before plotting the data
+        self.fsmodel = parent.model        # QFileSystemModel (need this to get root path)
+        self.mdbinfo = parent.mdbinfo
 
     @pyqtSlot(QListWidgetItem)
     def loadinfo(self, item):
-        filename = os.path.join(str(self.fsmodel.rootPath()), str(item.text()))
+        filename = os.path.join(self.mdbinfo.folder, str(item.text()))
 
         self.clear()
         with open(filename) as f:
