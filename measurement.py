@@ -66,10 +66,12 @@ class measurement(object):
             elif filename.find('Vg1_')!=-1:
                 toks = filename.split('_')
                 for i, t in enumerate(toks):
-                    if t=='Vg1': self.v_g = toks[i+1]
-                    if t=='Vds': self.v_ds = toks[i+1]
+                    if t=='Vg1': self.v_g = float(toks[i+1])
+                    if t=='Vds': self.v_ds = float(toks[i+1].strip('.txt'))
             else:
-                raise Exception
+                self.v_g = None
+                self.v_ds = None                
+#                raise Exception
             
                 
         
