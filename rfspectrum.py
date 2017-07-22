@@ -1,30 +1,55 @@
 # -*- coding: utf-8 -*-
+# rfspectrum class written by Andreas Inhofer and Holger Graef
+
 import numpy as np
 from math import pi
 import matplotlib.pyplot as plt
 from glob import glob
 from scipy.linalg import sqrtm
 from numpy.linalg import inv
+import os
+from datetime import datetime
 
 # Definition of constants:
 EPSILON_0 = 8.854187e-12  # Farads per meter.
 
 Z0 = 50.0  # Ohms
 
+def params_from_filename(filename):
+    params = dict()
+    # read parameters from file name
+    toks = os.path.splitext(os.path.basename(filename))[0].split('_')
+    # check if there is an even number of tokens
+    if len(toks)%2 == 0 and len(toks) > 0:
+        # check if first 2 tokens are time stamp
+        try:
+            params['timestamp'] = datetime.strptime(toks[0]+'_'+toks[1],"%Y-%m-%d_%Hh%Mm%Ss")
+            first_tok=2
+        except ValueError:
+            first_tok=0
+        # iterate through pairs of tokens to read the parameters
+        for i,tok in enumerate(toks[first_tok:]):
+            if i%2==0: params[tok] = toks[first_tok+i+1]        
+    return params
 
-class measurement(object):
-    """Defines the class of measurements.
+
+class rfspectrum(object):
+    """Defines the class of RF spectra.
     
     Parameters
     ----------
     from_file : path
         A file-path containing the S parameters from a VNA measurement.
     from_s : np.array
-        The S parameters from which a new measurement instance should be 
-        created. Requires to pass parent_meas.
-    parent_meas : measurement instance
-        When creating an instance using calculated S-parameters, 
-        pass the original measurement instance.
+        The S parameters from which a new rfspectrum instance should be 
+        created. Requires to pass a frequency list and optionally a parameter
+        dictionary.
+    f : np.array
+        The frequency list to be passed along if S parameters are read from
+        an array.
+    params : dict
+        To be passed along optionally.
+
 
     Attributes
     ----------
@@ -33,64 +58,43 @@ class measurement(object):
         S_11, S_12 etc. for each frequency
     """
     
-    def __init__(self,from_file = None, from_s = None, parent_meas = None):
-        if from_file:   
+    def __init__(self,from_file = None, from_s = None, f = None, params = None):
+        self.params = dict()        
+        
+        if from_file is not None:   
             filename = from_file
             with open(filename, 'r') as current_file:
                 self.raw = np.genfromtxt(current_file).T
     
             # Frequencies
-            self.freq = self.raw[0]
-            self.w = 2. * pi * self.freq
+            self.f = self.raw[0]
+            self.w = 2.*pi*self.f
             
             # S-matrix is created as a 2x2 matrix containing vectors.
-            self.s = np.empty((2,2,len(self.freq)), dtype= complex)
+            self.s = np.empty((2,2,len(self.f)), dtype= complex)
             self.s[0,0] = self.raw[1] + 1j*self.raw[2]
             self.s[0,1] = self.raw[3] + 1j*self.raw[4]
             self.s[1,0] = self.raw[5] + 1j*self.raw[6]
             self.s[1,1] = self.raw[7] + 1j*self.raw[8]
             
-            # DC data read from filename
-            if filename.find('Vg1=')!=-1:
-                self.v_g = float(filename[filename.find('Vg1=')+4:
-                                        filename.find('Vg1=')+12])
-                                        
-                self.v_ds = float(filename[filename.find('Vds=')+4:
-                                        filename.find('Vds=')+12])
-            elif filename.find('Vgate=')!=-1: 
-                self.v_g = float(filename[filename.find('Vgate=')+6:
-                                        filename.find('Vgate=')+14])
-                                        
-                self.v_ds = float(filename[filename.find('Vyoko=')+6:
-                                        filename.find('Vyoko=')+14])
-            elif filename.find('Vg1_')!=-1:
-                toks = filename.split('_')
-                for i, t in enumerate(toks):
-                    if t=='Vg1': self.v_g = float(toks[i+1])
-                    if t=='Vds': self.v_ds = float(toks[i+1].strip('.txt'))
-            else:
-                self.v_g = None
-                self.v_ds = None                
-#                raise Exception
+            self.params.update(params_from_filename(filename))
             
-                
         
         elif from_s is not None:
-            # Check that a parent measurement is passed.
-            assert parent_meas != None
+            # Check that a frequency list is passed.
+            assert f is not None
             # Inherit frequencies from parent
-            self.freq = parent_meas.freq
-            self.w = parent_meas.w
+            self.f = f
+            self.w = 2.*pi*f
             
             # Create S-matrix from passed argument
             self.s = from_s
-            
-            # Inherit DC data
-            self.v_g = parent_meas.v_g
-            self.v_ds = parent_meas.v_ds
         
         else: 
-            print "Too few parameters. Cannot create measurement instance."
+            print "Too few parameters. Cannot create rfspectrum instance."
+            
+        if params is not None:
+            self.params.update(params)
 
     def s2y(self, s):
         """Compute the Y matrices from the S matrices for each frequency.
@@ -228,7 +232,7 @@ class measurement(object):
         return self.s2y(self.abcd2s(abcd))
     
     def create_y(self):
-        """Create the Y matrices as an attribute of the measurement object.
+        """Create the Y matrices as an attribute of the rfspectrum object.
         
         Attributes
         ----------
@@ -286,7 +290,7 @@ class measurement(object):
         
         Parameters
         ----------
-        thru: measurement object
+        thru: rfspectrum object
             The thru object that shall be used for deembedding. 
             Must be created in the main program prior to 
             execution of this function.
@@ -308,25 +312,23 @@ class measurement(object):
         # samples' ABCD matrix and store the result in mov-format.
         three_mat_multiplication = lambda x,y,z: np.dot(np.dot(x,y),z)
         deembeded_abcd = self.vom2mov(np.array(map(three_mat_multiplication,
-                                      inv_half_thru,sample_abcd, inv_half_thru)))
+                                      inv_half_thru, sample_abcd, inv_half_thru)))
         # Calculate the deembedded S parameters as an attribute in mov-format.
         deembeded_s = self.abcd2s(deembeded_abcd)
-        return measurement(from_s = deembeded_s, parent_meas = self)
+        return rfspectrum(from_s = deembeded_s, f = self.f, params = self.params)
     
-    def plot_mat_spec(self,matrix,pltnum=1,ylim=1.1,legendlabel=0.0,ylabel="M"):
+    def plot_mat(self,matrix,pltnum=1,ylim=1.1,ylabel="M"):
         """Plot selected parameter (S, Y) in a 2x2 panel.
     
         Arguments
         ----------
         matrix : matrix of vectors
-            For example measurement.s or measurement.y
+            For example rfspectrum.s or rfspectrum.y
         pltnum : int
             The number of the plot. Defaults to 1. Choose other number if you want
             to plot in a different figure.
         ylim : float
             The limits (positive and negative) for the y-axis.
-        legendlabel : float
-            Define if you are plotting for different Vg.
         ylabel : string
             Define the label of the y-axes.
     
@@ -338,10 +340,10 @@ class measurement(object):
         fig = plt.figure(pltnum,figsize=(15.0, 10.0))
         for i in range(2):
             for j in range(2):
-                plotnum = 2*i+j+1 #add_subplot needs the +1 as indexing starts with 1
-                ax = fig.add_subplot(2,2,plotnum)
-                ax.plot(self.freq/1e9, matrix[i,j].real, label = 'Real, V$_g$=%.2fV'%legendlabel)
-                ax.plot(self.freq/1e9, matrix[i,j].imag, label = 'Imag, V$_g$=%.2fV'%legendlabel)
+                subplotnum = 2*i+j+1 #add_subplot needs the +1 as indexing starts with 1
+                ax = fig.add_subplot(2,2,subplotnum)
+                ax.plot(self.f/1e9, matrix[i,j].real)
+                ax.plot(self.f/1e9, matrix[i,j].imag)
                 ax.set_xlabel('f [GHz]')
                 ax.set_ylabel(ylabel+r'$_{%d%d}$'%(i+1,j+1))
                 ax.set_ylim([-ylim,ylim])             
@@ -349,46 +351,34 @@ class measurement(object):
 
 
 if __name__ == '__main__':
-    """Example of how to use the measurement class.    
+    """Example of how to use the rfspectrum class.    
         Plots all spectra obtained for a sweep in Vgate.
     """
-    dir_sample = r'D:\Users\inhofer\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
+    dir_sample = r'/home/holger/PhD/Measurements/Holger/KTW H9.4/2016-07-11 RT/2016-07-11_16h34m41s_Vg2_0.00V'
     
-    f_list = (glob(dir_sample + '/*/S-parameter/*.txt') + glob(dir_sample + '/S-parameter/*.txt'))
+    f_list = glob(dir_sample + '/*.txt')
 
 
     # Import thru    
-    dir_thru = r'D:\Users\inhofer\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
-    thru_list = (glob(dir_thru + '/*/S-parameter/*.txt') + glob(dir_thru + '/S-parameter/*.txt'))
-    thru = measurement(thru_list[0])
-
-    
-    # helper function to enable sorting by Vg in filename
-    def sorting(name):
-        if name.find('Vg1=')!=-1:
-            vg = float(name[name.find('Vg1=')+4:
-                                    name.find('Vg1=')+12])
-        else: 
-            vg = float(name[name.find('Vgate=')+6:
-                                    name.find('Vgate=')+14])
-        if 'return' in name: vg += 1000         # shift up return sweep
-        return vg    
+    #dir_thru = r'D:\Users\inhofer\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
+    #thru_list = (glob(dir_thru + '/*/S-parameter/*.txt') + glob(dir_thru + '/S-parameter/*.txt'))
+    #thru = rfspectrum(thru_list[0])  
     
     # use helper function to sort file list
+    sorting = lambda filename: float(params_from_filename(filename)['Vg1'])
     f_list = sorted(f_list, key=sorting)
     
-    print f_list
     plt.close('all')
     v_g = []
     r = []
     
     # iterate over all gate voltages
-    for filename in f_list[:1:]:
+    for filename in f_list:
         print filename
-        spectrum = measurement(filename)
+        spectrum = rfspectrum(filename)
         spectrum.create_y()
-        spectrum.plot_mat_spec(spectrum.y,ylim = 1,ylabel="Y")
-        spectrum.deembed_thru(thru)
+        spectrum.plot_mat_spec(spectrum.y,ylim=1e-4,ylabel="Y")
+        #spectrum.deembed_thru(thru)
         
         
         
