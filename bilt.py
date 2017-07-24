@@ -6,7 +6,7 @@ class BiltVoltMeter:
         self.bilt = bilt
         self.channel = channel
         
-        print "Initialising Bilt voltmeter on channel "+channel+("" if label is None else "("+label+")")+"..."
+        print "Initialising Bilt voltmeter on channel "+channel+("" if label is None else " ("+label+")")+"..."
         
         # configure filter
         bilt.write(channel+";MEAS:FIL "+filt)
@@ -16,12 +16,13 @@ class BiltVoltMeter:
     def get_voltage(self):
         return float(self.bilt.ask(self.channel+";MEAS?"))
 
+
 class BiltVoltageSource:
     def __init__(self, bilt, channel, rang, filt, slope, label=None):
         self.bilt = bilt
         self.channel = channel
         
-        print "Initialising Bilt voltage source on channel "+channel+("" if label is None else "("+label+")")+"..."
+        print "Initialising Bilt voltage source on channel "+channel+("" if label is None else " ("+label+")")+"..."
         
         # switch off voltage source
         bilt.write(channel+";OUTPUT OFF")
@@ -65,25 +66,24 @@ class BiltVoltageSource:
             status = self.bilt.ask(self.channel+";VOLT:STATUS?")
         
 
-class Bilt:
+class Bilt(visa.Instrument):
     def __init__(self, connection):
         visa.Instrument.__init__(self, connection)
         self.term_chars = '\n'
         print self.ask('*IDN?')
         print self.ask('SYST:ERROR?')
+
+
+if __name__ == '__main__':
+    bilt = Bilt("TCPIP0::192.168.0.2::5025::SOCKET")
     
-bilt = Bilt("TCPIP0::192.168.0.2::5025::SOCKET")
-
-# range can be "1.2", "12", "auto"
-# filter can be 1=10 ms, 0=100 ms
-
-#TODO try what happens if we put invalid channel, filter, etc.
-
-biltVg1 = BiltVoltageSource(bilt, "I1", "12", "1", 0.01, "Vg1")
-biltVg2 = BiltVoltageSource(bilt, "I2", "12", "1", 0.01, "Vg2")
-biltVds = BiltVoltageSource(bilt, "I3", "1.2", "1", 0.00005, "Vds")
-
-# filter can be 1=10 rdg/s, 2=50 rdg/s
-biltVg1m = BiltVoltMeter(bilt, "I5;C1", "2", "Vg1m")
-biltVg2m = BiltVoltMeter(bilt, "I5;C2", "2", "Vg2m")
-biltVdsm = BiltVoltMeter(bilt, "I5;C3", "2", "Vdsm")
+    # range can be "1.2", "12", "auto"
+    # filter can be 1=10 ms, 0=100 ms    
+    biltVg1 = BiltVoltageSource(bilt, "I1", "12", "1", 0.01, "Vg1")
+    biltVg2 = BiltVoltageSource(bilt, "I2", "12", "1", 0.01, "Vg2")
+    biltVds = BiltVoltageSource(bilt, "I3", "1.2", "1", 0.00005, "Vds")
+    
+    # filter can be 1=10 rdg/s, 2=50 rdg/s
+    biltVg1m = BiltVoltMeter(bilt, "I5;C1", "2", "Vg1m")
+    biltVg2m = BiltVoltMeter(bilt, "I5;C2", "2", "Vg2m")
+    biltVdsm = BiltVoltMeter(bilt, "I5;C3", "2", "Vdsm")
