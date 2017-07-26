@@ -18,3 +18,5 @@ for readability and easy interpretation by the analysis scripts, the parameter v
 values should be separated by tabs, the decimal point should be "."
 
 there should be only one sweeped parameter (e.g. gate voltage or source drain voltage) per file, if possible
+
+comments should be at the beginning of the file and preceeded by a hashtag "#"
