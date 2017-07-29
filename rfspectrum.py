@@ -7,30 +7,13 @@ import matplotlib.pyplot as plt
 from glob import glob
 from scipy.linalg import sqrtm
 from numpy.linalg import inv
-import os
-from datetime import datetime
+from params_from_filename import params_from_filename
+
 
 # Definition of constants:
 EPSILON_0 = 8.854187e-12  # Farads per meter.
 
 Z0 = 50.0  # Ohms
-
-def params_from_filename(filename):
-    params = dict()
-    # read parameters from file name
-    toks = os.path.splitext(os.path.basename(filename))[0].split('_')
-    # check if there is an even number of tokens
-    if len(toks)%2 == 0 and len(toks) > 0:
-        # check if first 2 tokens are time stamp
-        try:
-            params['timestamp'] = datetime.strptime(toks[0]+'_'+toks[1],"%Y-%m-%d_%Hh%Mm%Ss")
-            first_tok=2
-        except ValueError:
-            first_tok=0
-        # iterate through pairs of tokens to read the parameters
-        for i,tok in enumerate(toks[first_tok:]):
-            if i%2==0: params[tok] = toks[first_tok+i+1]        
-    return params
 
 
 class rfspectrum(object):
@@ -354,10 +337,7 @@ if __name__ == '__main__':
     """Example of how to use the rfspectrum class.    
         Plots all spectra obtained for a sweep in Vgate.
     """
-    dir_sample = r'/home/holger/PhD/Measurements/Holger/KTW H9.4/2016-07-11 RT/2016-07-11_16h34m41s_Vg2_0.00V'
-    
-    f_list = glob(dir_sample + '/*.txt')
-
+    f_list = glob('testdata/*.txt')
 
     # Import thru    
     #dir_thru = r'D:\Users\inhofer\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
@@ -377,7 +357,7 @@ if __name__ == '__main__':
         print filename
         spectrum = rfspectrum(filename)
         spectrum.create_y()
-        spectrum.plot_mat_spec(spectrum.y,ylim=1e-4,ylabel="Y")
+        spectrum.plot_mat(spectrum.y,ylim=1e-4,ylabel="Y")
         #spectrum.deembed_thru(thru)
         
         
