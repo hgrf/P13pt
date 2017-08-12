@@ -6,9 +6,9 @@ except ImportError:
 import matplotlib.pyplot as plt
 
 from PyQt4.QtGui import (QWidget, QListWidget, QVBoxLayout,
-                         QHBoxLayout)
+                         QHBoxLayout, QPushButton, QGridLayout, QLabel)
 
-from PyQt4.QtCore import pyqtSlot
+from PyQt4.QtCore import pyqtSlot, SIGNAL
 
 import numpy as np
 
@@ -22,41 +22,55 @@ class Plotter(QWidget):
         self.xvar = QListWidget(self)
         self.yvar = QListWidget(self)
 
-        self.xvar.itemClicked.connect(self.plot)
-        self.yvar.itemClicked.connect(self.plot)
-
-        configpanelayout = QHBoxLayout()
-        configpanelayout.addWidget(self.xvar)
-        configpanelayout.addWidget(self.yvar)
-
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar(self.canvas, self)
+        self.btn_clear = QPushButton("Clear data", self)
+
+        self.xvar.itemClicked.connect(self.plot)
+        self.yvar.itemClicked.connect(self.plot)
+        self.connect(self.btn_clear, SIGNAL('clicked()'), self.clear)
 
         # set the layout
+        configpanelayout = QGridLayout()
+        configpanelayout.addWidget(QLabel('<b>X variable:</b>'), 0, 0)
+        configpanelayout.addWidget(self.xvar, 1, 0)
+        configpanelayout.addWidget(QLabel('<b>Y variable:</b>'), 0, 1)
+        configpanelayout.addWidget(self.yvar, 1, 1)
+
+        toolbarlayout = QHBoxLayout()
+        toolbarlayout.addWidget(self.toolbar)
+        toolbarlayout.addWidget(self.btn_clear)
+
         layout = QVBoxLayout()
         layout.addLayout(configpanelayout)
-        layout.addWidget(self.toolbar)
+        layout.addLayout(toolbarlayout)
         layout.addWidget(self.canvas)
         layout.setStretch(0, 1)
         layout.setStretch(2, 2)
         self.setLayout(layout)
 
     @pyqtSlot()
-    def plot(self):
-        ix = self.xvar.currentRow()
-        iy = self.yvar.currentRow()
-        if ix < 0 or iy < 0:
-            return
+    def clear(self):
+        self.data = []
+        self.plot()
 
+    @pyqtSlot()
+    def plot(self):
+        # clear the plotting window
         ax = self.figure.add_subplot(111)
         ax.clear()
-        #ax.hold(False)
 
-        ax.plot(np.asarray(self.data).T[ix], np.asarray(self.data).T[iy], '*-')
-
-        ax.set_xlabel(self.header[ix])
-        ax.set_ylabel(self.header[iy])
+        # check if data to plot is available
+        if self.data != []:
+            # check if the user chose valid variables to plot
+            ix = self.xvar.currentRow()
+            iy = self.yvar.currentRow()
+            if ix >= 0 and iy >= 0:
+                # if yes, plot stuff and update axes lables
+                ax.plot(np.asarray(self.data).T[ix], np.asarray(self.data).T[iy], '*-')
+                ax.set_xlabel(self.header[ix])
+                ax.set_ylabel(self.header[iy])
 
         self.canvas.draw()
 

@@ -1,4 +1,6 @@
 import sys
+import os
+import errno
 from io import BytesIO as StringIO
 from PyQt4.QtCore import QThread, pyqtSignal, pyqtSlot
 try:
@@ -7,11 +9,29 @@ except ImportError:
     QString = str
 
 class MeasurementBase(QThread):
+    ALARM_SHOWVALUE = 0     # does nothing, but the user will see the result of the expression (this way we are not
+                            # limited to boolean expressions, we can even use the "alarms" to do real-time calculations
+                            # with the observables
+
+    ALARM_QUIT = 1          # quit the acquisition if the alarm condition is True
+
+    ALARM_CALLCOPS = 2      # show a colour indicator / a message if the alarm condition is True
+
+
     new_observables_data = pyqtSignal(list)
     new_console_data = pyqtSignal(QString)
 
     params = {}
     observables = []
+    alarms = []
+    """ As of now, alarms can be defined in the measurement class (as a list of lists, where the nested lists contain
+    pairs of condition (string) and action (integer ALARM_*), but they will be handled by the launcher, not in the
+    detached execution mode (i.e. running the script directly from the console). The reason is primarily that it is
+    much easier to dynamically modify the alarms if they are checked on the GUI side. If we want to evaluate the alarms
+    in the MeasurementBase class, then we have to (a) find a thread-safe way to send modifications of the alarms to the
+    running acquisition thread and (b) find a way to inform the GUI that an alarm is activated / re-evaluate the alarm
+    conditions in the GUI.
+    """
 
     def __init__(self, redirect_console=False, parent=None):
         super(MeasurementBase, self).__init__(parent)
@@ -34,6 +54,13 @@ class MeasurementBase(QThread):
 
     def prepare_saving(self, filename):
         if self.data_file is None:
+            try:
+                directory = os.path.dirname(filename)
+                os.makedirs(directory)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+
             self.data_file = open(filename, 'a')
             self.data_file.write('#' + '\t'.join(self.observables) + '\n')
         else:

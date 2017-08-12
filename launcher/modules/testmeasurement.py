@@ -1,5 +1,5 @@
-from measurement import MeasurementBase
-from testdrivers import VoltageSource, VoltMeter
+from P13pt.launcher.measurement import MeasurementBase
+from P13pt.testdrivers import VoltageSource, VoltMeter
 
 import time
 import numpy as np
@@ -19,6 +19,13 @@ class Measurement(MeasurementBase):
 
     observables = ['Vg1', 'Vg1m', 'Ileak1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs']
 
+    alarms = [
+        ['np.abs(Ileak1) > 1e-8', MeasurementBase.ALARM_CALLCOPS],
+        ['np.abs(Ileak2) > 1e-8', MeasurementBase.ALARM_CALLCOPS],
+        ['np.abs(Vg1-Vg2)', MeasurementBase.ALARM_SHOWVALUE]        # useful if we just want to know how much voltage
+                                                                    # is applied between the two gates
+    ]
+
     def measure(self, Vg1s, Vg2s, Vds, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
         print "Starting acquisition script..."
 
@@ -36,7 +43,7 @@ class Measurement(MeasurementBase):
 
         # prepare saving data
         filename = time.strftime('%Y-%m-%d_%Hh%Mm%Ss') + '.txt'
-        self.prepare_saving(filename)
+        self.prepare_saving('testdata/'+filename)
 
         # loops
         sourceVds.set_voltage(Vds)
