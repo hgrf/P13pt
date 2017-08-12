@@ -25,7 +25,7 @@ class Interpy(code.InteractiveConsole):
     """Interpréteur Python"""
  
     #========================================================================
-    def __init__(self, tlanceur, locals=None, filename="<console>"): 
+    def __init__(self, tlanceur, locals=None, filename="<console>"):
         """initialisation"""
         code.InteractiveConsole.__init__(self, locals=None, filename="<console>")
         self.tlanceur = tlanceur # adresse du thread qui a lancé l'interpréteur
@@ -146,7 +146,7 @@ class Tipy(QtCore.QThread):
         self.write(prompt)
         # prend l'instruction dans la pile dès qu'il y en a une
         ins = self.instruction.get()
-        if not ins.startswith('runfile:'):
+        if not str(ins).startswith('runfile:'):
             return ins
         else:
             filename = ins[8:]
@@ -175,7 +175,7 @@ class ConsoleWidget(QtGui.QTextEdit):
     """sous-classement de QTextEdit pour communiquer avec l'interpréteur
        Python via un QThread
     """
- 
+
     # signal pour recevoir du texte à afficher
     pourafficher = QtCore.pyqtSignal(unicode) 
     # signal pour recevoir une demande d'arrêt
@@ -232,8 +232,8 @@ class ConsoleWidget(QtGui.QTextEdit):
         self.ih = 0
  
         # compteur du nombre d'invites affichées  
-        self.nbinvites = -1 
- 
+        self.nbinvites = -1
+
     #========================================================================
     @QtCore.pyqtSlot(unicode)
     def affiche(self, texte):
@@ -262,7 +262,7 @@ class ConsoleWidget(QtGui.QTextEdit):
                 # il y a encore des lignes d'instruction initiales à exécuter
                 self.tipy.instruction.put(self.initpy[self.nbinvites])
             self.nbinvites += 1
- 
+
     # =======================================================================
     def keyPressEvent(self, event):
         """traitement des évènements clavier du QTextEdit"""
