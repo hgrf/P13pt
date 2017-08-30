@@ -8,28 +8,30 @@ import errno
 
 class ZILockin:
     def __init__(self, ziDAQ_address='localhost', ziDAQ_port=8005, channel=1, polltime=0.005):
+        # set up communication with device
         self.daq = zhinst.ziPython.ziDAQServer(ziDAQ_address, ziDAQ_port)
         self.device = device = zhinst.utils.autoDetect(self.daq)
-                
         self.daq.flush()
+        
+        # remember channel number (in string format for the settings dictionary)
+        self.c = c = str(channel-1)
 
-        # read settings
-        self.c = c = channel-1
+        # read all settings from lock-in
         self.settings = settings = self.daq.get('*')
 
+        # extract important settings for the channel that we want to poll
         self.frequency = settings[device]['oscs'][c]['freq'][0]
         LIampl = settings[device]['sigouts'][c]['amplitudes'][str(int(c)+6)][0]
         LIsigoutrange = settings[device]['sigouts'][c]['range'][0]
         self.amplitude = LIampl*LIsigoutrange
         self.rms_amp = LIampl*LIsigoutrange/np.sqrt(2)
-        timeconstant = settings[device]['demods'][c]['timeconstant'][0]
-        rate = settings[device]['demods'][c]['rate'][0]
+        self.timeconstant = settings[device]['demods'][c]['timeconstant'][0]
+        self.rate = settings[device]['demods'][c]['rate'][0]
 
-        # Subscribe to scope
+        # subscribe to scope
         self.path0 = '/' + device + '/demods/'+ c + '/sample'
-        self.daq.subscribe(path0)
-
-        self.polltime = polltime
+        self.daq.subscribe(self.path0)
+        self.polltime = polltime        # the time for which we will poll samples
 
         # filename += "_LI_%.0fHz"%LIfreq
         # filename += "_exc_%.0fmV"%(LIampl*LIsigoutrange*1e3)
