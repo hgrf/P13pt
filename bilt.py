@@ -11,7 +11,8 @@ class BiltVoltMeter:
         # configure filter
         bilt.write(channel+";MEAS:FIL "+filt)
         
-        print bilt.ask("SYST:ERROR?")
+        if bilt.ask("SYST:ERROR?")[:4] != '+000':
+            raise Exception("Bilt signals error")
 
     def get_voltage(self):
         return float(self.bilt.ask(self.channel+";MEAS?"))
@@ -49,7 +50,8 @@ class BiltVoltageSource:
         # wait for Bilt to switch on
         sleep(0.2)
         
-        print bilt.ask("SYST:ERROR?")
+        if bilt.ask("SYST:ERROR?")[:4] != '+000':
+            raise Exception("Bilt signals error")
     
     def set_voltage(self, value):
         value = round(value,5)          # in order to avoid bad things happening when we define linspaces like (0,1,4): basically instrument does not seem to like too many figures
@@ -70,8 +72,10 @@ class Bilt(visa.Instrument):
     def __init__(self, connection):
         visa.Instrument.__init__(self, connection)
         self.term_chars = '\n'
-        print self.ask('*IDN?')
-        print self.ask('SYST:ERROR?')
+        if self.ask('I0;*IDN?')[:13] != '"FRAME/BN722B': # if we just ask *IDN? we're probably talking to one of the modules, not the Bilt frame
+            raise Exception("Bilt does not respond or is incompatible with this driver")
+        if self.ask('SYST:ERROR?')[:4] != '+000':
+            raise Exception("Bilt signals error")
 
 
 if __name__ == '__main__':
