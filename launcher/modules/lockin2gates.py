@@ -10,14 +10,13 @@ class Measurement(MeasurementBase):
     params = {
         'Vg1s': np.linspace(-1., 1., 101),
         'Vg2s': [0.],
-        'Vds': 10e-3,
         'commongate': False,
         'Rg1': 100e3,
         'Rg2': 100e3,
         'Rds': 2.2e3,
         'stabilise_time': 0.5,
         'comment': None,
-        'data_dir': '/home/holger/testdata'
+        'data_dir': r'D:\meso\Desktop\testdata'
     }
 
     observables = ['Vg1', 'Vg1m', 'Ileak1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Vdsm_std', 'Rs']
@@ -29,7 +28,8 @@ class Measurement(MeasurementBase):
                                                                     # is applied between the two gates
     ]
 
-    def measure(self, data_dir, Vg1s, Vg2s, Vds, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
+    def measure(self, data_dir, Vg1s, Vg2s, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
+        print "==================================="        
         print "Starting acquisition script..."
 
         # initialise instruments
@@ -41,25 +41,29 @@ class Measurement(MeasurementBase):
             self.meterVg1 = meterVg1 = BiltVoltMeter(bilt, "I5;C2", "2", "Vg1m")
             self.meterVg2 = meterVg2 = BiltVoltMeter(bilt, "I5;C3", "2", "Vg2m")
             print "DC sources and voltmeters are set up."
-
+        except:
+            print "There has been an error setting up DC sources and voltmeters."
+            raise
+            
+        try:
             print "Setting up lock-in amplifier"
             self.lockin = lockin = ZILockin()
             print "Lock in amplifier is set up."
         except:
-            print "There has been an error setting up one of the instruments."
+            print "There has been an error setting up the lock-in amplifier."
             raise
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
 
         # save lock in settings (in case we need to check something later)
-        lockin.save_settings(os.path.join((data_dir, 'ZIsettings', timestamp+'.ZIsettings.txt')))
+        lockin.save_settings(os.path.join(data_dir, 'ZIsettings', timestamp+'.ZIsettings.txt'))
 
         # prepare saving data
         filename = timestamp + '.txt'
-        self.prepare_saving(os.path.join((data_dir, filename)))
+        self.prepare_saving(os.path.join(data_dir, filename))
 
         # loops
-        Vds = lockin.amplitude
+        Vds = lockin.rms_amp
         for Vg2 in Vg2s:
             sourceVg2.set_voltage(Vg2)
             for Vg1 in Vg1s:
