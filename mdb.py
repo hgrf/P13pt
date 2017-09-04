@@ -165,7 +165,8 @@ class MainWindow(QSplitter):
         infow.addTab(self.modifierw, "Modifier")
         infow.addTab(self.plotterw, "Plotter")
 
-        self.listw.itemClicked.connect(self.analyserw.loadinfo)
+        self.listw.currentItemChanged.connect(self.analyserw.loadinfo)
+        #self.listw.itemClicked.connect(self.analyserw.loadinfo)
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
