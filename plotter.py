@@ -15,6 +15,10 @@ class Plotter(QWidget):
     def __init__(self, parent=None):
         super(Plotter, self).__init__(parent)
 
+        self.header = None
+        self.data = None
+        self.reddata = None
+
         self.xvar = QListWidget(self)
         self.yvar = QListWidget(self)
         self.selectvar = QComboBox(self)
@@ -66,14 +70,17 @@ class Plotter(QWidget):
         self.plot(key=self.selectvar.currentIndex())
 
     def setheader(self, header):
+        ax = self.figure.add_subplot(111)       # reinitialise plot
+        ax.clear()
+        self.canvas.draw()
+        if header == self.header:       # only update header if it's different from the previous one
+            return
         self.header = header
         self.xvar.clear()
         self.yvar.clear()
         self.selectvar.clear()
         self.selectval.clear()
-        ax = self.figure.add_subplot(111)
-        ax.clear()
-        self.canvas.draw()
+
         for col in header:
             self.xvar.addItem(col)
             self.yvar.addItem(col)
@@ -82,6 +89,8 @@ class Plotter(QWidget):
     def setdata(self, data):
         self.data = data
         self.reddata = data
+
+        self.plot()         # try plotting data in case columns are already selected from previous file
 
     @pyqtSlot()         # don't accept arguments (otherwise might get some
                         # QListWidget or other stuff passed as key argument if used as slot)
