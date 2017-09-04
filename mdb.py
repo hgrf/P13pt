@@ -40,22 +40,17 @@ class FileListDelegate(QAbstractItemDelegate):
             painter.drawRect(r)
             fontPen = selectedFontPen
 
-        filename = index.data(Qt.DisplayRole).toString()
+        flag = '!' if index.data(Qt.UserRole+1).toBool() else '?'
+        filename = index.data(Qt.DisplayRole).toString()+' ('+flag+')'
         #description = index.data(Qt::UserRole + 1).toString();
 
         painter.setPen(fontPen)
-        painter.setFont(QFont(QFont.defaultFamily(QFont()), 12, QFont.Normal))
+        painter.setFont(QFont(QFont.defaultFamily(QFont()), 10, QFont.Normal))
         # returns bounding rect br
         br = painter.drawText(r.left(), r.top(), r.width(), r.height(), Qt.AlignTop | Qt.AlignLeft | Qt.TextWrapAnywhere, filename)
 
-        if(index.data(Qt.UserRole+1).toBool()):
-            painter.drawText(r.left(), br.bottom(), r.width(), r.height()-br.height(), Qt.AlignTop | Qt.AlignLeft, '!')
-        else:
-            painter.drawText(r.left(), br.bottom(), r.width(), r.height() - br.height(), Qt.AlignTop | Qt.AlignLeft,
-                             '?')
-
     def sizeHint(self, option, index):
-        return QSize(200, 60);  #  very dumb value
+        return QSize(200, 40);  #  very dumb value
 
 
 class MainWindow(QSplitter):
