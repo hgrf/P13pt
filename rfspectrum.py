@@ -1,365 +1,199 @@
 # -*- coding: utf-8 -*-
-# rfspectrum class written by Andreas Inhofer and Holger Graef
+"""
+ Interface for the scikit-rf Network class for use in P13.
+ * Adding P13 spectrum file format support to the base class.
+ * Adding P13 style thru deembedding support to the base class.
+ 
+ De-embedding algorithm and original idea: Andreas Inhofer
+ Code clean-up: Holger Graef
+"""
 
 import numpy as np
-from math import pi
 import matplotlib.pyplot as plt
-from glob import glob
 from scipy.linalg import sqrtm
 from numpy.linalg import inv
 from params_from_filename import params_from_filename
+from copy import deepcopy
+import os
+import skrf
+from skrf import a2s as abcd2s
+from skrf import s2a as s2abcd        
 
-
-# Definition of constants:
-EPSILON_0 = 8.854187e-12  # Farads per meter.
-
-Z0 = 50.0  # Ohms
-
-
-class rfspectrum(object):
-    """Defines the class of RF spectra.
-    
-    Parameters
-    ----------
-    from_file : path
-        A file-path containing the S parameters from a VNA measurement.
-    from_s : np.array
-        The S parameters from which a new rfspectrum instance should be 
-        created. Requires to pass a frequency list and optionally a parameter
-        dictionary.
-    f : np.array
-        The frequency list to be passed along if S parameters are read from
-        an array.
-    params : dict
-        To be passed along optionally.
-
-
-    Attributes
-    ----------
-    s : ndarray (2x2)
-        A 2x2 matrix where each element contains a vector with the corresponding
-        S_11, S_12 etc. for each frequency
+# compatible with scikit-rf version 0.14.5
+class Network(skrf.Network):
     """
+    Represents a n-port microwave network.
     
-    def __init__(self,from_file = None, from_s = None, f = None, params = None):
-        self.params = dict()        
-        
-        if from_file is not None:   
-            filename = from_file
-            with open(filename, 'r') as current_file:
-                self.raw = np.genfromtxt(current_file).T
+    This class is an interface for scikit-rf's Network class, adding support
+    for the "P13 standard" of saving 2 port network data (see below), which
+    is different from the touchstone format used by mwavepy.
     
-            # Frequencies
-            self.f = self.raw[0]
-            self.w = 2.*pi*self.f
+    Refer to scikit-rf's documentation for more detail.
+    """
+    def __init__(self, file=None, params=None, z0=50.0, **kwargs):
+        self.params = dict()
+         
+        if file:
+            # update parameters dictionary from filename
+            self.params.update(params_from_filename(file))       
+    
+            # in the following, we will check if we let skrf handle the file
+            # or if we do it ourselves
             
-            # S-matrix is created as a 2x2 matrix containing vectors.
-            self.s = np.empty((2,2,len(self.f)), dtype= complex)
-            self.s[0,0] = self.raw[1] + 1j*self.raw[2]
-            self.s[0,1] = self.raw[3] + 1j*self.raw[4]
-            self.s[1,0] = self.raw[5] + 1j*self.raw[6]
-            self.s[1,1] = self.raw[7] + 1j*self.raw[8]
+            # check if we are dealing with a touchstone file ".sNp"
+            is_skrf_compatible = False
+            ext = file.split('.')[-1].lower()
+            if ext[0] == 's' and ext[-1] == 'p':
+                try:
+                    n = int(ext[1:-1])
+                    is_skrf_compatible = True
+                except ValueError:
+                    is_skrf_compatible = False
             
-            self.params.update(params_from_filename(filename))
+            # check if we are dealing with a pickle file
+            if ext in ['.ntwk', '.p']:
+                is_skrf_compatible = True
+                
+            if is_skrf_compatible:
+                # use mwavepy constructor and pass on touchstone_file
+                super(Network, self).__init__(file=file)
+            else:
+                # call base class constructor
+                super(Network, self).__init__(z0=z0)
+                # read S parameters from file
+                # we will assume the file is compatible with numpy.genfromtxt,
+                # that we are dealing with a 2 port network and the values
+                # are stored in the order f, Real(S11), Imag(S11) and so forth
+                # for S12, S21, S22 ("P13 standard")
+                self.raw = np.genfromtxt(file).T
+                
+                if len(self.raw) != 9:
+                    raise Exception('Invalid number of columnns')
+                
+                self.frequency.unit = 'hz'
+                self.f = self.raw[0]
+                self.name = os.path.basename(os.path.splitext(file)[0])                
+                
+                # S-matrix is created as a len(f)x2x2 matrix, see below for
+                # a comment on this shape
+                self.s = np.empty((len(self.f),2,2), dtype=complex)
+                self.s[:,0,0] = self.raw[1] + 1j*self.raw[2]
+                self.s[:,0,1] = self.raw[3] + 1j*self.raw[4]
+                self.s[:,1,0] = self.raw[5] + 1j*self.raw[6]
+                self.s[:,1,1] = self.raw[7] + 1j*self.raw[8]
             
+        else:
+            # pass all arguments to skrf constructor
+            super(Network, self).__init__(z0=z0, **kwargs)
         
-        elif from_s is not None:
-            # Check that a frequency list is passed.
-            assert f is not None
-            # Inherit frequencies from parent
-            self.f = f
-            self.w = 2.*pi*f
-            
-            # Create S-matrix from passed argument
-            self.s = from_s
-        
-        else: 
-            print "Too few parameters. Cannot create rfspectrum instance."
-            
+        # update parameters dictionary from function argument
         if params is not None:
             self.params.update(params)
-
-    def s2y(self, s):
-        """Compute the Y matrices from the S matrices for each frequency.
     
-        Arguments
-        ----------
-        s: numpy.array
-            An array containing complex S parameters in the format 
-            defined by the __init__ method.
-    
-        Returns
-        -------
-        y: numpy.array
-            An array containing complex Y parameters in the format 
-            defined by the __init__ method.
-        """
-        y = np.empty((2,2,len(s[0,0])), dtype= complex)
-        y0 = 0.02
-        s11, s12, s21, s22 = s[0,0], s[0,1], s[1,0], s[1,1]
-        delta_s = (1.0+s11)*(1.0+s22) - (s12*s21)
-        y[0,0] = y0*((1.0-s11)*(1.0+s22) + s12*s21)/delta_s
-        y[0,1] = y0*(-2.0*s12)/delta_s
-        y[1,0] = y0*(-2.0*s21)/delta_s
-        y[1,1] = y0*((1.0+s11)*(1.0-s22) + s12*s21)/delta_s
-        return y
-        
-    def y2s(self,y):
-        """Compute the S matrices from the Y matrices for each frequency.
-    
-        Arguments
-        ----------
-        y: numpy.array
-            An array containing complex Y parameters in the format 
-            defined by the __init__ method.
-    
-        Returns
-        -------
-        s: numpy.array
-            An array containing complex S parameters in the format 
-            defined by the __init__ method.
-        """
-        s = np.empty((2,2,len(y[0,0])), dtype= complex)
-        y0 = 0.02
-        y11, y12, y21, y22 = y[0,0], y[0,1], y[1,0], y[1,1]
-        d = (y0 + y11)*(y0+y22) - (y12*y21)
-        s[0,0]= ((y0-y11)*(y0+y22) + y12*y21)/d
-        s[0,1]= (-2.0*y12*y0)/d
-        s[1,0]= (-2.0*y21*y0)/d
-        s[1,1]= ((y0+y11)*(y0-y22) + y12*y21)/d
-        return s
-        
-    def s2abcd(self,s):
-        """Compute the ABCD matrices from the S matrices for each frequency.
-    
-        Arguments
-        ----------
-        s: numpy.array
-            An array containing complex Y parameters in the format 
-            defined by the __init__ method.
-    
-        Returns
-        -------
-        abcd: numpy.array
-            An array containing complex ABCD parameters in the format 
-            defined by the __init__ method.
-        """   
-        abcd = np.empty((2,2,len(s[0,0])), dtype= complex)
-        y0 = 0.02
-        z0 = 50.0
-        s11, s12, s21, s22 = s[0,0], s[0,1], s[1,0], s[1,1]
-        abcd[0,0] = ((1.0+s11)*(1.0-s22) + s12*s21)/(2.0*s21)
-        abcd[0,1] = z0 * ((1.0+s11)*(1.0+s22) - s12*s21)/(2.0*s21)
-        abcd[1,0] = y0 * ((1.0-s11)*(1.0-s22) - s12*s21)/(2.0*s21)
-        abcd[1,1] = ((1.0-s11)*(1.0+s22) + s12*s21)/(2.0*s21)
-        return abcd
-    
-    def abcd2s(self,abcd):
-        """Compute the S matrices from the ABCD matrices for each frequency.
-    
-        Arguments
-        ----------
-        abcd: numpy.array
-            An array containing complex Y parameters in the format 
-            defined by the __init__ method.
-    
-        Returns
-        -------
-        s: numpy.array
-            An array containing complex ABCD parameters in the format 
-            defined by the __init__ method.
-        """    
-        s = np.empty((2,2,len(abcd[0,0])), dtype= complex)
-        y0 = 0.02
-        z0 = 50.0
-        a, b, c, d = abcd[0,0], abcd[0,1], abcd[1,0], abcd[1,1]
-        delta = a + b*y0 + c*z0 + d
-        s[0,0] = (a + b*y0 - c*z0 - d)/delta
-        s[0,1] = (2.0*(a*d - b*c))/delta
-        s[1,0] = 2.0/delta
-        s[1,1] = (-a + b*y0 - c*z0 + d)/delta
-        return s
-        
-    def y2abcd(self,y):
-        """Compute the ABCD matrices from the Y matrices for each frequency.
-    
-        Arguments
-        ----------
-        y: numpy.array
-            An array containing complex Y parameters in the format 
-            defined by the __init__ method.
-    
-        Returns
-        -------
-        abcd: numpy.array
-            An array containing complex ABCD parameters in the format 
-            defined by the __init__ method.
-        """            
-        return self.s2abcd(self.y2s(y))
-        
-    def abcd2y(self,abcd):
-        """Compute the Y matrices from the ABCD matrices for each frequency.
-    
-        Arguments
-        ----------
-        abcd: numpy.array
-            An array containing complex Y parameters in the format 
-            defined by the __init__ method.
-    
-        Returns
-        -------
-        y: numpy.array
-            An array containing complex ABCD parameters in the format 
-            defined by the __init__ method.
-        """            
-        return self.s2y(self.abcd2s(abcd))
-    
-    def create_y(self):
-        """Create the Y matrices as an attribute of the rfspectrum object.
-        
-        Attributes
-        ----------
-        self.y: numpy.array
-            The y-matrices as an atribute in the format "Matrix of vectors".
-        """
-        self.y = self.s2y(self.s)
-
-    def mov2vom(self, mat): 
-        """Transform matrix of vectors to vector of matrices.
-        
-        This method is useful for the deembedding procedure. 
-        RF-data (S,Y,etc.) is usually stored as a matrix containing the 
-        vectors Mat11, Mat22, etc. where each vector element corresponds to 
-        a given frequency. This method transforms the data into a vector 
-        (each element corresponds to a given frequency) whose elements are 
-        the matrices.
-        
-        Parameters
-        ----------
-        mat: numpy.array
-            The matrix of vectors.
-        
-        Returns
-        -------
-        vec: numpy.array
-            The vector of matrices.
-        """
-        return np.array([mat[:,:,i] for i in range(len(mat[0,0]))])
-    
-    def vom2mov(self, vec):
-        """Transform a vector of matrices to a matrix of vectors.
-        
-        Inverse method to mov2vom.
-        
-        Parameters
-        ----------
-        vec: numpy.array
-            A vector of matrices.
-            
-        Returns
-        -------
-        mat: numpy.array
-            A matrix of vectors.
-        """
-        num = len(vec)
-        mat = np.empty((2,2,num), dtype= complex)
-        for row in range(2):
-            for column in range(2):
-                mat[row, column] = np.array([vec[i, row, column] for i in range(num)])
-        return mat
+    @property
+    def w(self):
+        # omega is calculated automatically in base class using Frequency class
+        return self.frequency.w
 
     def deembed_thru(self, thru):
-        """Deembed the propagation along a measured thruline.
+        """De-embed the propagation towards the active region of the DUT.
         
-        Parameters
-        ----------
-        thru: rfspectrum object
-            The thru object that shall be used for deembedding. 
-            Must be created in the main program prior to 
-            execution of this function.
-            
-        Returns
-        ----------
-        deembeded_s: numpy.array
-            The samples' S-parameters after thruline deembedding.
-        """
-        # Get the ABCD matric in Vector of matrix form for the thru.
-        thru_abcd = self.mov2vom(self.s2abcd(thru.s))
-        # Get the ABCD matric in Vector of matrix form for the measurement.
-        sample_abcd = self.mov2vom(self.s2abcd(self.s))
-        # The ABCD matrix of "half a thruline".
-        half_thru = np.array(map(sqrtm,thru_abcd))
-        # Invert the ABCD matrix of "half a thruline" for each frequency.
-        inv_half_thru = np.array(map(inv,half_thru))
-        # Multiply the inverse of the "half-thrus" on both sides to the 
-        # samples' ABCD matrix and store the result in mov-format.
-        three_mat_multiplication = lambda x,y,z: np.dot(np.dot(x,y),z)
-        deembeded_abcd = self.vom2mov(np.array(map(three_mat_multiplication,
-                                      inv_half_thru, sample_abcd, inv_half_thru)))
-        # Calculate the deembedded S parameters as an attribute in mov-format.
-        deembeded_s = self.abcd2s(deembeded_abcd)
-        return rfspectrum(from_s = deembeded_s, f = self.f, params = self.params)
+        Calculate the S matrix of "half a thru" by taking the matrix square
+        root of the ABCD matrix of the thru network. The inverse of the result
+        is multiplied on both sides of the DUT ABCD matrix, which is then
+        converted back to S.
     
-    def plot_mat(self,matrix,pltnum=1,ylim=1.1,ylabel="M"):
+        Arguments
+        ---------
+        thru : Network object
+            the thru network
+        
+        Returns
+        -------
+        dut_deembedded : Network object
+            the deembedded DUT network
+        """
+        dut_abcd = s2abcd(self.s)
+        half_thru_abcd = np.array(map(sqrtm, s2abcd(thru.s)))
+        half_thru_inv = np.array(map(inv, half_thru_abcd))
+        three_mat_multiplication = lambda x,y,z: np.dot(np.dot(x,y),z)
+        deembedded_abcd = np.array(map(three_mat_multiplication,
+                                      half_thru_inv, dut_abcd, half_thru_inv))
+        dut_deembedded = deepcopy(self)
+        dut_deembedded.s = abcd2s(deembedded_abcd)
+        
+        return dut_deembedded
+
+    def plot_mat(self,parameter='s',fig=None,ylim=1.1):
         """Plot selected parameter (S, Y) in a 2x2 panel.
     
         Arguments
         ----------
-        matrix : matrix of vectors
-            For example rfspectrum.s or rfspectrum.y
-        pltnum : int
-            The number of the plot. Defaults to 1. Choose other number if you want
-            to plot in a different figure.
+        parameter : string
+            's' or 'y'
+        fig : matplotlib figure handle or None
+            plots on existing figure or creates new one
         ylim : float
             The limits (positive and negative) for the y-axis.
-        ylabel : string
-            Define the label of the y-axes.
     
         Returns
         -------
-        nothing
+        figure handle
     
         """
-        fig = plt.figure(pltnum,figsize=(15.0, 10.0))
+        if parameter not in ['s', 'y']:
+            raise Exception('Invalid parameter.')
+        matrix = getattr(self, parameter)
+        if fig is None:
+            fig = plt.figure(figsize=(15.0, 10.0))
         for i in range(2):
             for j in range(2):
-                subplotnum = 2*i+j+1 #add_subplot needs the +1 as indexing starts with 1
+                subplotnum = 2*i+j+1 # add_subplot needs the +1 as indexing starts with 1
                 ax = fig.add_subplot(2,2,subplotnum)
-                ax.plot(self.f/1e9, matrix[i,j].real)
-                ax.plot(self.f/1e9, matrix[i,j].imag)
+                ax.plot(self.f/1e9, matrix[:,i,j].real)
+                ax.plot(self.f/1e9, matrix[:,i,j].imag)
                 ax.set_xlabel('f [GHz]')
-                ax.set_ylabel(ylabel+r'$_{%d%d}$'%(i+1,j+1))
-                ax.set_ylim([-ylim,ylim])             
-        plt.tight_layout()               
+                ax.set_ylabel(parameter.upper()+r'$_{%d%d}$'%(i+1,j+1))
+                ax.set_ylim([-ylim,ylim])    
+                ax.set_xlim([min(self.f/1e9), max(self.f/1e9)])
+        plt.tight_layout()                  
 
 
-if __name__ == '__main__':
-    """Example of how to use the rfspectrum class.    
-        Plots all spectra obtained for a sweep in Vgate.
+# for compatibility with old name
+rfspectrum = Network
+    
+
+def convert_to_touchstone(filename, newfilename):
+    """Convert a "P13 standard" file to a touchstone file (.s2p)
+
+    Arguments
+    ----------
+    filename : string
+        File name of the "P13 standard" file.
+    newfilename : string
+        File name of the new (.s2p) file
+
+    Returns
+    -------
+    Nothing.
+
     """
-    f_list = glob('testdata/*.txt')
-
-    # Import thru    
-    #dir_thru = r'D:\Users\inhofer\Documents\shared_for_measurements\Dresden2\Cx2\2014-07-21_18h06m00s_Dresden2_Cx2_Vgsweep_0_-0.6V'
-    #thru_list = (glob(dir_thru + '/*/S-parameter/*.txt') + glob(dir_thru + '/S-parameter/*.txt'))
-    #thru = rfspectrum(thru_list[0])  
     
-    # use helper function to sort file list
-    sorting = lambda filename: float(params_from_filename(filename)['Vg1'])
-    f_list = sorted(f_list, key=sorting)
+    # see also http://na.support.keysight.com/plts/help/WebHelp/FilePrint/SnP_File_Format.htm    
     
-    plt.close('all')
-    v_g = []
-    r = []
-    
-    # iterate over all gate voltages
-    for filename in f_list:
-        print filename
-        spectrum = rfspectrum(filename)
-        spectrum.create_y()
-        spectrum.plot_mat(spectrum.y,ylim=1e-4,ylabel="Y")
-        #spectrum.deembed_thru(thru)
-        
-        
-        
+    # read data
+    with open(filename, 'r') as old_file: 
+        # create new file with '.s2p' extension
+        with open(newfilename, 'w') as new_file:
+            new_file.write('# hz s ri r 50\n')
+            for line in old_file.readlines():
+                values = line.strip().split(' ')
+                if not len(values) == 9:    # 1 for freq, 2x4 for S parameters
+                    raise Exception('Invalid number of columns')
+                # in old format we have f, S11, S12, S21, S22
+                # in touchstone we need f, S11, S21, S12, S22
+                new_order = [0, 1, 2, 5, 6, 3, 4, 7, 8]
+                values = [values[i] for i in new_order]
+                line = ' '.join(values)
+                new_file.write(line+'\n')
         
