@@ -15,6 +15,12 @@ class AnritsuVNA(visa.Instrument):
     def __init__(self, connection):
         visa.Instrument.__init__(self, connection)
         self.term_chars = '\n'
+        
+        # Make sure Data is communicated in the correct format.
+        # do this before any other requests, so that we don't get stuck if the
+        # VNA tries to speak binary
+        self.write(r':FORM:DATA ASC;')         
+        
         print self.ask('*idn?')
         # Initialisation that apparently is needed.
         # ESE: Something with the Standard event status register
@@ -22,8 +28,6 @@ class AnritsuVNA(visa.Instrument):
         # CLS: Clear all status bytes
         # FORM:BORD NORM - sets the most significant byte first.
         self.write('*ESE 60;*SRE 48;*CLS;:FORM:BORD NORM;')
-        # Make sure Data is communicated in the correct format.
-        self.write(r':FORM:DATA ASC;') 
         # Check that everything works fine for the moment.
         print self.ask('SYST:ERR?')
 
@@ -81,7 +85,7 @@ class AnritsuVNA(visa.Instrument):
         self.write(':TRIG:SING;')                 # trigger single sweep
 
         timeout = self.timeout
-        self.timeout = 120.
+        self.timeout = 600.
         
         self.ask('*STB?')           # ask for status byte (or whatever)        
         

@@ -19,36 +19,37 @@ class BiltVoltMeter:
 
 
 class BiltVoltageSource:
-    def __init__(self, bilt, channel, rang, filt, slope, label=None):
+    def __init__(self, bilt, channel, rang=None, filt=None, slope=None, label=None, initialise=True):
         self.bilt = bilt
         self.channel = channel
         
         print "Initialising Bilt voltage source on channel "+channel+("" if label is None else " ("+label+")")+"..."
+
+        if initialise:        
+            # switch off voltage source
+            bilt.write(channel+";OUTPUT OFF")
+            
+            # configure range
+            if rang == "auto":
+                bilt.write(channel+";VOLT:RANGE:AUTO 1")
+            else:
+                bilt.write(channel+";VOLT:RANGE:AUTO 0")
+                bilt.write(channel+";VOLT:RANGE "+rang)
+            
+            # configure filter
+            bilt.write(channel+";VOLT:FILTER "+filt)
         
-        # switch off voltage source
-        bilt.write(channel+";OUTPUT OFF")
-        
-        # configure range
-        if rang == "auto":
-            bilt.write(channel+";VOLT:RANGE:AUTO 1")
-        else:
-            bilt.write(channel+";VOLT:RANGE:AUTO 0")
-            bilt.write(channel+";VOLT:RANGE "+rang)
-        
-        # configure filter
-        bilt.write(channel+";VOLT:FILTER "+filt)
-    
-        # configure slope
-        bilt.write(channel+";VOLT:SLOPE {}".format(slope))
-        
-        # set voltage to zero
-        bilt.write(channel+";VOLT 0")
-        
-        # switch on source
-        bilt.write(channel+";OUTPUT ON")
-        
-        # wait for Bilt to switch on
-        sleep(0.2)
+            # configure slope
+            bilt.write(channel+";VOLT:SLOPE {}".format(slope))
+            
+            # set voltage to zero
+            bilt.write(channel+";VOLT 0")
+            
+            # switch on source
+            bilt.write(channel+";OUTPUT ON")
+            
+            # wait for Bilt to switch on
+            sleep(0.2)
         
         if bilt.ask("SYST:ERROR?")[:4] != '+000':
             raise Exception("Bilt signals error")
