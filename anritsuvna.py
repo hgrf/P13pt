@@ -12,7 +12,24 @@ import struct
 import warnings
 
 class AnritsuVNA(visa.Instrument):
+    # Constants
+    AVG_POINT_BY_POINT = 'POIN'
+    AVG_SWEEP_BY_SWEEP = 'SWE'    
+    
     def __init__(self, connection):
+        ''' Initialise the VNA driver
+        
+        Parameters
+        ----------
+        connection : str
+            The address of the VNA, e.g. 'GPIB::6::INSTR' or
+            'TCPIP::192.168.0.3::5001::SOCKET'
+        
+        Returns
+        -------
+        vna : AnritsuVNA
+            An instance of the driver class.        
+        '''
         visa.Instrument.__init__(self, connection)
         self.term_chars = '\n'
         
@@ -21,7 +38,8 @@ class AnritsuVNA(visa.Instrument):
         # VNA tries to speak binary
         self.write(r':FORM:DATA ASC;')         
         
-        print self.ask('*idn?')
+        if not self.ask('*idn?').startswith('ANRITSU,MS4644B'):
+            raise Exception('Unsupported device / cannot initialise')
         # Initialisation that apparently is needed.
         # ESE: Something with the Standard event status register
         # SRE: Something with the service enable register (switch to remote?)
@@ -29,44 +47,69 @@ class AnritsuVNA(visa.Instrument):
         # FORM:BORD NORM - sets the most significant byte first.
         self.write('*ESE 60;*SRE 48;*CLS;:FORM:BORD NORM;')
         # Check that everything works fine for the moment.
-        print self.ask('SYST:ERR?')
+        if not self.ask('SYST:ERR?').startswith('No Error'):
+            raise Exception('Device error')
 
     def ask_values_anritsu(self, query_str):
-        '''
-        This function sends a query to the VNA and retrieves the returned values
-        in the binary format that is specified in the Anritsu documentation.
+        ''' Send a query to the VNA and retrieves the returned values.
+        
+        Parameters
+        ----------
+        query_str : str
+            The command string.
+        
+        Returns
+        -------
+        a : array of python doubles
+            VNA data in the binary format that is specified in the
+            Anritsu documentation.
         '''
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore",category=visa.VisaIOWarning)           # because we often leave data in buffer
+            # because we tend to leave data in the buffer
+            warnings.filterwarnings("ignore", category=visa.VisaIOWarning)
             
-            # make sure Data is communicated in the correct format.
-            self.write(':FORM:DATA REAL;')      # switch data transmission to binary     
+            # make sure Data is communicated in the correct format (binary)
+            self.write(':FORM:DATA REAL;')
             # send query
-            self.write(query_str)               # send query string
+            self.write(query_str)
             # receive data
-            self.term_chars = ''                # switch off termination char.
+            self.term_chars = ''                 # switch off termination char
             header = visa.vpp43.read(self.vi, 2) # read header-header
-            assert header[0] == '#'             # check if format is OK
-            count = int(header[1])              # read length of header
-            #print "Reading {} bytes header from Anritsu".format(count)
+            assert header[0] == '#'              # check if format is OK
+            count = int(header[1])               # read length of header
             header = visa.vpp43.read(self.vi, count) # read header
-            count = int(header)                 # read length of binary data
-            #print "Reading {} bytes data from Anritsu".format(count)
-            self.term_chars = ''
-            data = visa.vpp43.read(self.vi, count)     # this crashes Spyder if variable explorer is open !!
-            visa.vpp43.read(self.vi, 1)    # read the termination character (do not do this when using GPIB)
-            #print 'Successfully read {} bytes'.format(len(data))
-            assert len(data) == count            # check all data was read
-            self.term_chars = '\n'               # switch on term char
+            count = int(header)                  # read length of binary data
+            # NB: the following can crash Spyder if variable explorer is open!
+            data = visa.vpp43.read(self.vi, count)
+            visa.vpp43.read(self.vi, 1)          # read termination character
+            assert len(data) == count            # check if all data was read
+            self.term_chars = '\n'               # switch term char back on
             self.write(':FORM:DATA ASC;')        # read data in ASCII format
-        return struct.unpack('!'+'d'*(count/8), data) # convert data from big-endian binary doubles to array of python doubles
+        # convert from big-endian binary doubles to array of python doubles
+        return struct.unpack('!'+'d'*(count/8), data)
 
     def get_freq_list(self):
+        ''' Retrieves the frequency list from the VNA.
+        
+        Returns
+        -------
+        f : array of python doubles
+            The frequencies in Hz.
+        '''
         return self.ask_values_anritsu(':SENS1:FREQ:DATA?;')
         
     def get_trace(self, trace_num):
-        '''
-        Gets trace number trace_num from VNA.
+        ''' Retrieves trace number trace_num from the VNA.
+        
+        Parameters
+        ----------
+        trace_num : int
+            The requested trace number (1, 2, 3...)
+            
+        Returns
+        -------
+        sreal, simag : arrays of python doubles
+            The real and imaginary part of the requested S parameter.
         '''
         # select desired trace
         self.write(':CALC1:PAR{}:SEL;'.format(trace_num)) 
@@ -75,14 +118,38 @@ class AnritsuVNA(visa.Instrument):
         sreal = data[::2]
         simag = data[1::2]
         return sreal, simag
+    
+    def get_table(self, trace_nums):
+        ''' Gets a table of values from the VNA
+        
+        The first row is frequency, the following rows are
+        the real and imaginary part of the requested traces.
+        
+        Parameters
+        ----------
+        trace_nums : array of int
+            The requested trace numbers (1, 2, 3...)
+        
+        Returns
+        -------
+        a : array of python doubles
+            The table of values.
+        '''
+        table = []
+        table.append(self.get_freq_list())
+        for num in trace_nums:
+            sreal, simag = self.get_trace(num) # get trace's real and imag part
+            table.append(sreal)
+            table.append(simag)
+        return table
         
     def single_sweep(self):
-        '''
-        This function starts a single sweep (VNA will hold at the end of the
-        sweep) and waits for the sweep to be done.
+        ''' Launch a single sweep (the VNA will hold at the end of the sweep).
+        
+        Waits for the sweep to be done.
         '''
         self.write(':SENS1:HOLD:FUNC SING;')       # single sweep with hold
-        self.write(':TRIG:SING;')                 # trigger single sweep
+        self.write(':TRIG:SING;')                  # trigger single sweep
 
         timeout = self.timeout
         self.timeout = 600.
@@ -90,47 +157,59 @@ class AnritsuVNA(visa.Instrument):
         self.ask('*STB?')           # ask for status byte (or whatever)        
         
         self.timeout = timeout
-        
+    
+    def _linear_sweep_only(func):
+        ''' This decorator verifies that the function is only used when the
+        VNA is in linear sweep mode.
+        '''
+        def magic(self, *args):
+            if self.ask(':SENS:SWE:TYP?') == 'LIN':
+                return func(self, *args)
+            else:
+                raise Exception('Function '+func.__name__+' can only be used'\
+                    +' when VNA is in linear sweep mode)')
+        return magic
+    
+    @_linear_sweep_only    
     def enable_averaging(self):
+        ''' Switch on averaging.
+        '''
         self.write(':SENS1:AVER ON;')
     
+    @_linear_sweep_only
     def disable_averaging(self):
+        ''' Switch off averaging.
+        '''
         self.write(':SENS1:AVER OFF;')
-        
+    
+    @_linear_sweep_only
     def set_average_count(self, count):
+        ''' Set average count.
+        
+        Parameters
+        ----------
+        count : int
+        '''
         self.write(':SENS1:AVER:COUNT {}'.format(count))
         
-    AVG_POINT_BY_POINT = 'POIN'
-    AVG_SWEEP_BY_SWEEP = 'SWE'
+    @_linear_sweep_only
     def set_average_type(self, typ):
+        ''' Set average type.
+        
+        Parameters
+        ----------
+        typ : str
+            'POIN' for point by point averaging, 'SWE' for sweep by sweep
+            averaging. The latter is pointless in this driver, because we
+            only execute single sweeps.
+        '''
         self.write(':SENS1:AVER:TYP {}'.format(typ))
     
+    @_linear_sweep_only
     def set_average(self, count, typ):
+        ''' Set all averaging parameters. For parameters, see set_average_count
+        and set_average_type.
+        '''
         self.enable_averaging()
         self.set_average_count(count)
         self.set_average_type(typ)
-
-if __name__ == '__main__':
-    """Example of how to use this driver
-    """
-    import numpy as np    
-    from measurement import measurement
-    vna = AnritsuVNA('GPIB::6::INSTR') #for GPIB
-#    vna = AnritsuVNA('TCPIP::192.168.0.3::5001::SOCKET')#for TCPIP
-    freqs = vna.get_freq_list()         # get frequency list
-    vna.set_average(1, vna.AVG_POINT_BY_POINT)
-    vna.single_sweep()
-    
-    table = []
-    table.append(freqs)
-    for i in range(4):
-        sreal, simag = vna.get_trace(i+1)     # get real and imag part of i-th trace
-        table.append(sreal)
-        table.append(simag)
-    
-    datafile = '2016-01-21_14h57m22s_test_Vds=-0.000029_Vg1=0.003376.txt'
-    np.savetxt(datafile, np.transpose(table))
-    
-    spectrum = measurement(datafile)
-    spectrum.create_y()
-    spectrum.plot_mat_spec("s",ylim = 1)
