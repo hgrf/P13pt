@@ -1,3 +1,7 @@
+"""
+Driver for the Bilt voltage sources and voltmeters
+"""
+
 import visa
 from time import sleep
 

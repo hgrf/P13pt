@@ -12,24 +12,19 @@ import struct
 import warnings
 
 class AnritsuVNA(visa.Instrument):
+    ''' Anritsu VNA driver class
+    
+    Parameters
+    ----------
+    connection : str
+        The address of the VNA, e.g. 'GPIB::6::INSTR' or
+        'TCPIP::192.168.0.3::5001::SOCKET'
+    '''
     # Constants
     AVG_POINT_BY_POINT = 'POIN'
     AVG_SWEEP_BY_SWEEP = 'SWE'    
     
     def __init__(self, connection):
-        ''' Initialise the VNA driver
-        
-        Parameters
-        ----------
-        connection : str
-            The address of the VNA, e.g. 'GPIB::6::INSTR' or
-            'TCPIP::192.168.0.3::5001::SOCKET'
-        
-        Returns
-        -------
-        vna : AnritsuVNA
-            An instance of the driver class.        
-        '''
         visa.Instrument.__init__(self, connection)
         self.term_chars = '\n'
         
