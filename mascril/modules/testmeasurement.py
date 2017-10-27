@@ -1,5 +1,5 @@
-from P13pt.launcher.measurement import MeasurementBase
-from P13pt.testdrivers import VoltageSource, VoltMeter
+from P13pt.mascril.measurement import MeasurementBase
+from P13pt.drivers.testdrivers import VoltageSource, VoltMeter
 
 import time
 import numpy as np
