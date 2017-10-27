@@ -13,7 +13,7 @@ from PyQt4.QtGui import (QWidget, QTextEdit, QFont, QPushButton, QLineEdit, QVBo
                          QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox, QApplication,
                          QSplitter, QTextCursor, QComboBox, QIcon, QLabel, QHeaderView)
 #from consolewidget import ConsoleWidget
-from P13pt.launcher.measurement import MeasurementBase      # we have to import it the same way (from the same parent
+from P13pt.mascril.measurement import MeasurementBase      # we have to import it the same way (from the same parent
                                                             # modules) as we will do it in the acquisition scripts,
                                                             # otherwise they will not be recognised as the same
                                                             # class

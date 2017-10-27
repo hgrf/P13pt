@@ -22,3 +22,12 @@ values should be separated by tabs, the decimal point should be "."
 there should be only one sweeped parameter (e.g. gate voltage or source drain voltage) per file, if possible
 
 comments should be at the beginning of the file and preceeded by a hashtag "#"
+
+
+## building the doc
+
+cd into the docs directory and execute
+
+    make html
+    
+then the doc can be accessed: /docs/\_build/html/index.html
