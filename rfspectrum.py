@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 """
- Interface for the scikit-rf Network class for use in P13.
- * Adding P13 spectrum file format support to the base class.
- * Adding P13 style thru deembedding support to the base class.
- 
- De-embedding algorithm and original idea: Andreas Inhofer
- Code clean-up: Holger Graef
+Interface for the scikit-rf Network class for use in P13. Refer to the
+`scikit-rf documentation <http://scikit-rf.readthedocs.io/en/latest/api/network.html>`_
+for more detail.
+
+* Adding P13 spectrum file format support to the base class.
+* Adding P13 style thru deembedding support to the base class.
+
+De-embedding algorithm and original idea: Andreas Inhofer
+
+Code clean-up and integration with scikit-rf: Holger Graef
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from scipy.linalg import sqrtm
 from numpy.linalg import inv
 from params_from_filename import params_from_filename

@@ -31,6 +31,8 @@ sys.path.insert(0, os.path.abspath('..'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
+    'numpydoc',
+    'sphinx.ext.autosummary'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -285,4 +287,5 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-autodoc_mock_imports = ["visa"]
+autodoc_mock_imports = ["visa", "skrf", "matplotlib", "numpy", "numpy.linalg", "scipy", "scipy.linalg"]
+numpydoc_show_class_members = False
