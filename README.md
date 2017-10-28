@@ -1,5 +1,21 @@
 # P13 python tools is the new RFLPA
 
+## setting up the dependencies
+
+it is recommended to do this in a virtual environment
+
+    virtualenv venv
+    . venv/bin/activate
+    pip install -r requirements.txt
+
+## building the doc
+
+cd into the docs directory and execute
+
+    make html
+    
+then the doc can be accessed: /docs/\_build/html/index.html
+
 ## file name strucure
 
 file names for DC or RF data should contain parameters separated by underscores, i.e. in the format "...\_name=value\_..."
@@ -22,12 +38,3 @@ values should be separated by tabs, the decimal point should be "."
 there should be only one sweeped parameter (e.g. gate voltage or source drain voltage) per file, if possible
 
 comments should be at the beginning of the file and preceeded by a hashtag "#"
-
-
-## building the doc
-
-cd into the docs directory and execute
-
-    make html
-    
-then the doc can be accessed: /docs/\_build/html/index.html
