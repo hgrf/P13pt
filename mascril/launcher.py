@@ -123,7 +123,11 @@ class mainwindow(QSplitter):
 
     @pyqtSlot()
     def browse_acquisition_script(self):
-        filename = QFileDialog.getOpenFileName(self, 'Open File', directory='modules', filter='*.py')
+        modulespath = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'modules')
+        filename = QFileDialog.getOpenFileName(self, 'Open File',
+                                               directory=modulespath,
+                                               filter='*.py')
         self.txt_acquisition_script.setText(filename)
 
     @pyqtSlot()
