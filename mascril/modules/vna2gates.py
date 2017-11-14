@@ -1,35 +1,37 @@
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
+from P13pt.drivers.anritsuvna import AnritsuVNA
+
 
 import time
 import numpy as np
 import os
+import errno
+
 
 class Measurement(MeasurementBase):
     params = {
-        'Vdss': [10e-3, 20e-3, 30e-3, 40e-3, 50e-3, 60e-3, 70e-3, 80e-3, 90e-3, 100e-3,
-                 120e-3, 140e-3, 160e-3, 180e-3, 200e-3],
-        'Vg1s': np.concatenate((np.linspace(0,-2,201),np.linspace(-2,0,201))),
-        'Vg2s': np.arange(0.2, 0.4, 0.02),
+        'Vdss': [10e-3],
+        'Vg1s': [0.1],
+        'Vg2s': [0.],
         'commongate': False,
-        'Rg1': 100e3,
         'Rg2': 100e3,
-        'Rds': 22e3,
+        'Rds': 2.2e3,
         'stabilise_time': 0.05,
         'comment': None,
-        'data_dir': r'D:\MeasurementJANIS\Holger\KTW H5 2x3\2017-11-09 LHe'
+        'data_dir': r'D:\MeasurementJANIS\Holger\test',
+        'useVNA': False
     }
 
-    observables = ['Vg1', 'Vg1m', 'Ileak1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs']
+    observables = ['Vg1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs']
 
     alarms = [
-        ['np.abs(Ileak1) > 1e-8', MeasurementBase.ALARM_CALLCOPS],
         ['np.abs(Ileak2) > 1e-8', MeasurementBase.ALARM_CALLCOPS],
         ['np.abs(Vg1-Vg2)', MeasurementBase.ALARM_SHOWVALUE]        # useful if we just want to know how much voltage
                                                                     # is applied between the two gates
     ]
 
-    def measure(self, data_dir, comment, Vdss, Vg1s, Vg2s, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
+    def measure(self, data_dir, comment, Vdss, Vg1s, Vg2s, commongate, Rg2, Rds, stabilise_time, useVNA, **kwargs):
         print "==================================="        
         print "Starting acquisition script..."
 
@@ -41,18 +43,36 @@ class Measurement(MeasurementBase):
             self.sourceVg1 = sourceVg1 = BiltVoltageSource(bilt, "I2", initialise=False)
             self.sourceVg2 = sourceVg2 = BiltVoltageSource(bilt, "I3", initialise=False)
             self.meterVds = meterVds = BiltVoltMeter(bilt, "I5;C1", "2", "Vdsm")
-            self.meterVg1 = meterVg1 = BiltVoltMeter(bilt, "I5;C2", "2", "Vg1m")
             self.meterVg2 = meterVg2 = BiltVoltMeter(bilt, "I5;C3", "2", "Vg2m")
             print "DC sources and voltmeters are set up."
         except:
             print "There has been an error setting up DC sources and voltmeters."
             raise
+        
+        if useVNA:
+            try:
+                print "Setting up VNA"
+                vna = AnritsuVNA('GPIB::6::INSTR')
+                self.freqs = vna.get_freq_list()         # get frequency list
+                print "VNA is set up."
+            except:
+                print "There has been an error setting up the VNA."
+                raise
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
 
         # prepare saving data
         filename = timestamp + '_' + (comment if comment else '') + '.txt'
         self.prepare_saving(os.path.join(data_dir, filename))
+
+        # prepare saving RF data
+        if useVNA:
+            spectra_fol = os.path.join(data_dir, timestamp)
+            try:
+                os.makedirs(spectra_fol)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
 
         # loops
         for Vds in Vdss:
@@ -74,16 +94,23 @@ class Measurement(MeasurementBase):
     
                     # measure
                     Vdsm = meterVds.get_voltage()
-                    Vg1m = meterVg1.get_voltage()
                     Vg2m = meterVg2.get_voltage()
     
                     # do calculations
-                    Ileak1 = (Vg1-Vg1m)/Rg1
                     Ileak2 = (Vg2-Vg2m)/Rg2
                     Rs = Rds*Vdsm/(Vds-Vdsm)
     
                     # save data
                     self.save_row(locals())
+
+                    # save VNA data
+                    if useVNA:
+                        print "Getting VNA spectra..."
+                        vna.single_sweep()
+                        table = vna.get_table(range(1,5))
+                        timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')  
+                        spectrum_file = timestamp+'_Vg1_%2.4f'%(Vg1)+'_Vg2_%2.4f'%(Vg2)+'_Vds_%2.4f'%(Vds)+'.txt'
+                        np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
 
         print "Acquisition done."
         
