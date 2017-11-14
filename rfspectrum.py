@@ -160,7 +160,9 @@ class Network(skrf.Network):
                 ax.set_ylabel(parameter.upper()+r'$_{%d%d}$'%(i+1,j+1))
                 ax.set_ylim([-ylim,ylim])    
                 ax.set_xlim([min(self.f/1e9), max(self.f/1e9)])
-        plt.tight_layout()                  
+        fig.tight_layout()       
+
+        return fig
 
 
 # for compatibility with old name
