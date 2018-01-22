@@ -8,10 +8,11 @@ Created on Mon Aug 07 11:25:58 2017
 import sys
 import imp
 import os
-from PyQt4.QtCore import pyqtSlot, SIGNAL, Qt
-from PyQt4.QtGui import (QWidget, QTextEdit, QFont, QPushButton, QLineEdit, QVBoxLayout,
+from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtGui import QFont, QTextCursor, QIcon
+from PyQt5.QtWidgets import (QWidget, QTextEdit, QPushButton, QLineEdit, QVBoxLayout,
                          QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox, QApplication,
-                         QSplitter, QTextCursor, QComboBox, QIcon, QLabel, QHeaderView)
+                         QSplitter, QComboBox, QLabel, QHeaderView)
 #from consolewidget import ConsoleWidget
 from P13pt.mascril.measurement import MeasurementBase      # we have to import it the same way (from the same parent
                                                             # modules) as we will do it in the acquisition scripts,
@@ -19,7 +20,7 @@ from P13pt.mascril.measurement import MeasurementBase      # we have to import i
                                                             # class
 from plotter import Plotter
 try:
-    from PyQt4.QtCore import QString
+    from PyQt5.QtCore import QString
 except ImportError:
     QString = str
 
@@ -101,7 +102,7 @@ class mainwindow(QSplitter):
         self.tbl_alarms = QTableWidget(observablesinterfacewidget)
         self.tbl_alarms.setColumnCount(3)
         self.tbl_alarms.setHorizontalHeaderLabels(['Condition', 'Action', 'Value'])
-        self.tbl_alarms.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.tbl_alarms.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tbl_alarms.verticalHeader().hide()
         self.btn_addalarm = QPushButton("Add alarm", observablesinterfacewidget)
         # put everything in a layout
@@ -110,10 +111,10 @@ class mainwindow(QSplitter):
             l.addWidget(w)
 
         # make connections
-        self.connect(self.btn_browse, SIGNAL("clicked()"), self.browse_acquisition_script)
-        self.connect(self.btn_load, SIGNAL("clicked()"), self.load_module)
-        self.connect(self.btn_run, SIGNAL("clicked()"), self.run_module)
-        self.connect(self.btn_addalarm, SIGNAL("clicked()"), self.add_alarm)
+        self.btn_browse.clicked.connect(self.browse_acquisition_script)
+        self.btn_load.clicked.connect(self.load_module)
+        self.btn_run.clicked.connect(self.run_module)
+        self.btn_addalarm.clicked.connect(self.add_alarm)
 
         # Set window size.
         self.setWindowState(Qt.WindowMaximized)
@@ -125,7 +126,7 @@ class mainwindow(QSplitter):
     def browse_acquisition_script(self):
         modulespath = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                    'modules')
-        filename = QFileDialog.getOpenFileName(self, 'Open File',
+        filename, filt = QFileDialog.getOpenFileName(self, 'Open File',
                                                directory=modulespath,
                                                filter='*.py')
         self.txt_acquisition_script.setText(filename)
@@ -186,10 +187,10 @@ class mainwindow(QSplitter):
             self.tbl_alarms.cellWidget(i, 1).setCurrentIndex(self.m.alarms[i][1])
 
         # connect signals
-        self.connect(self.m, SIGNAL("new_observables_data(PyQt_PyObject)"), self.new_data_handler)
-        self.connect(self.m, SIGNAL("new_console_data(QString)"), self.readonlyconsole.write)
-        self.connect(self.btn_stopmod, SIGNAL("clicked()"), self.m.quit)
-        self.connect(self.btn_forcestopmod, SIGNAL("clicked()"), self.m.terminate)
+        self.m.new_observables_data[object].connect(self.new_data_handler)
+        self.m.new_console_data[QString].connect(self.readonlyconsole.write)
+        self.btn_stopmod.clicked.connect(self.m.quit)
+        self.btn_forcestopmod.clicked.connect(self.m.terminate)
 
     @pyqtSlot()
     def run_module(self):

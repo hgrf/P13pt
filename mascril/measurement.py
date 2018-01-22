@@ -2,9 +2,9 @@ import sys
 import os
 import errno
 from io import BytesIO as StringIO
-from PyQt4.QtCore import QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
 try:
-    from PyQt4.QtCore import QString
+    from PyQt5.QtCore import QString
 except ImportError:
     QString = str
 
