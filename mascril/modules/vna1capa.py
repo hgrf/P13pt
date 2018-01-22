@@ -22,7 +22,7 @@ class Measurement(MeasurementBase):
         ['np.abs(Ileak) > 1e-8', MeasurementBase.ALARM_CALLCOPS]
     ]
 
-    def measure(self, data_dir, Vgs, Rg, stabilise_time, **kwargs):
+    def measure(self, data_dir, Vgs, Rg, comment, stabilise_time, **kwargs):
         print "==================================="        
         print "Starting acquisition script..."
 
@@ -51,7 +51,7 @@ class Measurement(MeasurementBase):
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
 
         # prepare saving DC data
-        filename = timestamp + '.txt'
+        filename = timestamp + ('_'+comment if comment else '') + '.txt'
         self.prepare_saving(os.path.join(data_dir, filename))
 
         # prepare saving RF data
