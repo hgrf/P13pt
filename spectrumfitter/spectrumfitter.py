@@ -8,13 +8,13 @@ from P13pt.rfspectrum import Network
 from P13pt.params_from_filename import params_from_filename
 import ConfigParser
 
-from PyQt4.QtCore import pyqtSignal, pyqtSlot, SIGNAL, SLOT, Qt, QSignalMapper
-from PyQt4.QtGui import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QSignalMapper
+from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                          QPushButton, QFileDialog, QMessageBox, QSlider, QSpinBox, QLabel,
                          QWidgetItem, QSplitter, QComboBox, QCheckBox)
 
 try:
-    from PyQt4.QtCore import QString
+    from PyQt5.QtCore import QString
 except ImportError:
     QString = str
 
@@ -71,13 +71,14 @@ class Fitter(QWidget):
         self.setLayout(layout)
 
         # make connections
-        self.connect(self.btn_browsemodel, SIGNAL('clicked()'), self.browse_model)
-        self.connect(self.btn_loadmodel, SIGNAL('clicked()'), self.load_model)
-        self.connect(self.btn_fit, SIGNAL('clicked()'), self.fit_model)
-        self.connect(self.cmb_fitmethod, SIGNAL('currentIndexChanged(int)'), self.fitmethod_changed)
-        self.connect(self.btn_browseresults, SIGNAL('clicked()'), self.browse_results)
-        self.connect(self.btn_saveresults, SIGNAL('clicked()'), self.save_results)
-        self.connect(self.btn_loadresults, SIGNAL('clicked()'), self.load_results)
+        self.btn_browsemodel.clicked.connect(self.browse_model)
+        self.btn_browsemodel.clicked.connect(self.browse_model)
+        self.btn_loadmodel.clicked.connect(self.load_model)
+        self.btn_fit.clicked.connect(self.fit_model)
+        self.cmb_fitmethod.currentIndexChanged.connect(self.fitmethod_changed)
+        self.btn_browseresults.clicked.connect(self.browse_results)
+        self.btn_saveresults.clicked.connect(self.save_results)
+        self.btn_loadresults.clicked.connect(self.load_results)
 
     def browse_model(self):
         model_file = QFileDialog.getOpenFileName(self, 'Choose model', directory=os.path.dirname(__file__))
@@ -124,11 +125,11 @@ class Fitter(QWidget):
             cb = QCheckBox()
             self.checkboxes[p] = cb
             map = QSignalMapper(self)
-            self.connect(sl, SIGNAL('valueChanged(int)'), sb, SLOT('setValue(int)'))
-            self.connect(sb, SIGNAL('valueChanged(int)'), sl, SLOT('setValue(int)'))
-            self.connect(sl, SIGNAL('valueChanged(int)'), map, SLOT('map()'))
+            sl.valueChanged[int].connect(sb.setValue)
+            sb.valueChanged[int].connect(sl.setValue)
+            sl.valueChanged[int].connect(map.map)
             sl.setValue(self.model.params[p][2])
-            self.connect(map, SIGNAL('mapped(QWidget *)'), self.value_changed)
+            map.mapped[QWidget].connect(self.value_changed)
             map.setMapping(sl, sl)
             l = QHBoxLayout()
             l.addWidget(label)
@@ -136,13 +137,13 @@ class Fitter(QWidget):
             l.addWidget(sb)
             l.addWidget(cb)
             self.sl_layout.addLayout(l)
-        self.enable_checkboxes(self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()).toBool())
+        self.enable_checkboxes(self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()))
         self.model_changed.emit()
 
     def fit_model(self):
         if self.model:
             fit_method = getattr(self.model, 'fit_'+str(self.cmb_fitmethod.currentText()))
-            if self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()).toBool():
+            if self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()):
                 fit_method(self.parent().get_f(), self.parent().get_y(), self.checkboxes)
             else:
                 fit_method(self.parent().get_f(), self.parent().get_y())
@@ -158,7 +159,7 @@ class Fitter(QWidget):
             self.checkboxes[p].setEnabled(b)
 
     def fitmethod_changed(self):
-        enable_checkboxes = self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()).toBool()
+        enable_checkboxes = self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex())
         self.enable_checkboxes(enable_checkboxes)
 
     def update_values(self, values):
@@ -254,13 +255,13 @@ class MainWindow(QSplitter):
         # make connections
         self.map_browse = QSignalMapper(self)
         for x in ['dut', 'thru', 'dummy']:
-            self.connect(self.__dict__['btn_browse'+x], SIGNAL('clicked()'), self.map_browse, SLOT('map()'))
+            self.__dict__['btn_browse'+x].clicked.connect(self.map_browse.map)
             self.map_browse.setMapping(self.__dict__['btn_browse'+x], x)
-        self.connect(self.map_browse, SIGNAL('mapped(const QString &)'), self.browse)
-        self.connect(self.btn_load, SIGNAL('clicked()'), self.load)
-        self.connect(self.btn_prev, SIGNAL('clicked()'), self.prev_spectrum)
-        self.connect(self.btn_next, SIGNAL('clicked()'), self.next_spectrum)
-        self.connect(self.fitter, SIGNAL('model_changed()'), self.plot_fit)
+        self.map_browse.mapped[str].connect(self.browse)
+        self.btn_load.clicked.connect(self.load)
+        self.btn_prev.clicked.connect(self.prev_spectrum)
+        self.btn_next.clicked.connect(self.next_spectrum)
+        self.fitter.model_changed.connect(self.plot_fit)
 
         # load config
         if config.has_section('main'):
@@ -278,7 +279,7 @@ class MainWindow(QSplitter):
         self.show()
 
         # Maximize the splitter.
-        #self.resize(1500,800)
+        self.resize(1500,800)
         #self.setWindowState(Qt.WindowMaximized)
 
     def get_f(self):
@@ -338,12 +339,14 @@ class MainWindow(QSplitter):
         self.dut = dut = Network(self.dut_files[self.current_index])
         params = params_from_filename(self.dut_files[self.current_index])
 
+        # TODO: tidy up this mess, especially the self.dut / dut weirdness (and be careful!)
         if self.dummy_file:
             dummy = Network(self.dummy_file)
         if self.thru_file:
             thru = Network(self.thru_file)
-            dummy = dummy.deembed_thru(thru)
-            dut = dut.deembed_thru(thru)
+            if self.dummy_file:
+                dummy = dummy.deembed_thru(thru)
+            self.dut = dut = dut.deembed_thru(thru)
         if self.dummy_file:
             dut.y -= dummy.y
 
