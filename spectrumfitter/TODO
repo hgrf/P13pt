@@ -1,13 +1,12 @@
 ## high priority
-* enable saving/loading the fitting parameters
-  file should contain comment section with info on model, dut, thru, dummy files
-
-* no need for signal mapper for sliders, can just update all model values using slider dictionary
+* loading the fitting parameters
 * let the user also decide a frequency range in which he wants to fit
-* integrate into P13pt
 * axis forgets history!
 
 ## low priority
+* should not use self.parent() in Fitter widget
+* the save results section should rather be controlled by the main widget since it manages all the model results too
+* no need for signal mapper for sliders, can just update all model values using slider dictionary
 * reset_values should not be in the model class
 * make icon buttons for navigation etc.
 * enable automatic fitting (i.e. for whole dataset + saving params)
@@ -18,8 +17,3 @@
 * we should impose the order of the parameters
 * the default fit method could be created automatically / be in a base class
 * make a history of fitting values every time they change so that the user can restore what was before fit
-
-## done
-X sliders are not updated when changing spectra
-X enable fitting
-X display units
