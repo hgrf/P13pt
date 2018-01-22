@@ -52,6 +52,7 @@ class Fitter(QWidget):
         self.btn_loadmodel = QPushButton('Load', self)
         self.cmb_fitmethod = QComboBox(self)
         self.btn_fit = QPushButton('Fit', self)
+        self.btn_fitall = QPushButton('Fit all', self)
 
         self.sliders = QWidget(self)
         self.sl_layout = QVBoxLayout()
@@ -65,7 +66,7 @@ class Fitter(QWidget):
         # set the layout
         layout = QVBoxLayout()
         for widget in [self.txt_model, self.btn_browsemodel, self.btn_loadmodel,
-                       self.cmb_fitmethod, self.btn_fit, self.sliders, self.txt_resultsfile,
+                       self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliders, self.txt_resultsfile,
                        self.btn_browseresults, self.btn_saveresults, self.btn_loadresults]:
             layout.addWidget(widget)
         self.setLayout(layout)
@@ -74,6 +75,7 @@ class Fitter(QWidget):
         self.btn_browsemodel.clicked.connect(self.browse_model)
         self.btn_loadmodel.clicked.connect(self.load_model)
         self.btn_fit.clicked.connect(self.fit_model)
+        self.btn_fitall.clicked.connect(self.fit_all)
         self.cmb_fitmethod.currentIndexChanged.connect(self.fitmethod_changed)
         self.btn_browseresults.clicked.connect(self.browse_results)
         self.btn_saveresults.clicked.connect(self.save_results)
@@ -149,6 +151,12 @@ class Fitter(QWidget):
             for p in self.model.values:
                 self.sliders[p].setValue(self.model.values[p]/self.model.params[p][3])
 
+    def fit_all(self):
+        for i in range(len(self.parent().dut_files)):
+            self.parent().current_index = i
+            self.parent().load_spectrum()
+            self.fit_model()
+
     def value_changed(self, slider):
         self.model.values[slider.id] = slider.value()*self.model.params[slider.id][3]
         self.model_changed.emit()
@@ -175,7 +183,7 @@ class Fitter(QWidget):
         self.model_changed.emit()
 
     def browse_results(self):
-        results_file = QFileDialog.getSaveFileName(self, 'Results file')
+        results_file, filter = QFileDialog.getSaveFileName(self, 'Results file')
         self.txt_resultsfile.setText(results_file)
 
     def save_results(self):
@@ -194,7 +202,8 @@ class Fitter(QWidget):
             f.write('\n')
 
             # write data
-            for filename in self.parent().model_params:
+            filelist = sorted([filename for filename in self.parent().model_params])
+            for filename in filelist:
                 f.write(filename+'\t')
                 for p in self.parent().dut.params:                  # TODO: what if some filenames do not contain all parameters? should catch exceptions
                     f.write(str(params_from_filename(filename)[p])+'\t')
@@ -298,6 +307,7 @@ class MainWindow(QSplitter):
     def load(self):
         self.clear_ax()
         self.current_index = 0
+        self.model_params = {}
         self.dut_files = sorted(glob(os.path.join(str(self.txt_dut.text()), '*.txt')),
                                 key=lambda x: params_from_filename(x)['timestamp'])
 

@@ -1,12 +1,13 @@
 ## high priority
-* empty the fitresult dictionary when loading new dataset
-* loading the fitting parameters
+* app should not block when fitting
+
 * let the user also decide a frequency range in which he wants to fit
 * axis forgets history!
 * add fit result "grade"
 * mention the model in the results file
 
 ## low priority
+* loading the fitting parameters
 * should not use self.parent() in Fitter widget
 * the save results section should rather be controlled by the main widget since it manages all the model results too
 * no need for signal mapper for sliders, can just update all model values using slider dictionary
