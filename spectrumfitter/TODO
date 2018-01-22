@@ -1,13 +1,11 @@
 ## high priority
-* app should not block when fitting
-
+* add button to readjust x+y axis and to reset zoom home
+* loading the fitting parameters
 * let the user also decide a frequency range in which he wants to fit
-* axis forgets history!
 * add fit result "grade"
-* mention the model in the results file
 
 ## low priority
-* loading the fitting parameters
+* when using "fit all", should disable interface but add stop button
 * should not use self.parent() in Fitter widget
 * the save results section should rather be controlled by the main widget since it manages all the model results too
 * no need for signal mapper for sliders, can just update all model values using slider dictionary

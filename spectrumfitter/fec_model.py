@@ -6,7 +6,7 @@ class Model:
     # for each parameter, we store the minimum and maximum value,
     # an initial value, a multiplier value and a unit
     params = {
-        'r': [0.1, 10000, 1000, 1, 'Ohm'],
+        'r': [0.1, 50000, 1000, 1, 'Ohm'],
         'c': [0.1, 1000, 200, 1e-15, 'fF'],
         'l': [0, 100, 0, 1e-9, 'nH'],
         'gl': [0, 1000, 0, 1e-6, 'uS'],
@@ -61,7 +61,10 @@ class Model:
         r = r + 1j*l*w
         k = np.sqrt(-1j*r*c*w)
         tlm = (1j*k/r) * np.tanh(1j*k) + gl
-        adm_a = 1j*w*ca + 1./ra
+        if ra == 0.:
+            adm_a = 1j*w*ca
+        else:
+            adm_a = 1j*w*ca + 1./ra
         adm = 1./(1./tlm + 1./adm_a + rasup)
         return adm
 
@@ -200,8 +203,12 @@ class Model:
             for p in self.values:
                 self.values[p] = res.params[p].value
 
-    def fit_3params_zero(self, base_f, base_y):
+    def fit_3or4params_init(self, base_f, base_y):
         self.values['l'] = 0.
         self.values['ca'] = 0.
         self.values['rasup'] = 0.
         self.values['gl'] = 0.
+        self.values['r'] = 2e3
+        self.values['c'] = 200e-15
+        self.values['l'] = 0.
+        self.values['ra'] = 200.
