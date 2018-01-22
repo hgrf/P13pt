@@ -1,0 +1,4 @@
+*.pyc
+mdb.cfg
+# ignore PyCharm specific files
+.idea/*
