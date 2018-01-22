@@ -1,14 +1,11 @@
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-try:
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
-except ImportError:
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 
-from PyQt4.QtGui import (QWidget, QListWidget, QVBoxLayout,
+from PyQt5.QtWidgets import (QWidget, QListWidget, QVBoxLayout,
                          QHBoxLayout, QPushButton, QGridLayout, QLabel)
 
-from PyQt4.QtCore import pyqtSlot, SIGNAL
+from PyQt5.QtCore import pyqtSlot
 
 import numpy as np
 
@@ -29,7 +26,7 @@ class Plotter(QWidget):
 
         self.xvar.itemClicked.connect(self.plot)
         self.yvar.itemClicked.connect(self.plot)
-        self.connect(self.btn_clear, SIGNAL('clicked()'), self.clear)
+        self.btn_clear.clicked.connect(self.clear)
 
         # set the layout
         configpanelayout = QGridLayout()
