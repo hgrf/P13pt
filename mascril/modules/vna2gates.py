@@ -1,6 +1,7 @@
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.anritsuvna import AnritsuVNA
+from P13pt.drivers.si9700 import SI9700
 
 
 import time
@@ -23,7 +24,7 @@ class Measurement(MeasurementBase):
         'useVNA': False
     }
 
-    observables = ['Vg1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs']
+    observables = ['Vg1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs', 'Ta', 'Tb']
 
     alarms = [
         ['np.abs(Ileak2) > 1e-8', MeasurementBase.ALARM_CALLCOPS],
@@ -58,6 +59,14 @@ class Measurement(MeasurementBase):
             except:
                 print "There has been an error setting up the VNA."
                 raise
+        
+        try:
+            print "Setting up temperature controller..."
+            tc = SI9700('GPIB::14::INSTR')
+            print "Temperature controller is set up."
+        except:
+            print "There has been an error setting up the temperature controller."
+            raise
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
 
@@ -95,6 +104,8 @@ class Measurement(MeasurementBase):
                     # measure
                     Vdsm = meterVds.get_voltage()
                     Vg2m = meterVg2.get_voltage()
+                    Ta = tc.get_temp('a')
+                    Tb = tc.get_temp('b')
     
                     # do calculations
                     Ileak2 = (Vg2-Vg2m)/Rg2
@@ -109,7 +120,7 @@ class Measurement(MeasurementBase):
                         vna.single_sweep()
                         table = vna.get_table(range(1,5))
                         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')  
-                        spectrum_file = timestamp+'_Vg1_%2.4f'%(Vg1)+'_Vg2_%2.4f'%(Vg2)+'_Vds_%2.4f'%(Vds)+'.txt'
+                        spectrum_file = timestamp+'_Vg1=%2.4f'%(Vg1)+'_Vg2=%2.4f'%(Vg2)+'_Vds=%2.4f'%(Vds)+'.txt'
                         np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
 
         print "Acquisition done."
