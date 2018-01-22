@@ -1,4 +1,6 @@
 ## high priority
+* add labels for dut, thru, dummy and arrange fields more nicely
+* add button to save images of all spectra
 * add button to readjust x+y axis and to reset zoom home
 * loading the fitting parameters
 * let the user also decide a frequency range in which he wants to fit
