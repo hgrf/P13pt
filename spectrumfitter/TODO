@@ -1,0 +1,21 @@
+## high priority
+* add button to readjust x+y axis and to reset zoom home
+* loading the fitting parameters
+* let the user also decide a frequency range in which he wants to fit
+* add fit result "grade"
+
+## low priority
+* when using "fit all", should disable interface but add stop button
+* should not use self.parent() in Fitter widget
+* the save results section should rather be controlled by the main widget since it manages all the model results too
+* no need for signal mapper for sliders, can just update all model values using slider dictionary
+* reset_values should not be in the model class
+* make icon buttons for navigation etc.
+* enable automatic fitting (i.e. for whole dataset + saving params)
+* remove redundancy self.dut.f vs. self.f
+* error when loading model before spectra
+* legend real and imag
+* enable user to choose which Y parameter
+* we should impose the order of the parameters
+* the default fit method could be created automatically / be in a base class
+* make a history of fitting values every time they change so that the user can restore what was before fit
