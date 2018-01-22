@@ -72,7 +72,6 @@ class Fitter(QWidget):
 
         # make connections
         self.btn_browsemodel.clicked.connect(self.browse_model)
-        self.btn_browsemodel.clicked.connect(self.browse_model)
         self.btn_loadmodel.clicked.connect(self.load_model)
         self.btn_fit.clicked.connect(self.fit_model)
         self.cmb_fitmethod.currentIndexChanged.connect(self.fitmethod_changed)
@@ -81,7 +80,7 @@ class Fitter(QWidget):
         self.btn_loadresults.clicked.connect(self.load_results)
 
     def browse_model(self):
-        model_file = QFileDialog.getOpenFileName(self, 'Choose model', directory=os.path.dirname(__file__))
+        model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model', directory=os.path.dirname(__file__))
         self.txt_model.setText(model_file)
         config.set('main', 'model', model_file)
 
@@ -380,6 +379,9 @@ class MainWindow(QSplitter):
         self.load_spectrum()
 
     def plot_fit(self):
+        if not self.dut_files:
+            return
+
         # update model lines on plot
         f = np.asarray(self.f)
         y = -self.fitter.model.admittance(2.*np.pi*f, **self.fitter.model.values)  # - (minus) as a convention because we are looking at Y12
