@@ -8,7 +8,8 @@ from P13pt.rfspectrum import Network
 from P13pt.params_from_filename import params_from_filename
 import ConfigParser
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QSignalMapper, QEventLoop
+from PyQt5.QtCore import pyqtSignal, Qt, QSignalMapper
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                          QPushButton, QFileDialog, QMessageBox, QSlider, QSpinBox, QLabel,
                          QWidgetItem, QSplitter, QComboBox, QCheckBox)
@@ -231,25 +232,35 @@ class MainWindow(QSplitter):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
+        browse_icon = QIcon.fromTheme('folder')
+
         # set up data loading area
-        self.data_loading = QWidget(self)
-        self.txt_dut = QLineEdit('Path to DUT...', self.data_loading)
-        self.btn_browsedut = QPushButton('Browse', self.data_loading)
-        self.txt_thru = QLineEdit('Path to thru...', self.data_loading)
-        self.btn_browsethru = QPushButton('Browse', self.data_loading)
-        self.txt_dummy = QLineEdit('Path to dummy...', self.data_loading)
-        self.btn_browsedummy = QPushButton('Browse', self.data_loading)
-        self.btn_load = QPushButton('Load', self.data_loading)
-        self.btn_prev = QPushButton('Previous spectrum', self.data_loading)
-        self.btn_next = QPushButton('Next spectrum', self.data_loading)
+        self.data_loading = QWidget()
+        self.txt_dut = QLineEdit('Path to DUT...')
+        self.btn_browsedut = QPushButton(browse_icon, '')
+        self.txt_thru = QLineEdit('Path to thru...')
+        self.btn_browsethru = QPushButton(browse_icon, '')
+        self.txt_dummy = QLineEdit('Path to dummy...')
+        self.btn_browsedummy = QPushButton(browse_icon, '')
+        self.btn_load = QPushButton('Load')
+        self.btn_prev = QPushButton(QIcon.fromTheme('go-previous'), '')
+        self.btn_next = QPushButton(QIcon.fromTheme('go-next'), '')
         l = QVBoxLayout()
-        for w in [self.txt_dut, self.btn_browsedut, self.txt_thru, self.btn_browsethru,
-                       self.txt_dummy, self.btn_browsedummy, self.btn_load, self.btn_prev, self.btn_next]:
-            l.addWidget(w)
+        for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut],
+                      [QLabel('Thru:'), self.txt_thru, self.btn_browsethru],
+                      [QLabel('Dummy:'), self.txt_dummy, self.btn_browsedummy]]:
+            hl = QHBoxLayout()
+            for w in field:
+                hl.addWidget(w)
+            l.addLayout(hl)
+        hl = QHBoxLayout()
+        for w in [self.btn_load, self.btn_prev, self.btn_next]:
+            hl.addWidget(w)
+        l.addLayout(hl)
         self.data_loading.setLayout(l)
 
         # set up plotting area
-        self.plotting = QWidget(self)
+        self.plotting = QWidget()
         self.figure = plt.figure()
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlabel('f [GHz]')
@@ -260,6 +271,14 @@ class MainWindow(QSplitter):
         for w in [self.toolbar, self.canvas]:
             l.addWidget(w)
         self.plotting.setLayout(l)
+
+        # set up left widget of the splitter
+        self.left_widget = QWidget(self)
+        l = QVBoxLayout()
+        l.addWidget(self.data_loading)
+        l.addWidget(self.plotting)
+        l.setStretchFactor(self.plotting, 1)
+        self.left_widget.setLayout(l)
 
         # set up fitting area
         self.fitter = Fitter(self)
@@ -284,15 +303,18 @@ class MainWindow(QSplitter):
         else:
             config.add_section('main')
 
-        # Show the splitter.
+        # set up the splitter stretch factors
         self.setStretchFactor(0,1)
-        self.setStretchFactor(1,1)
-        self.setStretchFactor(2,2)
+        self.setStretchFactor(1,3)
+
+        # show the splitter
         self.show()
 
-        # Maximize the splitter.
-        self.resize(1500,800)
-        #self.setWindowState(Qt.WindowMaximized)
+        # make the window big
+        self.resize(1000,800)
+
+        # Set window title
+        self.setWindowTitle("Spectrum Fitter")
 
     def get_f(self):
         if self.dut:
@@ -433,6 +455,7 @@ if __name__ == '__main__':
     config.read('spectrumfitter.cfg')
 
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon('audacity.png'))
 
     mainwindow = MainWindow()
 
