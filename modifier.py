@@ -1,15 +1,7 @@
-from PyQt4.QtGui import (QWidget, QTextEdit, QVBoxLayout, QHBoxLayout,
-                         QPushButton, QFont, QFontMetrics, QComboBox,
-                         QLineEdit, QLabel)
-
-from PyQt4.Qt import QObject, pyqtSignal
-
-import os
 import sys
-
-import ConfigParser
-import pickle
-
+from PyQt5.QtGui import QFont, QFontMetrics
+from PyQt5.QtWidgets import QWidget, QTextEdit, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox, QLineEdit, QLabel
+from PyQt5.Qt import QObject, pyqtSignal
 from mdbinfo import FileInfo, Mod
 
 class ConsoleStream(QObject):

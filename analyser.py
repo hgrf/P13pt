@@ -1,10 +1,8 @@
-from PyQt4.QtGui import (QTextEdit, QListWidgetItem)
-
-from PyQt4.QtCore import pyqtSlot
-
-import numpy as np
-
 import os
+import numpy as np
+from PyQt5.QtWidgets import QTextEdit, QListWidgetItem
+from PyQt5.QtCore import pyqtSlot
+
 
 #### helper functions
 def is_number(s):
@@ -35,6 +33,8 @@ class Analyser(QTextEdit):
 
     @pyqtSlot(QListWidgetItem)
     def loadinfo(self, item):
+        if item is None: # this happens when the user selects a different folder and the file is de-selected
+            return
         filename = os.path.join(self.mdbinfo.folder, str(item.text()))
 
         self.clear()

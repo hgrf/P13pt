@@ -1,15 +1,12 @@
 #!/usr/bin/python
 import sys
 
-from PyQt4.QtGui import (QApplication, QFileSystemModel,
-                         QSplitter, QTreeView, QVBoxLayout,
-                         QHBoxLayout, QListWidgetItem,
-                         QListWidget, QPushButton, QWidget,
-                         QSizePolicy, QMessageBox, QLabel,
-                         QTextEdit, QTabWidget, QComboBox, QTextEdit,
-                         QAbstractItemDelegate, QPen, QColor, QFont,
-                         QStyle, QBrush, QPalette)
-from PyQt4.QtCore import QDir, Qt, pyqtSlot, QSize
+from PyQt5.QtGui import QPen, QColor, QFont, QBrush, QPalette
+
+from PyQt5.QtWidgets import (QApplication, QFileSystemModel, QSplitter, QTreeView, QVBoxLayout, QHBoxLayout,
+                             QListWidgetItem, QListWidget, QPushButton, QWidget, QTabWidget,
+                             QTextEdit, QAbstractItemDelegate, QStyle)
+from PyQt5.QtCore import QDir, Qt, QSize
 
 from plotter import Plotter
 from analyser import Analyser
@@ -40,8 +37,8 @@ class FileListDelegate(QAbstractItemDelegate):
             painter.drawRect(r)
             fontPen = selectedFontPen
 
-        flag = '!' if index.data(Qt.UserRole+1).toBool() else '?'
-        filename = index.data(Qt.DisplayRole).toString()+' ('+flag+')'
+        flag = '!' if index.data(Qt.UserRole+1) else '?'
+        filename = index.data(Qt.DisplayRole)+' ('+flag+')'
         #description = index.data(Qt::UserRole + 1).toString();
 
         painter.setPen(fontPen)
@@ -95,7 +92,7 @@ class MainWindow(QSplitter):
         # Set up file system model for tree view
         self.model = QFileSystemModel()
         model = self.model
-        rPath = model.myComputer().toString()
+        rPath = model.myComputer() #.toString()
         model.setRootPath(root if root else rPath)
         model.setFilter(QDir.Dirs | QDir.Drives | QDir.NoDotAndDotDot | QDir.AllDirs)
 

@@ -1,15 +1,10 @@
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-try:
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
-except ImportError:
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from PyQt5.QtWidgets import QWidget, QListWidget, QComboBox, QVBoxLayout, QHBoxLayout
+from PyQt5.QtCore import pyqtSlot
 
-from PyQt4.QtGui import (QWidget, QListWidget, QComboBox, QVBoxLayout,
-                         QHBoxLayout)
-
-from PyQt4.QtCore import pyqtSlot
 
 class Plotter(QWidget):
     def __init__(self, parent=None):
@@ -104,13 +99,14 @@ class Plotter(QWidget):
         ax.clear()
         #ax.hold(False)
 
-        if key is None:
-            ax.plot(self.reddata[ix], self.reddata[iy], '*-')
-        else:
-            uniquevals = np.unique(self.reddata[key])
-            for v in uniquevals:
-                ax.plot(self.reddata[ix, self.reddata[key]==v], self.reddata[iy, self.reddata[key]==v], '*-', label=str(v))
-            ax.legend()
+        if self.reddata is not None:
+            if key is None:
+                ax.plot(self.reddata[ix], self.reddata[iy], '*-')
+            else:
+                uniquevals = np.unique(self.reddata[key])
+                for v in uniquevals:
+                    ax.plot(self.reddata[ix, self.reddata[key]==v], self.reddata[iy, self.reddata[key]==v], '*-', label=str(v))
+                ax.legend()
 
         ax.set_xlabel(self.header[ix])
         ax.set_ylabel(self.header[iy])
