@@ -26,6 +26,58 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 
+def load_fitresults(filename, readfilenameparams=True):
+    # read results file
+    with open(filename, 'r') as f:
+        # read the header
+        column_header = None
+        previous_line = None
+        end_of_header = False
+        data = []
+        for line in f:
+            line = line.strip()
+            if line:
+                if line[0] == '#':  # line is a comment line
+                    line = line[1:].strip()
+                    if line.startswith('thru:'):
+                        thru = line[5:].strip()
+                    elif line.startswith('dummy:'):
+                        dummy = line[6:].strip()
+                    elif line.startswith('dut:'):
+                        dut = line[4:].strip()
+                    elif line.startswith('model:'):
+                        model = line[6:].strip()
+                else:
+                    # check if we reached the end of the header (or if we already had reached it previously)
+                    # and if there is a last header line
+                    if not end_of_header:
+                        end_of_header = True
+                        if previous_line:  # '#' was removed already
+                            column_header = previous_line.split('\t')
+                    data.append(line.split('\t'))
+                previous_line = line
+        data = zip(*data)  # transpose array
+
+        # remove file name parameter columns if requested
+        if not readfilenameparams:
+            if not column_header[0] == 'filename':
+                return None
+            if not len(data):
+                return None
+            num_params = len(params_from_filename(data[0][0]))
+            data = [data[0]]+data[num_params+1:]
+            column_header = [column_header[0]]+column_header[num_params+1:]
+
+        # put everything together
+        if column_header and len(column_header) == len(data):
+            data = dict(zip(column_header, data))
+        else:
+            data = None
+
+    return data
+
+
+
 def clearLayout(layout):
     for i in reversed(range(layout.count())):
         item = layout.itemAt(i)
@@ -89,9 +141,9 @@ class Fitter(QWidget):
     def load_model(self):
         # unload previous model
         clearLayout(self.sl_layout)
-        self.cmb_fitmethod.clear()
         self.sliders = {}
         self.checkboxes = {}
+        self.cmb_fitmethod.clear()
 
         # check if we are dealing with a valid module
         filename = str(self.txt_model.text())
@@ -214,7 +266,36 @@ class Fitter(QWidget):
                 f.write('\n')
 
     def load_results(self):
-        QMessageBox.warning(self, 'Not implemented', 'Not implemented')
+        # read the data
+        data = load_fitresults(self.txt_resultsfile.text(), False)
+
+        # check at least the filename field is present in the data
+        if not data or 'filename' not in data:
+            QMessageBox.warning(self, 'Error', 'Could not load data')
+            return
+
+        # empty the model parameters dictionary
+        self.parent().model_params = {}
+
+        # get a list of parameter names
+        params = [p for p in data]
+        unusable = []
+        # now check float conversion compatibility of the data columns, removing the ones that we cannot use
+        for p in params:
+            try:
+                data[p] = [float(x) for x in data[p]]
+            except ValueError:
+                unusable.append(p)
+        for p in unusable:
+            params.remove(p)
+
+        for i,f in enumerate(data['filename']):
+             # careful, this will also add the parameters from the filename to the model params
+             # TODO: repair this (i.e. let the load_fitresults function inform the user about the number of filename parameters that need to be taken into account)
+             values = [float(data[p][i]) for p in params]
+             self.parent().model_params[f] = dict(zip(params, values))
+             #print dict(zip(params, values))
+
 
 
 class MainWindow(QSplitter):
