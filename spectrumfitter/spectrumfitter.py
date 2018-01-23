@@ -110,6 +110,11 @@ class Fitter(QWidget):
         self.sl_layout = QVBoxLayout()
         self.sliders.setLayout(self.sl_layout)
 
+        self.txt_picfolder = QLineEdit('Path to picture folder...', self)
+        self.btn_browsepicfolder = QPushButton('Browse', self)
+        self.btn_savepic = QPushButton('Save current picture', self)
+        self.btn_saveallpics = QPushButton('Save all pictures', self)
+
         self.txt_resultsfile = QLineEdit('Path to results file...', self)
         self.btn_browseresults = QPushButton('Browse', self)
         self.btn_saveresults = QPushButton('Save', self)
@@ -118,8 +123,9 @@ class Fitter(QWidget):
         # set the layout
         layout = QVBoxLayout()
         for widget in [self.txt_model, self.btn_browsemodel, self.btn_loadmodel,
-                       self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliders, self.txt_resultsfile,
-                       self.btn_browseresults, self.btn_saveresults, self.btn_loadresults]:
+                       self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliders,
+                       self.txt_picfolder, self.btn_browsepicfolder, self.btn_savepic, self.btn_saveallpics,
+                       self.txt_resultsfile, self.btn_browseresults, self.btn_saveresults, self.btn_loadresults]:
             layout.addWidget(widget)
         self.setLayout(layout)
 
@@ -132,6 +138,9 @@ class Fitter(QWidget):
         self.btn_browseresults.clicked.connect(self.browse_results)
         self.btn_saveresults.clicked.connect(self.save_results)
         self.btn_loadresults.clicked.connect(self.load_results)
+        self.btn_browsepicfolder.clicked.connect(self.browse_picfolder)
+        self.btn_savepic.clicked.connect(self.savepic)
+        self.btn_saveallpics.clicked.connect(self.saveallpics)
 
     def browse_model(self):
         model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model', directory=os.path.dirname(__file__))
@@ -296,6 +305,21 @@ class Fitter(QWidget):
              self.parent().model_params[f] = dict(zip(params, values))
              #print dict(zip(params, values))
 
+    def browse_picfolder(self):
+        folder = QFileDialog.getExistingDirectory(self, 'Choose folder')
+        self.txt_picfolder.setText(folder)
+
+    def savepic(self):
+        if self.parent().dut:
+            name, ext = os.path.splitext(os.path.basename(self.parent().dut_files[self.parent().current_index]))
+            self.parent().figure.savefig(os.path.join(self.txt_picfolder.text(), name+'.png'))
+
+    def saveallpics(self):
+        for i in range(len(self.parent().dut_files)):
+            self.parent().current_index = i
+            self.parent().load_spectrum()
+            self.savepic()
+            QApplication.processEvents()
 
 
 class MainWindow(QSplitter):
