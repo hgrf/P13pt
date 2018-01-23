@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 
-def load_fitresults(filename, readfilenameparams=True):
+def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
     # read results file
     with open(filename, 'r') as f:
         # read the header
@@ -74,7 +74,10 @@ def load_fitresults(filename, readfilenameparams=True):
         else:
             data = None
 
-    return data
+    if not extrainfo:
+        return data
+    else:
+        return data, dut, thru, dummy, model
 
 
 

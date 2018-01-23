@@ -154,8 +154,8 @@ class Network(skrf.Network):
             for j in range(2):
                 subplotnum = 2*i+j+1 # add_subplot needs the +1 as indexing starts with 1
                 ax = fig.add_subplot(2,2,subplotnum)
-                ax.plot(self.f/1e9, matrix[:,i,j].real, label='Re '+label)
-                ax.plot(self.f/1e9, matrix[:,i,j].imag, label='Im '+label)
+                ax.plot(self.f/1e9, matrix[:,i,j].real, label=('Re '+label if label else None))
+                ax.plot(self.f/1e9, matrix[:,i,j].imag, label=('Im '+label if label else None))
                 ax.set_xlabel('f [GHz]')
                 ax.set_ylabel(parameter.upper()+r'$_{%d%d}$'%(i+1,j+1))
                 ax.set_ylim([-ylim,ylim])    

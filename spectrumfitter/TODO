@@ -1,4 +1,5 @@
 ## high priority
+* put the "replace dialog" in a different place
 * use only the filename as a key, not the entire path
 * loading the fitting parameters
   -> need to verify that model params are compatible
@@ -8,6 +9,7 @@
 * let the user also decide a frequency range in which he wants to fit
 * add fit result "grade"
 * add symbols for windows
+* allow non-integer values for fitting params
 
 ## low priority
 * put .py filter for model files
