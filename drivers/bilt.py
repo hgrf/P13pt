@@ -1,5 +1,9 @@
 """
 Driver for the Bilt voltage sources and voltmeters
+
+for PyVISA 1.8
+
+@author: Holger Graef
 """
 
 import visa
@@ -73,14 +77,30 @@ class BiltVoltageSource:
             status = self.bilt.ask(self.channel+";VOLT:STATUS?")
         
 
-class Bilt(visa.Instrument):
+class Bilt:
     def __init__(self, connection):
-        visa.Instrument.__init__(self, connection)
-        self.term_chars = '\n'
+        self.rm = visa.ResourceManager()
+        self.bilt = self.rm.open_resource(connection)
+        self.bilt.write_termination = '\n'
+        self.bilt.read_termination = '\n'
+        
         if self.ask('I0;*IDN?')[:13] != '"FRAME/BN722B': # if we just ask *IDN? we're probably talking to one of the modules, not the Bilt frame
             raise Exception("Bilt does not respond or is incompatible with this driver")
         if self.ask('SYST:ERROR?')[:4] != '+000':
             raise Exception("Bilt signals error")
+            
+    # just wrapping the main functions of self.bilt
+    def query(self, q):
+        return self.bilt.query(q)
+    
+    def ask(self, q):
+        return self.bilt.query(q)
+    
+    def write(self, q):
+        return self.bilt.write(q)
+    
+    def read_stb(self):
+        return self.bilt.read_stb()
 
 
 if __name__ == '__main__':

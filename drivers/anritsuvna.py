@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Minimal script for communication with anritsu VNA
+Driver for the Anritsu VNA MS4644B
+
+for PyVISA 1.8
+
+refer to Anritsu VNA programming handbook
+for VectorStar MS464xB series
+PN: 10410-00322 Rev. H
 
 @author: Holger Graef and Andreas Inhofer
 """
 
-# for PyVISA 1.4 !!!
-
 import visa
-import struct
-import warnings
+import time
 
-class AnritsuVNA(visa.Instrument):
+class AnritsuVNA:
     ''' Anritsu VNA driver class
     
     Parameters
@@ -22,35 +25,46 @@ class AnritsuVNA(visa.Instrument):
     '''
     # Constants
     AVG_POINT_BY_POINT = 'POIN'
-    AVG_SWEEP_BY_SWEEP = 'SWE'    
+    AVG_SWEEP_BY_SWEEP = 'SWE'
+    TOTAL_PORTS = 2
+    
+    sweeping_port = 0
     
     def __init__(self, connection):
-        visa.Instrument.__init__(self, connection)
-        self.term_chars = '\n'
+        self.rm = visa.ResourceManager()
+        self.vna = self.rm.open_resource(connection)
+        self.vna.write_termination = '\n'
+        self.vna.read_termination = '\n'
         
         # Make sure Data is communicated in the correct format.
         # do this before any other requests, so that we don't get stuck if the
         # VNA tries to speak binary
-        self.write(r':FORM:DATA ASC;')         
+        self.vna.write(r':FORM:DATA ASC;')         
         
-        if not self.ask('*idn?').startswith('ANRITSU,MS4644B'):
+        if not self.vna.query('*IDN?').startswith('ANRITSU,MS4644B'):
             raise Exception('Unsupported device / cannot initialise')
-        # Initialisation that apparently is needed.
-        # ESE: Something with the Standard event status register
-        # SRE: Something with the service enable register (switch to remote?)
-        # CLS: Clear all status bytes
+        # Initialisation (cf. manual, e.g. page 2-34)
+        # ESE: set the standard event status register
+        # SRE: set the service request enable register
+        # CLS: clear all registers
         # FORM:BORD NORM - sets the most significant byte first.
-        self.write('*ESE 60;*SRE 48;*CLS;:FORM:BORD NORM;')
+        self.vna.write('*ESE 60;*SRE 48;*CLS;:FORM:BORD NORM;')
         # Check that everything works fine for the moment.
-        if not self.ask('SYST:ERR?').startswith('No Error'):
+        if not self.vna.query('SYST:ERR?').startswith('No Error'):
             raise Exception('Device error')
+   
+    def read_registers(self):
+        print "Status byte:", self.query('*STB?')
+        print "Standard event status register:", self.query('*ESR?')
+        print "Operation status register:", self.query(':STAT:OPER:COND?')
+        #print "Data transfer at sweep end:", self.query(':TRIG:SEDT?')
 
-    def ask_values_anritsu(self, query_str):
+    def ask_values(self, q):
         ''' Send a query to the VNA and retrieves the returned values.
         
         Parameters
         ----------
-        query_str : str
+        q : str
             The command string.
         
         Returns
@@ -59,29 +73,10 @@ class AnritsuVNA(visa.Instrument):
             VNA data in the binary format that is specified in the
             Anritsu documentation.
         '''
-        with warnings.catch_warnings():
-            # because we tend to leave data in the buffer
-            warnings.filterwarnings("ignore", category=visa.VisaIOWarning)
-            
-            # make sure Data is communicated in the correct format (binary)
-            self.write(':FORM:DATA REAL;')
-            # send query
-            self.write(query_str)
-            # receive data
-            self.term_chars = ''                 # switch off termination char
-            header = visa.vpp43.read(self.vi, 2) # read header-header
-            assert header[0] == '#'              # check if format is OK
-            count = int(header[1])               # read length of header
-            header = visa.vpp43.read(self.vi, count) # read header
-            count = int(header)                  # read length of binary data
-            # NB: the following can crash Spyder if variable explorer is open!
-            data = visa.vpp43.read(self.vi, count)
-            visa.vpp43.read(self.vi, 1)          # read termination character
-            assert len(data) == count            # check if all data was read
-            self.term_chars = '\n'               # switch term char back on
-            self.write(':FORM:DATA ASC;')        # read data in ASCII format
-        # convert from big-endian binary doubles to array of python doubles
-        return struct.unpack('!'+'d'*(count/8), data)
+        self.vna.write(':FORM:DATA REAL;')
+        data = self.vna.query_binary_values(q, datatype='d', is_big_endian=True)
+        self.vna.write(':FORM:DATA ASC;')
+        return data
 
     def get_freq_list(self):
         ''' Retrieves the frequency list from the VNA.
@@ -91,7 +86,7 @@ class AnritsuVNA(visa.Instrument):
         f : array of python doubles
             The frequencies in Hz.
         '''
-        return self.ask_values_anritsu(':SENS1:FREQ:DATA?;')
+        return self.ask_values(':SENS1:FREQ:DATA?')
         
     def get_trace(self, trace_num):
         ''' Retrieves trace number trace_num from the VNA.
@@ -108,7 +103,7 @@ class AnritsuVNA(visa.Instrument):
         '''
         # select desired trace
         self.write(':CALC1:PAR{}:SEL;'.format(trace_num)) 
-        data = self.ask_values_anritsu(':CALC1:DATA:SDAT?')
+        data = self.ask_values(':CALC1:DATA:SDAT?')
         
         sreal = data[::2]
         simag = data[1::2]
@@ -137,28 +132,65 @@ class AnritsuVNA(visa.Instrument):
             table.append(sreal)
             table.append(simag)
         return table
+    
+    def is_sweep_done(self):
+        '''Checks if the sweep is done.
         
-    def single_sweep(self):
+        Every time a port has finished sweeping, the corresponding bit 7 in the
+        status byte register is activated, so we have to iterate over all
+        ports.
+        '''
+        if not self.sweeping_port:
+            raise Exception('No sweep is running')
+        # note: I think this bugs if we use the read_stb() function, because
+        # possibly it might be read this way before the VNA has cleared it
+        # using the *CLS command from the previous execution of this function
+        if int(self.query('*STB?')) & 128:
+            #print 'Port ', self.sweeping_port, ' is done'
+            if self.sweeping_port == self.TOTAL_PORTS:
+                self.sweeping_port = 0
+                self.write('*CLS;')
+                return True
+            else:
+                self.sweeping_port += 1
+                self.write('*CLS;')
+                return self.is_sweep_done()   # check if the next port is ready
+        else:
+            return False
+    
+    def stop_sweep(self):
+        ''' Stops the VNA sweep.
+        '''
+        self.write(':SENS1:HOLD:FUNC HOLD;')
+    
+    def single_sweep(self, wait=True):
         ''' Launch a single sweep (the VNA will hold at the end of the sweep).
         
-        Waits for the sweep to be done.
+        Parameters
+        ----------
+        wait : bool
+            If set to True, the function waits for the sweep to be done.
         '''
+        self.stop_sweep()
+        # tell the VNA to let us know when the sweep is done
+        # detect positive transistion for bit 1 (sweep complete) of the
+        # operation status register see page 2-34
+        self.write(':STAT:OPER:PTR 2')
+        self.write(':STAT:OPER:ENAB 2')
+        self.write('*CLS;')                        # clear the registers
         self.write(':SENS1:HOLD:FUNC SING;')       # single sweep with hold
-        self.write(':TRIG:SING;')                  # trigger single sweep
-
-        timeout = self.timeout
-        self.timeout = 600.
-        
-        self.ask('*STB?')           # ask for status byte (or whatever)        
-        
-        self.timeout = timeout
+        self.write(':TRIG;')
+        self.sweeping_port = 1
+        if wait:
+            while not self.is_sweep_done():
+                time.sleep(0.5)
     
     def _linear_sweep_only(func):
         ''' This decorator verifies that the function is only used when the
         VNA is in linear sweep mode.
         '''
         def magic(self, *args):
-            if self.ask(':SENS:SWE:TYP?') == 'LIN':
+            if self.query(':SENS:SWE:TYP?') == 'LIN':
                 return func(self, *args)
             else:
                 raise Exception('Function '+func.__name__+' can only be used'\
@@ -208,3 +240,20 @@ class AnritsuVNA(visa.Instrument):
         self.enable_averaging()
         self.set_average_count(count)
         self.set_average_type(typ)
+        
+    # just wrapping the main functions of self.vna
+    def query(self, q):
+        return self.vna.query(q)
+    
+    def ask(self, q):
+        return self.vna.query(q)
+    
+    def write(self, q):
+        return self.vna.write(q)
+    
+    def read_stb(self):
+        return self.vna.read_stb()
+    
+
+if __name__ == '__main__':
+    vna = AnritsuVNA('GPIB::6::INSTR')
