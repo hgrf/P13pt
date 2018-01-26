@@ -1,18 +1,20 @@
 # P13 python tools is the new RFLPA
 
-## setting up the dependencies
+## Setting up the dependencies
 
-it is recommended to do this in a virtual environment
+It is recommended to do this in a virtual environment:
 
     virtualenv venv
     . venv/bin/activate
     pip install -r requirements.txt
     
-we also require PyQt5, this requirement is probably already fulfilled (and not always by the same package, so I did not put it in the requirements.txt)
+We also require PyQt5, this requirement is probably already fulfilled (and not always by the same package, so I did not put it in the requirements.txt).
+
+If you wish to use the "driver" for the Zurich Instruments lock-in amplifier, you should install version 16.04 of ziPython.
 
 TODO: instructions for installation with Anaconda
 
-## building the doc
+## Building the doc
 
 cd into the docs directory and execute
 
@@ -20,7 +22,7 @@ cd into the docs directory and execute
     
 then the doc can be accessed: /docs/\_build/html/index.html
 
-## file name strucure
+## File name strucure for data files
 
 file names for DC or RF data should contain parameters separated by underscores, i.e. in the format "...\_name=value\_..."
 
@@ -35,7 +37,7 @@ for readability and easy interpretation by the analysis scripts, the parameter v
 it is possible to add parameters without value, they will be added to the parameter dictionary, but not assigned any value (useful for "flagging" files)
 
 
-## file structure
+## Data file structure
 
 values should be separated by tabs, the decimal point should be "."
 

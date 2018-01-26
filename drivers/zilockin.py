@@ -1,10 +1,16 @@
+"""
+Driver for the Scientific Instruments 9700 temperature controller
+
+for ziPython 16.04
+
+@author: Holger Graef
+"""
+
 import zhinst.ziPython, zhinst.utils
 import pprint
 import numpy as np
 import os
 import errno
-
-# TODO: check version of zhinst here!
 
 class ZILockin:
     def __init__(self, ziDAQ_address='localhost', ziDAQ_port=8005, channel=1, polltime=0.005):
@@ -75,3 +81,6 @@ class ZILockin:
     def tidy_up(self):
         # unsubscribe to scope
         self.daq.unsubscribe(self.path0)
+        
+if __name__ == '__main__':
+    zi = ZILockin()
