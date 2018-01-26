@@ -7,6 +7,10 @@ it is recommended to do this in a virtual environment
     virtualenv venv
     . venv/bin/activate
     pip install -r requirements.txt
+    
+we also require PyQt5, this requirement is probably already fulfilled (and not always by the same package, so I did not put it in the requirements.txt)
+
+TODO: instructions for installation with Anaconda
 
 ## building the doc
 
@@ -34,7 +38,5 @@ it is possible to add parameters without value, they will be added to the parame
 ## file structure
 
 values should be separated by tabs, the decimal point should be "."
-
-there should be only one sweeped parameter (e.g. gate voltage or source drain voltage) per file, if possible
 
 comments should be at the beginning of the file and preceeded by a hashtag "#"
