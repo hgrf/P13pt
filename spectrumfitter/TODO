@@ -8,7 +8,6 @@
 * add button to readjust x+y axis and to reset zoom home
 * let the user also decide a frequency range in which he wants to fit
 * add fit result "grade"
-* add symbols for windows
 * allow non-integer values for fitting params
 
 ## low priority

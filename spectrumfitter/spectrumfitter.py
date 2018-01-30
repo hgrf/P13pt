@@ -340,7 +340,7 @@ class MainWindow(QSplitter):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
-        browse_icon = QIcon.fromTheme('folder')
+        browse_icon = QIcon('../icons/folder.png')
 
         # set up data loading area
         self.data_loading = QWidget()
@@ -351,8 +351,8 @@ class MainWindow(QSplitter):
         self.txt_dummy = QLineEdit('Path to dummy...')
         self.btn_browsedummy = QPushButton(browse_icon, '')
         self.btn_load = QPushButton('Load')
-        self.btn_prev = QPushButton(QIcon.fromTheme('go-previous'), '')
-        self.btn_next = QPushButton(QIcon.fromTheme('go-next'), '')
+        self.btn_prev = QPushButton(QIcon('../icons/previous.png'), '')
+        self.btn_next = QPushButton(QIcon('../icons/next.png'), '')
         l = QVBoxLayout()
         for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut],
                       [QLabel('Thru:'), self.txt_thru, self.btn_browsethru],
