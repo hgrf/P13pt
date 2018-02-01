@@ -70,13 +70,13 @@ class Measurement(MeasurementBase):
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
 
-        # prepare saving data
-        filename = timestamp + '_' + (comment if comment else '') + '.txt'
-        self.prepare_saving(os.path.join(data_dir, filename))
+        # prepare saving DC data
+        filename = timestamp + ('_'+comment if comment else '')
+        self.prepare_saving(os.path.join(data_dir, filename+'.txt'))
 
         # prepare saving RF data
         if useVNA:
-            spectra_fol = os.path.join(data_dir, timestamp)
+            spectra_fol = os.path.join(data_dir, filename)
             try:
                 os.makedirs(spectra_fol)
             except OSError as e:

@@ -51,11 +51,11 @@ class Measurement(MeasurementBase):
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
 
         # prepare saving DC data
-        filename = timestamp + ('_'+comment if comment else '') + '.txt'
-        self.prepare_saving(os.path.join(data_dir, filename))
+        filename = timestamp + ('_'+comment if comment else '')
+        self.prepare_saving(os.path.join(data_dir, filename+'.txt'))
 
         # prepare saving RF data
-        spectra_fol = os.path.join(data_dir, timestamp)
+        spectra_fol = os.path.join(data_dir, filename)
         try:
             os.makedirs(spectra_fol)
         except OSError as e:
@@ -87,12 +87,7 @@ class Measurement(MeasurementBase):
             # save VNA data
             print "Getting VNA spectra..."
             vna.single_sweep()
-            table = []
-            table.append(self.freqs)
-            for i in range(4):
-                sreal, simag = vna.get_trace(i+1)     # get real and imag part of i-th trace
-                table.append(sreal)
-                table.append(simag)
+            table = vna.get_table([1,2,3,4])
             timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')  
             spectrum_file = timestamp+'_Vg=%2.4f'%(Vg)+'.txt'
             np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
@@ -103,9 +98,7 @@ class Measurement(MeasurementBase):
 
     def tidy_up(self):
         self.end_saving()
-
         print "Driving all voltages back to zero..."
-
         self.sourceVg.set_voltage(0.)
 
 
