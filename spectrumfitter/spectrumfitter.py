@@ -279,7 +279,11 @@ class Fitter(QWidget):
 
     def load_results(self):
         # read the data
-        data = load_fitresults(self.txt_resultsfile.text(), False)
+        try:
+            data = load_fitresults(self.txt_resultsfile.text(), False)
+        except IOError:
+            QMessageBox.warning(self, 'Error', 'Could not load data')
+            return
 
         # check at least the filename field is present in the data
         if not data or 'filename' not in data:
@@ -504,8 +508,8 @@ class MainWindow(QSplitter):
 
         if first_load:
             self.ax.set_xlim([min(dut.f/1e9), max(dut.f/1e9)])
-        self.ax.plot(dut.f/1e9, dut.y[:,0,1].real*1e3, label='Real')
-        self.ax.plot(dut.f/1e9, dut.y[:,0,1].imag*1e3, label='Imag')
+        self.ax.plot(dut.f/1e9, -dut.y[:,0,1].real*1e3, label='Real')
+        self.ax.plot(dut.f/1e9, -dut.y[:,0,1].imag*1e3, label='Imag')
         if first_load:
             self.figure.canvas.toolbar.update()
         self.ax.set_title(', '.join([key+'='+str(params[key]) for key in params]))
@@ -539,7 +543,7 @@ class MainWindow(QSplitter):
 
         # update model lines on plot
         f = np.asarray(self.f)
-        y = -self.fitter.model.admittance(2.*np.pi*f, **self.fitter.model.values)  # - (minus) as a convention because we are looking at Y12
+        y = self.fitter.model.admittance(2.*np.pi*f, **self.fitter.model.values)  # - (minus) as a convention because we are looking at Y12
 
         if self.line_r:
             self.line_r.set_ydata(y.real*1e3)

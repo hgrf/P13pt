@@ -1,16 +1,29 @@
 ## high priority
+* add button to readjust x+y axis and to reset zoom home
 * put the "replace dialog" in a different place
 * use only the filename as a key, not the entire path
 * loading the fitting parameters
   -> need to verify that model params are compatible
   -> need to verify that dataset is compatible
   -> need to update plotting area after loading
-* add button to readjust x+y axis and to reset zoom home
+
 * let the user also decide a frequency range in which he wants to fit
-* add fit result "grade"
 * allow non-integer values for fitting params
+* need to be able to modify range of sliders
+* put a function to export deembedded admittance spectra
 
 ## low priority
+* make a program that can plot spectra from fitresults (by clicking on datapoints)
+* remove redundancy self.dut.f vs. self.f
+* error when loading model before spectra
+* legend real and imag
+* enable user to choose which Y parameter
+* we should impose the order of the parameters
+* the default fit method could be created automatically / be in a base class
+* make a history of fitting values every time they change so that the user can restore what was before fit
+* avoid that script saves results in a file calles "Path to results file..."
+* add fit result "grade"
+* mention Andreas' DFO in spectrumfitter info
 * put .py filter for model files
 * save results file in windows compatible format (CRLF)
 * check dataset coherence (i.e. all spectra have same number of frequency points and values can be read etc.)
@@ -20,13 +33,3 @@
 * the save results section should rather be controlled by the main widget since it manages all the model results too
 * no need for signal mapper for sliders, can just update all model values using slider dictionary
 * reset_values should not be in the model class
-* make icon buttons for navigation etc.
-* enable automatic fitting (i.e. for whole dataset + saving params)
-* remove redundancy self.dut.f vs. self.f
-* error when loading model before spectra
-* legend real and imag
-* enable user to choose which Y parameter
-* we should impose the order of the parameters
-* the default fit method could be created automatically / be in a base class
-* make a history of fitting values every time they change so that the user can restore what was before fit
-* avoid that script saves results in a file calles "Path to results file..."
