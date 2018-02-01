@@ -89,7 +89,6 @@ class Model:
 
     def fit_default(self, f, y, checkboxes):
         w = 2.*np.pi*f
-        y = -y  # minus sign because Y12 and not Y11
 
         # create fit parameters
         params = Parameters()
@@ -114,7 +113,7 @@ class Model:
         # fit
         for i, mask in enumerate(masks):
             w = 2.*np.pi*base_f[mask]
-            y = -base_y[mask]  # minus sign because Y12 and not Y11
+            y = base_y[mask]  # minus sign because Y12 and not Y11
 
             # create fit parameters
             params = Parameters()
@@ -133,7 +132,7 @@ class Model:
 
     def fit_firstguess(self, f, y):
         # get leak conductance from the real part of the low frequency admittance
-        gl = np.mean(-y[f<2e7].real)
+        gl = np.mean(y[f<2e7].real)
 
         # get crossover frequency
         mask = f > 3e8  # avoid detecting the crossover associated with the leak
@@ -142,7 +141,7 @@ class Model:
 
         # get capacitance
         mask = f < 3e8
-        c = np.mean(-y[mask].imag/(2.*np.pi*f[mask]))
+        c = np.mean(y[mask].imag/(2.*np.pi*f[mask]))
         r = 1./(2.*np.pi*fc*c)
 
         self.values['gl'] = gl
@@ -158,7 +157,7 @@ class Model:
         # fit
         for i, mask in enumerate(masks):
             w = 2.*np.pi*base_f[mask]
-            y = -base_y[mask]  # minus sign because Y12 and not Y11
+            y = base_y[mask]  # minus sign because Y12 and not Y11
 
             # create fit parameters
             params = Parameters()
@@ -187,7 +186,7 @@ class Model:
 
         for i, mask in enumerate(masks):
             w = 2.*np.pi*base_f[mask]
-            y = -base_y[mask]  # minus sign because Y12 and not Y11
+            y = base_y[mask]  # minus sign because Y12 and not Y11
 
             # create fit parameters
             params = Parameters()
@@ -215,7 +214,7 @@ class Model:
 
         for i, mask in enumerate(masks):
             w = 2.*np.pi*base_f[mask]
-            y = -base_y[mask]  # minus sign because Y12 and not Y11
+            y = base_y[mask]  # minus sign because Y12 and not Y11
 
             # create fit parameters
             params = Parameters()

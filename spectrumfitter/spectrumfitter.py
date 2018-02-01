@@ -24,7 +24,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 import matplotlib.pyplot as plt
 import numpy as np
-import copy
+from copy import copy
 
 def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
     # read results file
@@ -80,7 +80,6 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
         return data, dut, thru, dummy, model
 
 
-
 def clearLayout(layout):
     for i in reversed(range(layout.count())):
         item = layout.itemAt(i)
@@ -92,258 +91,27 @@ def clearLayout(layout):
 
         layout.removeItem(item)
 
-class Fitter(QWidget):
-    model_changed = pyqtSignal()
-    model = None
-    model_file = None
-    sliders = {}
-    checkboxes = {}
-
-    def __init__(self, parent=None):
-        super(Fitter, self).__init__(parent)
-
-        self.txt_model = QLineEdit('Path to model...', self)
-        self.btn_browsemodel = QPushButton('Browse', self)
-        self.btn_loadmodel = QPushButton('Load', self)
-        self.cmb_fitmethod = QComboBox(self)
-        self.btn_fit = QPushButton('Fit', self)
-        self.btn_fitall = QPushButton('Fit all', self)
-
-        self.sliders = QWidget(self)
-        self.sl_layout = QVBoxLayout()
-        self.sliders.setLayout(self.sl_layout)
-
-        self.txt_picfolder = QLineEdit('Path to picture folder...', self)
-        self.btn_browsepicfolder = QPushButton('Browse', self)
-        self.btn_savepic = QPushButton('Save current picture', self)
-        self.btn_saveallpics = QPushButton('Save all pictures', self)
-
-        self.txt_resultsfile = QLineEdit('Path to results file...', self)
-        self.btn_browseresults = QPushButton('Browse', self)
-        self.btn_saveresults = QPushButton('Save', self)
-        self.btn_loadresults = QPushButton('Load', self)
-
-        # set the layout
-        layout = QVBoxLayout()
-        for widget in [self.txt_model, self.btn_browsemodel, self.btn_loadmodel,
-                       self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliders,
-                       self.txt_picfolder, self.btn_browsepicfolder, self.btn_savepic, self.btn_saveallpics,
-                       self.txt_resultsfile, self.btn_browseresults, self.btn_saveresults, self.btn_loadresults]:
-            layout.addWidget(widget)
-        self.setLayout(layout)
-
-        # make connections
-        self.btn_browsemodel.clicked.connect(self.browse_model)
-        self.btn_loadmodel.clicked.connect(self.load_model)
-        self.btn_fit.clicked.connect(self.fit_model)
-        self.btn_fitall.clicked.connect(self.fit_all)
-        self.cmb_fitmethod.currentIndexChanged.connect(self.fitmethod_changed)
-        self.btn_browseresults.clicked.connect(self.browse_results)
-        self.btn_saveresults.clicked.connect(self.save_results)
-        self.btn_loadresults.clicked.connect(self.load_results)
-        self.btn_browsepicfolder.clicked.connect(self.browse_picfolder)
-        self.btn_savepic.clicked.connect(self.savepic)
-        self.btn_saveallpics.clicked.connect(self.saveallpics)
-
-    def browse_model(self):
-        model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model', directory=os.path.dirname(__file__),
-                                                         filter='*.py')
-        self.txt_model.setText(model_file)
-        config.set('main', 'model', model_file)
-
-    def load_model(self):
-        # unload previous model
-        clearLayout(self.sl_layout)
-        self.sliders = {}
-        self.checkboxes = {}
-        self.cmb_fitmethod.clear()
-
-        # check if we are dealing with a valid module
-        filename = str(self.txt_model.text())
-        mod_name, file_ext = os.path.splitext(os.path.split(filename)[-1])
-        try:
-            mod = imp.load_source(mod_name, filename)
-        except IOError as e:
-            QMessageBox.critical(self, "Error", "Could not load module: "+str(e.args[1]))
-            return
-        if not hasattr(mod, 'Model'):
-            QMessageBox.critical(self, "Error", "Could not get correct class from file.")
-            return
-        self.model = getattr(mod, 'Model')()
-        self.model_file = filename
-        for member in inspect.getmembers(self.model, predicate=inspect.ismethod):
-            if member[0].startswith('fit_'):
-                # check if for this function we want to show checkboxes or not
-                if len(inspect.getargspec(member[1]).args) == 4:
-                    enable_checkboxes = True
-                else:
-                    enable_checkboxes = False
-                self.cmb_fitmethod.addItem(member[0][4:], enable_checkboxes)
-        for p in self.model.params:
-            label = QLabel(p+' ['+str(self.model.params[p][4])+']')
-            sl = QSlider(Qt.Horizontal)
-            self.sliders[p] = sl
-            sl.id = p
-            sl.setMinimum(self.model.params[p][0])
-            sl.setMaximum(self.model.params[p][1])
-            sb = QSpinBox()
-            sb.setMinimum(self.model.params[p][0])
-            sb.setMaximum(self.model.params[p][1])
-            cb = QCheckBox()
-            self.checkboxes[p] = cb
-            map = QSignalMapper(self)
-            sl.valueChanged[int].connect(sb.setValue)
-            sb.valueChanged[int].connect(sl.setValue)
-            sl.valueChanged[int].connect(map.map)
-            sl.setValue(self.model.params[p][2])
-            map.mapped[QWidget].connect(self.value_changed)
-            map.setMapping(sl, sl)
-            l = QHBoxLayout()
-            l.addWidget(label)
-            l.addWidget(sl)
-            l.addWidget(sb)
-            l.addWidget(cb)
-            self.sl_layout.addLayout(l)
-        self.enable_checkboxes(self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()))
-        self.model_changed.emit()
-
-    def fit_model(self):
-        if self.model:
-            fit_method = getattr(self.model, 'fit_'+str(self.cmb_fitmethod.currentText()))
-            if self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()):
-                fit_method(self.parent().get_f(), self.parent().get_y(), self.checkboxes)
-            else:
-                fit_method(self.parent().get_f(), self.parent().get_y())
-            for p in self.model.values:
-                self.sliders[p].setValue(self.model.values[p]/self.model.params[p][3])
-
-    def fit_all(self):
-        for i in range(len(self.parent().dut_files)):
-            self.parent().current_index = i
-            self.parent().load_spectrum()
-            self.fit_model()
-            QApplication.processEvents()
-
-    def value_changed(self, slider):
-        self.model.values[slider.id] = slider.value()*self.model.params[slider.id][3]
-        self.model_changed.emit()
-
-    def enable_checkboxes(self, b=True):
-        for p in self.checkboxes:
-            self.checkboxes[p].setEnabled(b)
-
-    def fitmethod_changed(self):
-        enable_checkboxes = self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex())
-        self.enable_checkboxes(enable_checkboxes)
-
-    def update_values(self, values):
-        self.model.values.update(values)
-        for p in self.model.values:
-            self.sliders[p].setValue(self.model.values[p]/self.model.params[p][3])
-        self.model_changed.emit()
-
-    def reset_values(self):
-        if self.model:
-            self.model.reset_values()
-        for p in self.model.values:
-            self.sliders[p].setValue(self.model.values[p]/self.model.params[p][3])
-        self.model_changed.emit()
-
-    def browse_results(self):
-        results_file, filter = QFileDialog.getSaveFileName(self, 'Results file')
-        self.txt_resultsfile.setText(results_file)
-
-    def save_results(self):
-        if self.txt_resultsfile.text() == 'Path to results file...' or self.txt_resultsfile.text() == '':
-            QMessageBox.warning(self, 'Error', 'Please select a valid results file for saving.')
-            return
-        with open(self.txt_resultsfile.text(), 'w') as f:
-            # write the header
-            f.write('# fitting results generated by P13pt spectrum fitter\n')
-            f.write('# thru:\t'+self.parent().thru_file+'\n')
-            f.write('# dummy:\t' +self.parent().dummy_file+'\n')
-            f.write('# dut:\t'+os.path.dirname(self.parent().dut_files[0])+'\n')
-            f.write('# model:\t'+self.model_file+'\n')
-
-            # determine columns
-            f.write('# filename\t')
-            for p in self.parent().dut.params:
-                f.write(p+'\t')
-            f.write('\t'.join([p for p in self.model.params]))
-            f.write('\n')
-
-            # write data
-            filelist = sorted([filename for filename in self.parent().model_params])
-            for filename in filelist:
-                f.write(filename+'\t')
-                for p in self.parent().dut.params:                  # TODO: what if some filenames do not contain all parameters? should catch exceptions
-                    f.write(str(params_from_filename(filename)[p])+'\t')
-                f.write('\t'.join([str(self.parent().model_params[filename][p]) for p in self.model.params]))
-                f.write('\n')
-
-    def load_results(self):
-        # read the data
-        try:
-            data = load_fitresults(self.txt_resultsfile.text(), False)
-        except IOError:
-            QMessageBox.warning(self, 'Error', 'Could not load data')
-            return
-
-        # check at least the filename field is present in the data
-        if not data or 'filename' not in data:
-            QMessageBox.warning(self, 'Error', 'Could not load data')
-            return
-
-        # empty the model parameters dictionary
-        self.parent().model_params = {}
-
-        # get a list of parameter names
-        params = [p for p in data]
-        unusable = []
-        # now check float conversion compatibility of the data columns, removing the ones that we cannot use
-        for p in params:
-            try:
-                data[p] = [float(x) for x in data[p]]
-            except ValueError:
-                unusable.append(p)
-        for p in unusable:
-            params.remove(p)
-
-        for i,f in enumerate(data['filename']):
-             # careful, this will also add the parameters from the filename to the model params
-             # TODO: repair this (i.e. let the load_fitresults function inform the user about the number of filename parameters that need to be taken into account)
-             values = [float(data[p][i]) for p in params]
-             self.parent().model_params[f] = dict(zip(params, values))
-             #print dict(zip(params, values))
-
-    def browse_picfolder(self):
-        folder = QFileDialog.getExistingDirectory(self, 'Choose folder')
-        self.txt_picfolder.setText(folder)
-
-    def savepic(self):
-        if self.parent().dut:
-            name, ext = os.path.splitext(os.path.basename(self.parent().dut_files[self.parent().current_index]))
-            self.parent().figure.savefig(os.path.join(self.txt_picfolder.text(), name+'.png'))
-
-    def saveallpics(self):
-        for i in range(len(self.parent().dut_files)):
-            self.parent().current_index = i
-            self.parent().load_spectrum()
-            self.savepic()
-            QApplication.processEvents()
-
 
 class MainWindow(QSplitter):
     f = []
     dut_files = []
     duts = {}
     dut = None
+    y = None
     thru_file = ''
+    thru = None
     dummy_file = ''
+    dummy = None
+    dut_folder = ''
     current_index = 0
     line_r = None
     line_i = None
     model_params = {}
+    fitted_param = '-Y12'
+    model = None
+    model_file = None
+    sliders = {}
+    checkboxes = {}
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -397,7 +165,44 @@ class MainWindow(QSplitter):
         self.left_widget.setLayout(l)
 
         # set up fitting area
-        self.fitter = Fitter(self)
+        self.fitting = QWidget()
+        self.txt_model = QLineEdit('Path to model...')
+        self.btn_browsemodel = QPushButton('Browse')
+        self.btn_loadmodel = QPushButton('Load')
+        self.cmb_fitmethod = QComboBox()
+        self.btn_fit = QPushButton('Fit')
+        self.btn_fitall = QPushButton('Fit all')
+        self.sliders = QWidget()
+        self.sl_layout = QVBoxLayout()
+        self.sliders.setLayout(self.sl_layout)
+        l = QVBoxLayout()
+        for w in [self.txt_model, self.btn_browsemodel, self.btn_loadmodel,
+                  self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliders]:
+            l.addWidget(w)
+        self.fitting.setLayout(l)
+
+        # set up picture and data saving area
+        self.saving = QWidget()
+        self.txt_picfolder = QLineEdit('Path to picture folder...')
+        self.btn_browsepicfolder = QPushButton('Browse')
+        self.btn_savepic = QPushButton('Save current picture')
+        self.btn_saveallpics = QPushButton('Save all pictures')
+        self.txt_resultsfile = QLineEdit('Path to results file...')
+        self.btn_browseresults = QPushButton('Browse')
+        self.btn_saveresults = QPushButton('Save')
+        self.btn_loadresults = QPushButton('Load')
+        l = QVBoxLayout()
+        for w in [self.txt_picfolder, self.btn_browsepicfolder, self.btn_savepic, self.btn_saveallpics,
+                  self.txt_resultsfile, self.btn_browseresults, self.btn_saveresults, self.btn_loadresults]:
+            l.addWidget(w)
+        self.saving.setLayout(l)
+
+        # set up right widget of the splitter
+        self.right_widget = QWidget(self)
+        l = QVBoxLayout()
+        l.addWidget(self.fitting)
+        l.addWidget(self.saving)
+        self.right_widget.setLayout(l)
 
         # make connections
         self.map_browse = QSignalMapper(self)
@@ -408,14 +213,24 @@ class MainWindow(QSplitter):
         self.btn_load.clicked.connect(self.load)
         self.btn_prev.clicked.connect(self.prev_spectrum)
         self.btn_next.clicked.connect(self.next_spectrum)
-        self.fitter.model_changed.connect(self.plot_fit)
+        self.btn_browsemodel.clicked.connect(self.browse_model)
+        self.btn_loadmodel.clicked.connect(self.load_model)
+        self.btn_fit.clicked.connect(self.fit_model)
+        self.btn_fitall.clicked.connect(self.fit_all)
+        self.cmb_fitmethod.currentIndexChanged.connect(self.fitmethod_changed)
+        self.btn_browseresults.clicked.connect(self.browse_results)
+        self.btn_saveresults.clicked.connect(self.save_results)
+        self.btn_loadresults.clicked.connect(self.load_results)
+        self.btn_browsepicfolder.clicked.connect(self.browse_picfolder)
+        self.btn_savepic.clicked.connect(self.savepic)
+        self.btn_saveallpics.clicked.connect(self.saveallpics)
 
         # load config
         if config.has_section('main'):
             if config.has_option('main', 'dut'): self.txt_dut.setText(config.get('main', 'dut'))
             if config.has_option('main', 'thru'): self.txt_thru.setText(config.get('main', 'thru'))
             if config.has_option('main', 'dummy'): self.txt_dummy.setText(config.get('main', 'dummy'))
-            if config.has_option('main', 'model'): self.fitter.txt_model.setText(config.get('main', 'model'))
+            if config.has_option('main', 'model'): self.txt_model.setText(config.get('main', 'model'))
         else:
             config.add_section('main')
 
@@ -432,15 +247,6 @@ class MainWindow(QSplitter):
         # Set window title
         self.setWindowTitle("Spectrum Fitter")
 
-    def get_f(self):
-        if self.dut:
-            return self.dut.f
-        else:
-            return []
-
-    def get_y(self):
-        return self.dut.y[:,0,1]
-
     def browse(self, x):
         # open browser and update the text field
         folder = QFileDialog.getExistingDirectory(self, 'Choose dataset')
@@ -454,26 +260,33 @@ class MainWindow(QSplitter):
         self.current_index = 0
         self.model_params = {}
         self.duts = {}
-        self.dut_files = sorted(glob(os.path.join(str(self.txt_dut.text()), '*.txt')),
-                                key=lambda x: params_from_filename(x)['timestamp'])
+        self.dut_folder = str(self.txt_dut.text())
+        self.dut_files = [os.path.basename(x) for x in sorted(glob(os.path.join(self.dut_folder, '*.txt')))]
 
         if len(self.dut_files) < 1:
             QMessageBox.warning(self, 'Warning', 'Please select a valid DUT folder')
+            self.dut_folder = ''
             return
 
         dummy_files = glob(os.path.join(str(self.txt_dummy.text()), '*.txt'))
         if len(dummy_files) != 1:
             self.txt_dummy.setText('Please select a valid dummy folder')
             self.dummy_file = ''
+            self.dummy = None
         else:
             self.dummy_file, = dummy_files
+            self.dummy = Network(self.dummy_file)
 
         thru_files = glob(os.path.join(str(self.txt_thru.text()), '*.txt'))
         if len(thru_files) != 1:
             self.txt_thru.setText('Please select a valid thru folder')
             self.thru_file = ''
+            self.thru = None
         else:
             self.thru_file, = thru_files
+            self.thru = Network(self.thru_file)
+            if self.dummy:
+                self.dummy = self.dummy.deembed_thru(self.thru)
 
         self.load_spectrum(True)
 
@@ -490,41 +303,37 @@ class MainWindow(QSplitter):
         self.line_r = None
         self.line_i = None
 
-        params = params_from_filename(self.dut_files[self.current_index])
+        params = params_from_filename(os.path.join(self.dut_folder, self.dut_files[self.current_index]))
         if not first_load and self.dut_files[self.current_index] in self.duts:
-            self.dut = dut = self.duts[self.dut_files[self.current_index]]
+            self.dut = self.duts[self.dut_files[self.current_index]]
         else:
             # load spectra
-            self.dut = dut = Network(self.dut_files[self.current_index])
+            self.dut = Network(os.path.join(self.dut_folder, self.dut_files[self.current_index]))
+            if self.thru:
+                self.dut = self.dut.deembed_thru(self.thru)
+            if self.dummy:
+                self.dut.y -= self.dummy.y
+            self.duts[self.dut_files[self.current_index]] = copy(self.dut)
 
-            # TODO: tidy up this mess, especially the self.dut / dut weirdness (and be careful!)
-            if self.dummy_file:
-                dummy = Network(self.dummy_file)
-            if self.thru_file:
-                thru = Network(self.thru_file)
-                if self.dummy_file:
-                    dummy = dummy.deembed_thru(thru)
-                self.dut = dut = dut.deembed_thru(thru)
-            if self.dummy_file:
-                dut.y -= dummy.y
-
-            self.duts[self.dut_files[self.current_index]] = copy.copy(dut)
-
-        if first_load:
-            self.ax.set_xlim([min(dut.f/1e9), max(dut.f/1e9)])
-        self.ax.plot(dut.f/1e9, -dut.y[:,0,1].real*1e3, label='Real')
-        self.ax.plot(dut.f/1e9, -dut.y[:,0,1].imag*1e3, label='Imag')
-        if first_load:
-            self.figure.canvas.toolbar.update()
         self.ax.set_title(', '.join([key+'='+str(params[key]) for key in params]))
+        if self.fitted_param == 'Y12':
+            self.y = self.dut.y[:,0,1]
+        elif self.fitted_param == '-Y12':
+            self.y = -self.dut.y[:,0,1]
+        else:
+            raise Exception('Unsupported parameter')
+        self.ax.plot(self.dut.f/1e9, self.y.real*1e3, label='Real')
+        self.ax.plot(self.dut.f/1e9, self.y.imag*1e3, label='Imag')
+        if first_load:
+            self.ax.set_xlim([min(self.dut.f/1e9), max(self.dut.f/1e9)])
+            self.figure.canvas.toolbar.update()
 
         # draw model if available
-        self.f = dut.f
-        if self.fitter.model:
+        if self.model:
             if self.dut_files[self.current_index] in self.model_params:
-                self.fitter.update_values(self.model_params[self.dut_files[self.current_index]])
+                self.update_values(self.model_params[self.dut_files[self.current_index]])
             else:
-                self.fitter.reset_values()
+                self.reset_values()
 
         # update canvas
         self.canvas.draw()
@@ -546,8 +355,8 @@ class MainWindow(QSplitter):
             return
 
         # update model lines on plot
-        f = np.asarray(self.f)
-        y = self.fitter.model.admittance(2.*np.pi*f, **self.fitter.model.values)  # - (minus) as a convention because we are looking at Y12
+        f = np.asarray(self.dut.f)
+        y = self.model.admittance(2.*np.pi*f, **self.model.values)
 
         if self.line_r:
             self.line_r.set_ydata(y.real*1e3)
@@ -558,7 +367,211 @@ class MainWindow(QSplitter):
         self.canvas.draw()
 
         # store new model data
-        self.model_params[self.dut_files[self.current_index]] = copy.copy(self.fitter.model.values)
+        self.model_params[self.dut_files[self.current_index]] = copy(self.model.values)
+
+    def browse_model(self):
+        model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model', directory=os.path.dirname(__file__),
+                                                         filter='*.py')
+        self.txt_model.setText(model_file)
+        config.set('main', 'model', model_file)
+
+    def load_model(self):
+        # unload previous model
+        clearLayout(self.sl_layout)
+        self.sliders = {}
+        self.checkboxes = {}
+        self.cmb_fitmethod.clear()
+
+        # check if we are dealing with a valid module
+        filename = str(self.txt_model.text())
+        mod_name, file_ext = os.path.splitext(os.path.split(filename)[-1])
+        try:
+            mod = imp.load_source(mod_name, filename)
+        except IOError as e:
+            QMessageBox.critical(self, "Error", "Could not load module: " + str(e.args[1]))
+            return
+        if not hasattr(mod, 'Model'):
+            QMessageBox.critical(self, "Error", "Could not get correct class from file.")
+            return
+        self.model = getattr(mod, 'Model')()
+        self.model_file = filename
+        for member in inspect.getmembers(self.model, predicate=inspect.ismethod):
+            if member[0].startswith('fit_'):
+                # check if for this function we want to show checkboxes or not
+                if len(inspect.getargspec(member[1]).args) == 4:
+                    enable_checkboxes = True
+                else:
+                    enable_checkboxes = False
+                self.cmb_fitmethod.addItem(member[0][4:], enable_checkboxes)
+        for p in self.model.params:
+            label = QLabel(p + ' [' + str(self.model.params[p][4]) + ']')
+            sl = QSlider(Qt.Horizontal)
+            self.sliders[p] = sl
+            sl.id = p
+            sl.setMinimum(self.model.params[p][0])
+            sl.setMaximum(self.model.params[p][1])
+            sb = QSpinBox()
+            sb.setMinimum(self.model.params[p][0])
+            sb.setMaximum(self.model.params[p][1])
+            cb = QCheckBox()
+            self.checkboxes[p] = cb
+            map = QSignalMapper(self)
+            sl.valueChanged[int].connect(sb.setValue)
+            sb.valueChanged[int].connect(sl.setValue)
+            sl.valueChanged[int].connect(map.map)
+            sl.setValue(self.model.params[p][2])
+            map.mapped[QWidget].connect(self.value_changed)
+            map.setMapping(sl, sl)
+            l = QHBoxLayout()
+            l.addWidget(label)
+            l.addWidget(sl)
+            l.addWidget(sb)
+            l.addWidget(cb)
+            self.sl_layout.addLayout(l)
+        self.enable_checkboxes(self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()))
+        self.plot_fit()
+
+    def fit_model(self):
+        if self.model:
+            fit_method = getattr(self.model, 'fit_' + str(self.cmb_fitmethod.currentText()))
+            if self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()):
+                fit_method(self.dut.f, self.y, self.checkboxes)
+            else:
+                fit_method(self.dut.f, self.y)
+            for p in self.model.values:
+                self.sliders[p].setValue(self.model.values[p] / self.model.params[p][3])
+
+    def fit_all(self):
+        for i in range(len(self.dut_files)):
+            self.current_index = i
+            self.load_spectrum()
+            self.fit_model()
+            QApplication.processEvents()
+
+    def value_changed(self, slider):
+        self.model.values[slider.id] = slider.value() * self.model.params[slider.id][3]
+        self.plot_fit()
+
+    def enable_checkboxes(self, b=True):
+        for p in self.checkboxes:
+            self.checkboxes[p].setEnabled(b)
+
+    def fitmethod_changed(self):
+        enable_checkboxes = self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex())
+        self.enable_checkboxes(enable_checkboxes)
+
+    def update_values(self, values):
+        self.model.values.update(values)
+        for p in self.model.values:
+            self.sliders[p].setValue(self.model.values[p] / self.model.params[p][3])
+        self.plot_fit()
+
+    def reset_values(self):
+        if self.model:
+            self.model.reset_values()
+        for p in self.model.values:
+            self.sliders[p].setValue(self.model.values[p] / self.model.params[p][3])
+        self.plot_fit()
+
+    def browse_results(self):
+        results_file, filter = QFileDialog.getSaveFileName(self, 'Results file')
+        self.txt_resultsfile.setText(results_file)
+
+    def save_results(self):
+        res_fname = self.txt_resultsfile.text()
+        res_folder = os.path.dirname(res_fname)
+        if not res_fname or res_fname == 'Path to results file...':
+            QMessageBox.warning(self, 'Error', 'Please select a valid results file for saving.')
+            return
+        with open(self.txt_resultsfile.text(), 'w') as f:
+            # write the header
+            f.write('# fitting results generated by P13pt spectrum fitter\n')
+            f.write('# dut: ' + os.path.relpath(self.dut_folder, res_folder) + '\n')
+            f.write('# thru: ' + os.path.relpath(self.thru_file, res_folder) + '\n')
+            f.write('# dummy: ' + os.path.relpath(self.dummy_file, res_folder) + '\n')
+            f.write('# model: ' + os.path.basename(self.model_file) + '\n')
+
+            # determine columns
+            f.write('# filename\t')
+            for p in self.dut.params:
+                f.write(p + '\t')
+            f.write('\t'.join([p for p in self.model.params]))
+            f.write('\n')
+
+            # write data
+            filelist = sorted([filename for filename in self.model_params])
+            for filename in filelist:
+                f.write(filename + '\t')
+                # TODO: what if some filenames do not contain all parameters? should catch exceptions
+                for p in self.dut.params:
+                    f.write(str(params_from_filename(filename)[p]) + '\t')
+                f.write('\t'.join([str(self.model_params[filename][p]) for p in self.model.params]))
+                f.write('\n')
+
+    def load_results(self):
+        res_fname = self.txt_resultsfile.text()
+        res_folder = os.path.dirname(res_fname)
+        # read the data
+        try:
+            data, dut, thru, dummy, model = load_fitresults(res_fname, readfilenameparams=False, extrainfo=True)
+        except IOError:
+            QMessageBox.warning(self, 'Error', 'Could not load data')
+            return
+
+        # check at least the filename field is present in the data
+        if not data or 'filename' not in data:
+            QMessageBox.warning(self, 'Error', 'Could not load data')
+            return
+
+        # check if this is the current dataset
+        if self.dut_folder and dut == os.path.relpath(self.dut_folder, res_folder) \
+            and ((not self.thru_file and not thru) or thru == os.path.relpath(self.thru_file, res_folder)) \
+            and ((not self.dummy_file and not dummy) or dummy == os.path.relpath(self.dummy_file, res_folder)):
+            # empty the model parameters dictionary
+            self.model_params = {}
+        else:
+            # load the dataset provided in the results file
+            self.txt_dut.setText(os.path.join(res_folder, dut))
+            self.txt_thru.setText(os.path.dirname(os.path.join(res_folder, thru)))
+            self.txt_dummy.setText(os.path.dirname(os.path.join(res_folder, dummy)))
+            self.load()
+
+        # get a list of parameter names
+        params = [p for p in data]
+        unusable = []
+        # now check float conversion compatibility of the data columns, removing the ones that we cannot use
+        for p in params:
+            try:
+                data[p] = [float(x) for x in data[p]]
+            except ValueError:
+                unusable.append(p)
+        for p in unusable:
+            params.remove(p)
+
+        for i, f in enumerate(data['filename']):
+            # careful, this will also add the parameters from the filename to the model params
+            # TODO: repair this (i.e. let the load_fitresults function inform the user about the number of filename parameters that need to be taken into account)
+            values = [float(data[p][i]) for p in params]
+            self.model_params[f] = dict(zip(params, values))
+
+        # just reload the spectrum to be sure that the model is plotted correctly
+        self.load_spectrum()
+
+    def browse_picfolder(self):
+        folder = QFileDialog.getExistingDirectory(self, 'Choose folder')
+        self.txt_picfolder.setText(folder)
+
+    def savepic(self):
+        if self.dut:
+            name, ext = os.path.splitext(self.dut_files[self.current_index])
+            self.figure.savefig(os.path.join(self.txt_picfolder.text(), name + '.png'))
+
+    def saveallpics(self):
+        for i in range(len(self.dut_files)):
+            self.current_index = i
+            self.load_spectrum()
+            self.savepic()
+            QApplication.processEvents()
 
 
 if __name__ == '__main__':
