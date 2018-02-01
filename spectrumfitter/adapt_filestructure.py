@@ -1,7 +1,9 @@
-filename = '/home/hgraef/PhD/Measurements/PRC-TopGate-D3/2018.01.15_VNA_RT/spectrumfitter_3p.txt'
+import os
+
+filename = '/home/holger/PhD/Measurements/PRC-TopGate-D3/2018.01.15_VNA_RT/spectrumfitter_4p.txt'
 newfile = filename[:-4]+'_HolgersPC.txt'
-oldroot = 'C:/Users/David/ownCloud'
-newroot = '/home/hgraef/ownCloud/PhD/Measurements'
+oldroot = 'C:/Users/David/ownCloud/PRC-TopGate-D3'
+newroot = '..'
 
 def rebase(path):
     if not path.startswith(oldroot):
@@ -25,9 +27,12 @@ with open(filename, 'r') as fin:
                     elif line.startswith('dut:'):
                         dut = line[4:].strip()
                         fout.write('# dut: '+rebase(dut))
+                    elif line.startswith('model:'):
+                        model = line[6:].strip()
+                        fout.write('# model: '+os.path.basename(model))
                     else:
                         fout.write('# '+line)
                 else: # line is a data line
                     filename = line.split('\t')[0]
-                    fout.write(rebase(filename)+line[len(filename):])
+                    fout.write(os.path.basename(filename.replace('\\', '/'))+line[len(filename):])
                 fout.write('\r\n')

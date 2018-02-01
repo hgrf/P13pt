@@ -1,4 +1,6 @@
 ## high priority
+* put version string in result files
+* script should not crash when trying to load invalid DUT folder
 * check if results recognition works if thru or dummy is not defined
 * put the "replace dialog" in a different place
 * adapt browse buttons for pictures and results
