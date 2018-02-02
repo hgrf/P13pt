@@ -197,7 +197,7 @@ class Model:
 
             # don't fit the following params
             # TODO: could generate these automatically
-            params.add('gl', value=self.values['gl'], min=0., max=1e-6, vary=False)
+            params.add('gl', value=self.values['gl'], min=0., max=1000e-6, vary=False)
             params.add('ca', value=self.values['ca'], min=0., max=1e-12, vary=False)
             params.add('rasup', value=self.values['rasup'], min=0., max=10e3, vary=False)
 
@@ -225,7 +225,7 @@ class Model:
 
             # don't fit the following params
             # TODO: could generate these automatically
-            params.add('gl', value=self.values['gl'], min=0., max=1e-6, vary=False)
+            params.add('gl', value=self.values['gl'], min=0., max=1000e-6, vary=False)
             params.add('ca', value=self.values['ca'], min=0., max=1e-12, vary=False)
             params.add('rasup', value=self.values['rasup'], min=0., max=10e3, vary=False)
 
