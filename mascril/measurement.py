@@ -1,8 +1,11 @@
 import sys
 import os
 import errno
+import numpy as np
 from io import BytesIO as StringIO
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QLineEdit, QFileDialog, QCheckBox, QMessageBox
 try:
     from PyQt5.QtCore import QString
 except ImportError:
@@ -106,3 +109,129 @@ class MeasurementBase(QThread):
         self.reset_console()
         super(MeasurementBase, self).terminate()
 
+
+'''
+TODO TODO TODO:
+The main places where the following plays a role are:
+
+launcher.py:
+- load_module()
+- run_module()
+
+measurement.py:
+- only the new stuff
+
+1) Keep "backwards compatibility" and simplicity by allowing parameters that do not inherit from MeasurementParameter.
+These will be evaluated "brute force" as before.
+
+2) Everything that inherits from MeasurementParameter will by treated with more care.
+
+3) "Command line execution" should still be possible
+
+What has to be done now:
+- try to make line edit frame disappear
+- make widget for sweeps
+- update existing modules to new, easier way of dealing with parameters
+- enable saving and loading of parameters 
+'''
+
+class MeasurementParameter(object):
+    ''' The base class for measurement parameters.
+    '''
+    def __init__(self):
+        pass
+
+    def get_table_widget(self):
+        return QWidget()
+
+    def get_value(self):
+        return None
+
+
+class Folder(MeasurementParameter):
+    def __init__(self, path):
+        super(Folder, self).__init__()
+        self.widget = QWidget()
+        self.widget.mp = self
+        self.txt_folder = QLineEdit(path)
+        self.btn_select_folder = QPushButton(QIcon('../icons/folder.png'), '')
+        self.btn_select_folder.clicked.connect(self.browse)
+
+        # make layout
+        l = QHBoxLayout(self.widget)
+        l.addWidget(self.txt_folder)
+        l.addWidget(self.btn_select_folder)
+        l.setContentsMargins(0,0,0,0)
+        self.widget.setLayout(l)
+
+    def get_table_widget(self):
+        return self.widget
+
+    def get_value(self):
+        return self.txt_folder.text()
+
+    def browse(self):
+        path = QFileDialog.getExistingDirectory(None, 'Choose directory')
+        if path:
+            self.txt_folder.setText(path)
+
+
+class String(MeasurementParameter):
+    def __init__(self, string):
+        super(String, self).__init__()
+        self.widget = QLineEdit(string)
+        self.widget.mp = self
+
+    def get_table_widget(self):
+        return self.widget
+
+    def get_value(self):
+        return self.widget.text()
+
+
+class Boolean(MeasurementParameter):
+    def __init__(self, b):
+        super(Boolean, self).__init__()
+        self.widget = QCheckBox()
+        self.widget.setChecked(b)
+        self.widget.mp = self
+
+    def get_table_widget(self):
+        return self.widget
+
+    def get_value(self):
+        return self.widget.isChecked()
+
+
+class Sweep(MeasurementParameter):
+    def __init__(self, value):
+        super(Sweep, self).__init__()
+        self.widget = QWidget()
+        self.widget.mp = self
+        self.value = value
+        if isinstance(value, list):
+            text = '[' + ','.join(map(str, value)) + ']'
+        elif isinstance(value, np.ndarray):
+            text = '[' + ",".join(map(str, value.tolist())) + ']'
+        else:
+            text = 'could not evaluate...'
+            self.value = None
+        self.txt_values = QLineEdit(text)
+        self.btn_setup_sweep = QPushButton('setup')
+        self.btn_setup_sweep.clicked.connect(self.setup)
+
+        # make layout
+        l = QHBoxLayout(self.widget)
+        l.addWidget(self.txt_values)
+        l.addWidget(self.btn_setup_sweep)
+        l.setContentsMargins(0, 0, 0, 0)
+        self.widget.setLayout(l)
+
+    def setup(self):
+        QMessageBox.warning(None, 'Error', 'Not implemented')
+
+    def get_table_widget(self):
+        return self.widget
+
+    def get_value(self):
+        return self.value

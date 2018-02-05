@@ -1,4 +1,4 @@
-from P13pt.mascril.measurement import MeasurementBase
+from P13pt.mascril.measurement import MeasurementBase, Folder, String, Sweep, Boolean
 from P13pt.drivers.testdrivers import VoltageSource, VoltMeter
 
 import time
@@ -6,15 +6,16 @@ import numpy as np
 
 class Measurement(MeasurementBase):
     params = {
-        'Vg1s': np.linspace(-1., 1., 101),
-        'Vg2s': [0.],
+        'data_dir': Folder('/home/holger'),
+        'Vg1s': Sweep(np.linspace(-1., 1., 101)),
+        'Vg2s': Sweep([0.]),
         'Vds': 10e-3,
-        'commongate': False,
+        'commongate': Boolean(False),
         'Rg1': 100e3,
         'Rg2': 100e3,
         'Rds': 2.2e3,
         'stabilise_time': 0.5,
-        'comment': None
+        'comment': String('comment')
     }
 
     observables = ['Vg1', 'Vg1m', 'Ileak1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs']
@@ -26,8 +27,10 @@ class Measurement(MeasurementBase):
                                                                     # is applied between the two gates
     ]
 
-    def measure(self, Vg1s, Vg2s, Vds, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
+    def measure(self, data_dir, Vg1s, Vg2s, Vds, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
         print "Starting acquisition script..."
+        print "Because I need to save my data somewhere, I will save it in the following directory:"
+        print data_dir
 
         # initialise instruments
         try:

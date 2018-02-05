@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Aug 07 11:25:58 2017
-
-@author: meso
-"""
-
 import sys
 import imp
 import os
@@ -13,11 +6,11 @@ from PyQt5.QtGui import QFont, QTextCursor, QIcon
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QPushButton, QLineEdit, QVBoxLayout,
                          QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox, QApplication,
                          QSplitter, QComboBox, QLabel, QHeaderView)
-#from consolewidget import ConsoleWidget
-from P13pt.mascril.measurement import MeasurementBase      # we have to import it the same way (from the same parent
+from P13pt.mascril.measurement import MeasurementBase       # we have to import it the same way (from the same parent
                                                             # modules) as we will do it in the acquisition scripts,
                                                             # otherwise they will not be recognised as the same
                                                             # class
+from P13pt.mascril.measurement import MeasurementParameter  # idem
 from plotter import Plotter
 try:
     from PyQt5.QtCore import QString
@@ -163,7 +156,10 @@ class mainwindow(QSplitter):
                 value = '['+','.join(map(str, value))+']'
             elif isinstance(value, np.ndarray):
                 value = '['+",".join(map(str, value.tolist()))+']'
-            self.tbl_params.setItem(i, 1, QTableWidgetItem(str(value)))
+            if isinstance(value, MeasurementParameter):
+                self.tbl_params.setCellWidget(i, 1, value.get_table_widget())
+            else:
+                self.tbl_params.setItem(i, 1, QTableWidgetItem(str(value)))
 
         # set up plotter
         self.plotter.clear()
@@ -208,12 +204,18 @@ class mainwindow(QSplitter):
 
         # set up the parameters
         for i in range(self.tbl_params.rowCount()):
-            key, value = [str(self.tbl_params.item(i, j).text()) for j in [0, 1]]
-            try:
-                self.m.params[key] = eval(value, {'np': np})
-            except Exception as e:
-                QMessageBox.critical(self, "Error", "Parameter '"+key+"' could not be evaluated: "+str(e.args[0]))
-                return
+            key = str(self.tbl_params.item(i,0).text())
+            if self.tbl_params.item(i,1) is None:
+                # get the value from the MeasurementParameter
+                self.m.params[key] = self.tbl_params.cellWidget(i,1).mp.get_value()
+            else:
+                # simply extract the value from the field and evaluate it
+                value = self.tbl_params.item(i,1).text()
+                try:
+                    self.m.params[key] = eval(value, {'np': np})
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", "Parameter '"+key+"' could not be evaluated: "+str(e.args[0]))
+                    return
 
         # set up the alarms (this will only be necessary once the alarms will be dealt with by MeasurementBase)
         #alarms = []
