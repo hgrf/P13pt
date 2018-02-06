@@ -158,6 +158,32 @@ class AnritsuVNA:
         else:
             return False
     
+    def get_sweep_time(self):
+        '''Asks VNA for the time the sweep will take.
+        
+        Returns
+        -------
+        t : float
+            Sweep time.
+        '''
+        # two ports are being swept
+        return 2.*float(self.query(':SENS:SWE:TIM?'))
+   
+    def get_source_att(self, port):
+        '''Asks the VNA for the source attenuator value on the specified port.
+        
+        Parameters
+        ----------
+        port : int
+            The port
+        
+        Returns
+        -------
+        p : float
+            The attenuator value
+        '''
+        return float(self.query(':SOUR:POW:PORT{}:ATT?'.format(port)))
+    
     def stop_sweep(self):
         ''' Stops the VNA sweep.
         '''
@@ -185,6 +211,28 @@ class AnritsuVNA:
             while not self.is_sweep_done():
                 time.sleep(0.5)
     
+    def get_sweep_type(self):
+        '''Asks the VNA for the sweep type.
+        
+        Returns
+        -------
+        t : unicode
+            The sweep type
+        '''
+        return self.query(':SENS:SWE:TYP?')
+    
+    def _fsegm_sweep_only(func):
+        ''' This decorator verifies that the function is only used when the
+        VNA is in FSEGM sweep mode.
+        '''
+        def magic(self, *args):
+            if self.query(':SENS:SWE:TYP?') == 'FSEGM':
+                return func(self, *args)
+            else:
+                raise Exception('Function '+func.__name__+' can only be used'\
+                    +' when VNA is in FSEGM sweep mode)')
+        return magic
+    
     def _linear_sweep_only(func):
         ''' This decorator verifies that the function is only used when the
         VNA is in linear sweep mode.
@@ -197,6 +245,25 @@ class AnritsuVNA:
                     +' when VNA is in linear sweep mode)')
         return magic
     
+    @_fsegm_sweep_only
+    def dump_freq_segments(self, f):
+        ''' Dump the frequency segments to a file.
+        '''
+        f.write('# Frequency based segmented sweep setup of Anritsu MS4644B\n')
+        f.write('# Attenuator Port 1: {}\n'.format(self.get_source_att(1)))
+        f.write('# Attenuator Port 2: {}\n'.format(self.get_source_att(2)))
+        f.write('# Seg no.\tfstart\tfstop\tpoints\tbwidth\tavg\tport1pow\tport2pow\n')        
+        count = int(self.query(':SENS:FSEGM:COUN?'))
+        for i in range(1,count+1):
+            port1pow = float(self.query(':SENS:FSEGM{}:POW:PORT1?'.format(i)))
+            port2pow = float(self.query(':SENS:FSEGM{}:POW:PORT2?'.format(i)))
+            avg = int(self.query(':SENS:FSEGM{}:AVER:COUN?'.format(i)))
+            bwidth = float(self.query(':SENS:FSEGM{}:BWID?'.format(i)))
+            fstart = float(self.query(':SENS:FSEGM{}:FREQ:FSTA?'.format(i)))
+            fstop = float(self.query(':SENS:FSEGM{}:FREQ:FSTO?'.format(i)))
+            points = int(self.query(':SENS:FSEGM{}:SWE:POIN?'.format(i)))
+            f.write('{:d}\t{:f}\t{:f}\t{:d}\t{:f}\t{:d}\t{:f}\t{:f}\n'.format(i, fstart, fstop, points, bwidth, avg, port1pow, port2pow))
+       
     @_linear_sweep_only    
     def enable_averaging(self):
         ''' Switch on averaging.
@@ -240,6 +307,38 @@ class AnritsuVNA:
         self.enable_averaging()
         self.set_average_count(count)
         self.set_average_type(typ)
+    
+    @_linear_sweep_only
+    def get_source_power(self, port):
+        '''Asks the VNA for the source power on the specified port.
+        
+        Parameters
+        ----------
+        port : int
+            The port
+        
+        Returns
+        -------
+        p : float
+            The power
+        '''
+        return float(self.query(':SOUR:POW:PORT{}?'.format(port)))
+    
+    @_linear_sweep_only
+    def get_source_eff_pow(self, port):
+        '''Asks the VNA for the effective power on the specified port.
+        
+        Parameters
+        ----------
+        port : int
+            The port
+        
+        Returns
+        -------
+        p : float
+            The power
+        '''
+        return float(self.query(':SOUR:EFF:POW:PORT{}?'.format(port)))
         
     # just wrapping the main functions of self.vna
     def query(self, q):
