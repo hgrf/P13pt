@@ -40,10 +40,21 @@ class ReadOnlyConsole(QTextEdit):
         :param data: a unicode string
         :return: nothing
         """
-
         # move cursor to end (in case user clicked somewhere else in the window)
-        cursor = QTextCursor(self.document());
-        cursor.movePosition(QTextCursor.End);
+        cursor = QTextCursor(self.document())
+        cursor.movePosition(QTextCursor.End)
+        # TODO: improve this dirty draft of a carriage return implementation
+        # i = data.find('\r')
+        # if i >= 0:
+        #     cursor.select(QTextCursor.LineUnderCursor)
+        #     cursor.removeSelectedText()
+        #     data = data[i+1:]
+        # usage example:
+        #
+        # for i in range(100):
+        #     sys.stdout.write("\r%d%%" % i)
+        #     sys.stdout.flush()
+        #     time.sleep(0.1)
         self.setTextCursor(cursor)
 
         # insert text
