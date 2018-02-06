@@ -1,4 +1,8 @@
 '''TODO
+- parameters should be disabled when running script
+- dialog title for sweep setup
+- move MeasurementParameters to separate file and put as much as possible in
+  base class
 - add line for manual python sweep values and combo to choose between "wizard" and python
 - update existing modules to new, easier way of dealing with parameters
 - enable saving and loading of parameters
@@ -116,6 +120,9 @@ class MeasurementBase(QThread):
     @pyqtSlot()
     def terminate(self):
         self.reset_console()
+        if self.data_file:
+            self.data_file.close()
+            self.data_file = None
         super(MeasurementBase, self).terminate()
 
 
