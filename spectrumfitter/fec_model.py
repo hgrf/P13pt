@@ -6,13 +6,13 @@ class Model:
     # for each parameter, we store the minimum and maximum value,
     # an initial value, a multiplier value and a unit
     params = {
-        'r': [0.1, 50000, 1000, 1, 'Ohm'],
-        'c': [0.1, 1000, 200, 1e-15, 'fF'],
-        'l': [0, 100, 0, 1e-9, 'nH'],
-        'gl': [0, 1000, 0, 1e-6, 'uS'],
-        'ra': [0, 1000, 300, 1, 'Ohm'],
-        'ca': [0, 1000, 600, 1e-15, 'fF'],
-        'rasup': [0, 1000, 100, 1, 'Ohm']
+        'r': [0.1, 50000, 1000., 1, 'Ohm'],
+        'c': [0.1, 1000, 20.0, 1e-15, 'fF'],
+        'l': [0, 100, 0., 1e-9, 'nH'],
+        'gl': [0, 1000, 0., 1e-6, 'uS'],
+        'ra': [0, 1000, 100., 1, 'Ohm'],
+        'ca': [0, 1000, 0., 1e-15, 'fF'],
+        'rasup': [0, 1000, 0., 1, 'Ohm']
     }
 
     values = {}    # this is where the fitter will store the values
@@ -152,7 +152,39 @@ class Model:
         # define masks
         masks = [base_f < 1e9]
         masks += [base_f < 5e9]
-        masks += [base_f < 30e9]
+
+        # fit
+        for i, mask in enumerate(masks):
+            w = 2.*np.pi*base_f[mask]
+            y = base_y[mask]  # minus sign because Y12 and not Y11
+
+            # create fit parameters
+            params = Parameters()
+            params.add('r', value=self.values['r'], min=100, max=100e3, vary=True if i in [0, 1] else False)
+            params.add('c', value=self.values['c'], min=1e-15, max=1e-12, vary=True if i in [0, 1] else False)
+            params.add('ra', value=self.values['ra'], min=1, max=10e3, vary=True if i in [1] else False)
+
+            # don't fit the following params
+            # TODO: could generate these automatically
+            params.add('l', value=self.values['l'], min=0., max=1e-6, vary=False)
+            params.add('gl', value=self.values['gl'], min=0., max=1000e-6, vary=False)
+            params.add('ca', value=self.values['ca'], min=0., max=1e-12, vary=False)
+            params.add('rasup', value=self.values['rasup'], min=0., max=10e3, vary=False)
+
+            # execute fit
+            res = minimize(self.objective, params, args=(w, y))
+            for p in self.values:
+                self.values[p] = res.params[p].value
+                
+    def fit_RCRa_2fc(self, base_f, base_y):
+        # get crossover frequency
+        mask = base_f > 3e8  # avoid detecting the crossover associated with the leak
+        fc = base_f[mask][np.argmin(np.abs(base_y[mask].real - base_y[mask].imag))]
+        if fc < 3.1e8: fc = 1e9
+        
+        # define masks
+        masks = [base_f < fc]
+        masks += [base_f < fc*2]
 
         # fit
         for i, mask in enumerate(masks):
