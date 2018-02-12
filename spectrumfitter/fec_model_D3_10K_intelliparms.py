@@ -1,6 +1,6 @@
 import numpy as np
 from lmfit import Parameters, minimize
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QWidget
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QWidget, QLineEdit
 
 class Model:
     # dictionary of the model's parameters
@@ -22,7 +22,20 @@ class Model:
     values = {}    # this is where the fitter will store the values
 
     def __init__(self):
-        self.infowidget = QLabel()
+        self.infowidget = QWidget()
+        self.txt_length = QLineEdit()
+        self.txt_width = QLineEdit()
+        self.infolabel = QLabel()
+        self.infolabel.setStyleSheet('QLabel { background: #FFFFFF; font-size: 20px; }')
+        l1 = QHBoxLayout()
+        for w in (QLabel('L [um]:'), self.txt_length, QLabel('W [um]:'), self.txt_width):
+            l1.addWidget(w)
+        l2 = QVBoxLayout()
+        l2.addLayout(l1)
+        l2.addWidget(self.infolabel)
+        self.txt_length.textChanged.connect(self.update_info_widget)
+        self.txt_width.textChanged.connect(self.update_info_widget)
+        self.infowidget.setLayout(l2)
         self.reset_values()
 
     def reset_values(self):
@@ -86,15 +99,18 @@ class Model:
             return res[part]
 
     def update_info_widget(self):
-        # TODO: need to enter device params somewhere
-        L = 50e-6
-        W = 4e-6
-        r = self.values['r']/L*W
+        try:
+            L = float(self.txt_length.text())/1e6
+            W = float(self.txt_width.text())/1e6
+        except ValueError:
+            return
+        #r = self.values['r']/L*W
         l = self.values['l']/L*W
         c = self.values['c']/L/W
-        self.infowidget.setText('Z0 = '+str(np.sqrt(self.values['l']/self.values['c']))+' Ohm\n'+
-                                'vpl/vf = '+str(1./np.sqrt(l*c)/1e6)+'\n'+
-                                'fres = '+str(1./(4.*np.sqrt(self.values['l']*self.values['c']))/1e9)+' GHz')
+        self.infolabel.setText('------------------------\n'+
+                               'Z0 = '+str(np.sqrt(self.values['l']/self.values['c']))+' Ohm\n'+
+                               'vpl/vf = '+str(1./np.sqrt(l*c)/1e6)+'\n'+
+                               'fres = '+str(1./(4.*np.sqrt(self.values['l']*self.values['c']))/1e9)+' GHz')
 
     def fit_RCRa(self, base_f, base_y):
         # define initial values

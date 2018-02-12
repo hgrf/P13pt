@@ -436,10 +436,16 @@ class MainWindow(QSplitter):
             l.addWidget(sb)
             l.addWidget(cb)
             self.sl_layout.addLayout(l)
-        self.sl_layout.addWidget(self.model.infowidget)
+        try:        # for backwards compatibility
+            self.sl_layout.addWidget(self.model.infowidget)
+        except AttributeError:
+            pass
         self.enable_checkboxes(self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()))
         self.plot_fit()
-        self.model.update_info_widget()
+        try:
+            self.model.update_info_widget()
+        except AttributeError:
+            pass
 
     def fit_model(self):
         if self.model:
@@ -461,7 +467,10 @@ class MainWindow(QSplitter):
     def value_changed(self, slider):
         self.model.values[slider.id] = slider.value() * self.model.params[slider.id][3]
         self.plot_fit()
-        self.model.update_info_widget()
+        try:
+            self.model.update_info_widget()
+        except AttributeError:
+            pass
 
     def enable_checkboxes(self, b=True):
         for p in self.checkboxes:
