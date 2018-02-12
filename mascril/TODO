@@ -1,0 +1,13 @@
+TODO
+- parameters should be disabled when running script
+- dialog title for sweep setup
+- enable carriage return in terminal and make better progress bar
+- tidy up MAScriL issues on GitHub
+- exceptions should be handled instead of making MAScriL crash
+- move MeasurementParameters to separate file and put as much as possible in
+  base class
+- add line for manual python sweep values and combo to choose between "wizard" and python
+- update existing modules to new, easier way of dealing with parameters
+- enable saving and loading of parameters
+- verify that command line execution of the acquisition script is still possible -> need to avoid instantiation of
+  QWidgets if there is no QApplication
