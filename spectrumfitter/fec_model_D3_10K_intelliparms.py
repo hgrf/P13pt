@@ -58,10 +58,18 @@ class Model:
         adm = 1./(1./tlm + rlo - r/3)
         return adm
 
-    def objective(self, params, x_data, y_data):
+    def objective(self, params, x_data, y_data, part=2):
         """Error function function minimized during the fitting procedure.
 
         We perform the optimization on both the real and imaginary part.
+        
+        Parameters
+        ----------
+        
+        part : int
+            0: real
+            1: imaginary
+            2: both
         """
         r, c, l, rlo = (params['r'].value, params['c'].value,
                         params['l'].value, params['rlo'].value) 
@@ -70,7 +78,10 @@ class Model:
         res = np.empty((2, len(y_data)))
         res[0] = y_data.real - computed_admittance.real
         res[1] = y_data.imag - computed_admittance.imag
-        return np.ravel(res)
+        if part == 2:
+            return np.ravel(res)
+        else:
+            return res[part]
 
     def fit_RCRa(self, base_f, base_y):
         # define initial values
@@ -98,7 +109,7 @@ class Model:
         masks += [base_f < 2.*fc]   # here we will only fit Rlo
         
         # do it again
-        masks += [base_f < fc/5]
+        masks += [base_f < fc/2.]
         masks += [base_f < 2.*fc]
         
         # now fit R
@@ -123,6 +134,10 @@ class Model:
             params.add('l', value=self.values['l'], min=self.params['l'][0]*self.params['l'][3], max=self.params['l'][1]*self.params['l'][3], vary=True if i in [6] else False)
         
             # execute fit
-            res = minimize(self.objective, params, args=(w, y))
+            if i in []:
+                # fit only imaginary part
+                res = minimize(self.objective, params, args=(w, y, 1))
+            else:
+                res = minimize(self.objective, params, args=(w, y))
             for p in self.values:
                 self.values[p] = res.params[p].value
