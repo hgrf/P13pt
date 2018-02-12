@@ -1,5 +1,6 @@
 import numpy as np
 from lmfit import Parameters, minimize
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QWidget
 
 class Model:
     # dictionary of the model's parameters
@@ -21,6 +22,7 @@ class Model:
     values = {}    # this is where the fitter will store the values
 
     def __init__(self):
+        self.infowidget = QLabel()
         self.reset_values()
 
     def reset_values(self):
@@ -82,6 +84,17 @@ class Model:
             return np.ravel(res)
         else:
             return res[part]
+
+    def update_info_widget(self):
+        # TODO: need to enter device params somewhere
+        L = 50e-6
+        W = 4e-6
+        r = self.values['r']/L*W
+        l = self.values['l']/L*W
+        c = self.values['c']/L/W
+        self.infowidget.setText('Z0 = '+str(np.sqrt(self.values['l']/self.values['c']))+' Ohm\n'+
+                                'vpl/vf = '+str(1./np.sqrt(l*c)/1e6)+'\n'+
+                                'fres = '+str(1./(4.*np.sqrt(self.values['l']*self.values['c']))/1e9)+' GHz')
 
     def fit_RCRa(self, base_f, base_y):
         # define initial values
