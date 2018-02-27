@@ -150,7 +150,7 @@ class Model:
 
     def fit_RCRa(self, base_f, base_y):
         # define masks
-        masks = [base_f < 1e9]
+        masks = [base_f < 0.2e9]
         masks += [base_f < 5e9]
 
         # fit
@@ -161,7 +161,7 @@ class Model:
             # create fit parameters
             params = Parameters()
             params.add('r', value=self.values['r'], min=100, max=100e3, vary=True if i in [0, 1] else False)
-            params.add('c', value=self.values['c'], min=1e-15, max=1e-12, vary=True if i in [0, 1] else False)
+            params.add('c', value=self.values['c'], min=1e-15, max=1e-12, vary=True if i in [0] else False)
             params.add('ra', value=self.values['ra'], min=1, max=10e3, vary=True if i in [1] else False)
 
             # don't fit the following params
