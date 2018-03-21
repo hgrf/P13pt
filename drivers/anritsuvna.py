@@ -39,7 +39,7 @@ class AnritsuVNA:
         # Make sure Data is communicated in the correct format.
         # do this before any other requests, so that we don't get stuck if the
         # VNA tries to speak binary
-        self.vna.write(r':FORM:DATA ASC;')         
+        self.vna.write(r':FORM:DATA ASC;')     
         
         if not self.vna.query('*IDN?').startswith('ANRITSU,MS4644B'):
             raise Exception('Unsupported device / cannot initialise')
@@ -49,6 +49,11 @@ class AnritsuVNA:
         # CLS: clear all registers
         # FORM:BORD NORM - sets the most significant byte first.
         self.vna.write('*ESE 60;*SRE 48;*CLS;:FORM:BORD NORM;')
+        
+        # switch on sweep time measurement
+        self.vna.write(':SENS1:SWE:TIM:TYP AUT;')
+        self.vna.write(':SENS1:SWE:TIM:STAT 1;')  
+        
         # Check that everything works fine for the moment.
         if not self.vna.query('SYST:ERR?').startswith('No Error'):
             raise Exception('Device error')

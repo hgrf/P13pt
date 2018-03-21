@@ -14,7 +14,7 @@ class Measurement(MeasurementBase):
         'Rg': 100e3,
         'stabilise_time': 0.3,
         'comment': String(''),
-        'data_dir': Folder(r'D:\MeasurementJANIS\Holger\PRC-TopGate-D3\2018.02.06_VNA_RT'),
+        'data_dir': Folder(r''),
         'use_vna': Boolean(True),
         'init_bilt': Boolean(False)
     }
@@ -115,7 +115,7 @@ class Measurement(MeasurementBase):
                 sys.stdout.flush()
                 # make sure sweep is really done
                 while not vna.is_sweep_done():
-                    pass
+                    time.sleep(0.5)
                 table = vna.get_table([1,2,3,4])
                 timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
                 spectrum_file = timestamp+'_Vg=%2.4f'%(Vg)+'.txt'
