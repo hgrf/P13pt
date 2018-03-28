@@ -5,7 +5,7 @@ import numpy as np
 from io import BytesIO as StringIO
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout,
+from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QApplication,
                              QLabel, QLineEdit, QFileDialog, QCheckBox, QDialog, QMessageBox)
 try:
     from PyQt5.QtCore import QString
@@ -51,8 +51,16 @@ class MeasurementBase(QThread):
             sys.stdout = sys.stderr = self.sio = StringIO()
             self.sio.write = self.new_console_data.emit
 
+        # evaluate the parameters dictionary
+        params = {}
+        for key in self.params:
+            if isinstance(self.params[key], MeasurementParameter):
+                params[key] = self.params[key].get_value()
+            else:
+                params[key] = self.params[key]
+
         try:
-            l = self.measure(**self.params)
+            l = self.measure(**params)
         except Exception as e:
             print "Error: "+e.message
 
@@ -120,9 +128,12 @@ class MeasurementBase(QThread):
 class MeasurementParameter(object):
     ''' The base class for measurement parameters.
     '''
+    cli = False     # set to True if running in command line interface
+
     def __init__(self):
         self.mainwindow = None
-        pass
+        if QApplication.instance() is None:
+            self.cli = True
 
     def get_table_widget(self):
         return QWidget()
@@ -134,6 +145,9 @@ class MeasurementParameter(object):
 class Folder(MeasurementParameter):
     def __init__(self, path):
         super(Folder, self).__init__()
+        self.value = path
+        if self.cli:
+            return
         self.widget = QWidget()
         self.widget.mp = self
         self.widget.setStyleSheet("QLineEdit { border: none }")
@@ -149,12 +163,16 @@ class Folder(MeasurementParameter):
         self.widget.setLayout(l)
 
     def get_table_widget(self):
+        if self.cli:
+            return
         return self.widget
 
     def get_value(self):
-        return self.txt_folder.text()
+        return self.value if self.cli else self.txt_folder.text()
 
     def browse(self):
+        if self.cli:
+            return
         path = QFileDialog.getExistingDirectory(None, 'Choose directory')
         if path:
             self.txt_folder.setText(path)
@@ -163,38 +181,50 @@ class Folder(MeasurementParameter):
 class String(MeasurementParameter):
     def __init__(self, string):
         super(String, self).__init__()
+        self.value = string
+        if self.cli:
+            return
         self.widget = QLineEdit(string)
         self.widget.mp = self
         self.widget.setStyleSheet("QLineEdit { border: none }")
 
     def get_table_widget(self):
+        if self.cli:
+            return
         return self.widget
 
     def get_value(self):
-        return self.widget.text()
+        return self.value if self.cli else self.widget.text()
 
 
 class Boolean(MeasurementParameter):
     def __init__(self, b):
         super(Boolean, self).__init__()
+        self.value = b
+        if self.cli:
+            return
         self.widget = QCheckBox()
         self.widget.setChecked(b)
         self.widget.mp = self
 
     def get_table_widget(self):
+        if self.cli:
+            return
         return self.widget
 
     def get_value(self):
-        return self.widget.isChecked()
+        return self.value if self.cli else self.widget.isChecked()
 
 
 class Sweep(MeasurementParameter):
     def __init__(self, value):
         super(Sweep, self).__init__()
+        self.value = value
+        if self.cli:
+            return
         self.widget = QWidget()
         self.widget.mp = self
         self.widget.setStyleSheet("QLineEdit { border: none }")
-        self.value = value
         if isinstance(value, list):
             text = '[' + ','.join(map(str, value)) + ']'
         elif isinstance(value, np.ndarray):
@@ -249,6 +279,8 @@ class Sweep(MeasurementParameter):
         self.dialog.show()
 
     def apply(self):
+        if self.cli:
+            return
         try:
             start = float(self.txt_start.text())
             stop = float(self.txt_stop.text())
@@ -274,6 +306,8 @@ class Sweep(MeasurementParameter):
         self.dialog.close()
 
     def values_changed(self):
+        if self.cli:
+            return
         try:
             start = float(self.txt_start.text())
             stop = float(self.txt_stop.text())
@@ -292,6 +326,8 @@ class Sweep(MeasurementParameter):
             self.txt_num.setText(str((int((stop-start)/step)+1)*arfactor+from0steps+to0steps))
 
     def get_table_widget(self):
+        if self.cli:
+            return
         return self.widget
 
     def get_value(self):

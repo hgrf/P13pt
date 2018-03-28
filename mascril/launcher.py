@@ -238,15 +238,13 @@ class mainwindow(QSplitter):
         # and disconnect all signals
         self.m.flags['quit_requested'] = False
 
-        # set up the parameters
+        # update the parameters that do not update automatically
+        # (i.e. that are not derived from MeasurementParameter)
         for i in range(self.tbl_params.rowCount()):
-            key = str(self.tbl_params.item(i,0).text())
-            if self.tbl_params.item(i,1) is None:
-                # get the value from the MeasurementParameter
-                self.m.params[key] = self.tbl_params.cellWidget(i,1).mp.get_value()
-            else:
-                # simply extract the value from the field and evaluate it
-                value = self.tbl_params.item(i,1).text()
+            key = str(self.tbl_params.item(i, 0).text())
+            if not isinstance(self.m.params[key], MeasurementParameter):
+                # TODO: get rid of the python interpretation and cast value to the correct type (python evaluation should be a special kind of MeasurementParameter)
+                value = self.tbl_params.item(i, 1).text()
                 try:
                     self.m.params[key] = eval(value, {'np': np})
                 except Exception as e:
