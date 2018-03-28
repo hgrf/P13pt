@@ -1,7 +1,8 @@
 import sys
 import imp
 import os
-from PyQt5.QtCore import pyqtSlot, Qt, QSize
+from PyQt5.QtCore import (pyqtSlot, Qt, QSize, qInstallMessageHandler, QtInfoMsg, QtCriticalMsg, QtDebugMsg,
+                          QtWarningMsg, QtFatalMsg)
 from PyQt5.QtGui import QFont, QTextCursor, QIcon
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QPushButton, QLineEdit, QVBoxLayout, QHBoxLayout,
                          QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox, QApplication,
@@ -163,7 +164,10 @@ class mainwindow(QSplitter):
         try:
             mod = imp.load_source(mod_name, filename)
         except IOError as e:
-            QMessageBox.critical(self, "Error", "Could not load module: "+str(e.args[1]))
+            QMessageBox.critical(self, "Error", "Could not load file: "+str(e.args[1]))
+            return
+        except Exception as e:
+            QMessageBox.critical(self, "Error", "Could not load module: "+str(e.args[0]))
             return
         if not hasattr(mod, 'Measurement') or not issubclass(getattr(mod, 'Measurement'), MeasurementBase):
             QMessageBox.critical(self, "Error", "Could not get correct class from file.")
@@ -321,10 +325,24 @@ class mainwindow(QSplitter):
                         self.tbl_alarms.item(i, 2).setText("OK...")
                         self.tbl_alarms.item(i, 2).setBackground(Qt.green)
 
+def msghandler(type, context, message):
+    if type == QtInfoMsg:
+        QMessageBox.information(None, 'Info', message)
+    elif type == QtDebugMsg:
+        QMessageBox.information(None, 'Debug', message)
+    elif type == QtCriticalMsg:
+        QMessageBox.critical(None, 'Critical', message)
+    elif type == QtWarningMsg:
+        QMessageBox.warning(None, 'Warning', message)
+    elif type == QtFatalMsg:
+        QMessageBox.critical(None, 'Fatal error', message)
+
 if __name__ == "__main__":
+    qInstallMessageHandler(msghandler)
+
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('tools-wizard.png'))
-     
+
     w = mainwindow()
     w.show()
      

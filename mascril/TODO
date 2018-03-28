@@ -2,7 +2,6 @@ TODO
 - parameters should be disabled when running script
 - dialog title for sweep setup
 - enable carriage return in terminal and make better progress bar
-- exceptions should be handled instead of making MAScriL crash
 - move MeasurementParameters to separate file and put as much as possible in
   base class
 - add line for manual python sweep values and combo to choose between "wizard" and python

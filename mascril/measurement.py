@@ -51,7 +51,10 @@ class MeasurementBase(QThread):
             sys.stdout = sys.stderr = self.sio = StringIO()
             self.sio.write = self.new_console_data.emit
 
-        l = self.measure(**self.params)
+        try:
+            l = self.measure(**self.params)
+        except Exception as e:
+            print "Error: "+e.message
 
         self.tidy_up()
         self.reset_console()
