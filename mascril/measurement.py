@@ -246,6 +246,7 @@ class Sweep(MeasurementParameter):
 
         # set up dialog
         self.dialog = QDialog(self.mainwindow)
+        self.dialog.setWindowTitle('Sweep setup')
         self.dialog.setModal(True)
         self.txt_start, self.txt_stop, self.txt_step, self.txt_num = [QLineEdit() for i in range(4)]
         self.txt_num.setReadOnly(True)
