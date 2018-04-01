@@ -257,6 +257,16 @@ class mainwindow(QSplitter):
         #    alarms.append([condition, action])
         #self.m.alarms = alarms
 
+        # disable parameter editing (here we have to distinguish between "custom" MeasurementParameter widgets and the
+        # basic cell items
+        for i in range(self.tbl_params.rowCount()):
+            widget = self.tbl_params.cellWidget(i, 1)
+            item = self.tbl_params.item(i, 1)
+            if widget:
+                widget.setEnabled(False)
+            if item:
+                item.setFlags(item.flags()^Qt.ItemIsEnabled)
+
         # update buttons
         self.btn_load.setEnabled(False)
         self.btn_run.setEnabled(False)
@@ -270,6 +280,16 @@ class mainwindow(QSplitter):
         self.btn_forcestopmod.setEnabled(True)
 
     def module_done(self):
+        # enable parameter editing
+        for i in range(self.tbl_params.rowCount()):
+            widget = self.tbl_params.cellWidget(i, 1)
+            item = self.tbl_params.item(i, 1)
+            if widget:
+                widget.setEnabled(True)
+            if item:
+                item.setFlags(item.flags()^Qt.ItemIsEnabled)
+
+        # update buttons
         self.btn_stopmod.setEnabled(False)
         self.btn_forcestopmod.setEnabled(False)
         self.btn_run.setEnabled(True)

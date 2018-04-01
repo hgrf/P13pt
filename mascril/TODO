@@ -1,7 +1,6 @@
 TODO
 - add line for manual python sweep values and combo to choose between "wizard" and python
 - single value should be possible in sweep setup
-- parameters should be disabled when running script
 - move MeasurementParameters to separate file and put as much as possible in
   base class
 - enable saving and loading of parameters
