@@ -1,4 +1,5 @@
 from P13pt.mascril.measurement import MeasurementBase, Sweep, String, Folder, Boolean
+from P13pt.mascril.progressbar import progressbar_wait
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.anritsuvna import AnritsuVNA
 
@@ -99,20 +100,7 @@ class Measurement(MeasurementBase):
                 print "Getting VNA spectra|"
                 vna.single_sweep(wait=False)
                 # display sweep progress
-                # TODO: should put this in the single sweep function
-                t0 = time.time()
-                i = 0 # number of # displayed
-                while True:
-                    t1 = time.time()
-                    if t1-t0 >= sweeptime:
-                        break
-                    if (t1-t0)/sweeptime*100./5. > i+1:
-                        sys.stdout.write('#')
-                        sys.stdout.flush()
-                        i += 1
-                    time.sleep(0.01)
-                sys.stdout.write('\n')
-                sys.stdout.flush()
+                progressbar_wait(sweeptime)
                 # make sure sweep is really done
                 while not vna.is_sweep_done():
                     time.sleep(0.5)

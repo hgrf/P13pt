@@ -1,7 +1,9 @@
 from P13pt.mascril.measurement import MeasurementBase, Folder, String, Sweep, Boolean
+from P13pt.mascril.progressbar import progressbar_wait
 from P13pt.drivers.testdrivers import VoltageSource, VoltMeter
 
 import time
+import sys
 import numpy as np
 
 class Measurement(MeasurementBase):
@@ -14,7 +16,7 @@ class Measurement(MeasurementBase):
         'Rg1': 100e3,
         'Rg2': 100e3,
         'Rds': 2.2e3,
-        'stabilise_time': 0.5,
+        'stabilise_time': 5,
         'comment': String('comment')
     }
 
@@ -59,7 +61,7 @@ class Measurement(MeasurementBase):
                 sourceVg1.set_voltage(Vg1)
 
                 # stabilise
-                time.sleep(stabilise_time)
+                progressbar_wait(stabilise_time)
 
                 # measure
                 Vg1m = meterVg1.get_voltage()
