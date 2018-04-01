@@ -185,7 +185,7 @@ class mainwindow(QSplitter):
             elif isinstance(value, np.ndarray):
                 value = '['+",".join(map(str, value.tolist()))+']'
             if isinstance(value, MeasurementParameter):
-                self.tbl_params.setCellWidget(i, 1, value.get_table_widget())
+                self.tbl_params.setCellWidget(i, 1, value.widget)
                 value.mainwindow = self
             else:
                 self.tbl_params.setItem(i, 1, QTableWidgetItem(str(value)))

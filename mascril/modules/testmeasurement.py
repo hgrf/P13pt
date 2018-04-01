@@ -1,4 +1,5 @@
-from P13pt.mascril.measurement import MeasurementBase, Folder, String, Sweep, Boolean
+from P13pt.mascril.measurement import MeasurementBase
+from P13pt.mascril.parameter import Folder, String, Sweep, Boolean
 from P13pt.mascril.progressbar import progressbar_wait
 from P13pt.drivers.testdrivers import VoltageSource, VoltMeter
 

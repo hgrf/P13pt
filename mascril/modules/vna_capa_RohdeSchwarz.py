@@ -3,7 +3,8 @@ This script uses the following driver for the Rohde and Schwarz VNA:
     https://github.com/Terrabits/rohdeschwarz
 '''
 
-from P13pt.mascril.measurement import MeasurementBase, Sweep, String, Folder, Boolean
+from P13pt.mascril.measurement import MeasurementBase
+from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from rohdeschwarz.instruments.vna import Vna as RohdeSchwarzVNA
 
