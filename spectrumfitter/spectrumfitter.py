@@ -8,11 +8,11 @@ from P13pt.rfspectrum import Network
 from P13pt.params_from_filename import params_from_filename
 import ConfigParser
 
-from PyQt5.QtCore import pyqtSignal, Qt, QSignalMapper
+from PyQt5.QtCore import Qt, QSignalMapper
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                          QPushButton, QFileDialog, QMessageBox, QSlider, QSpinBox, QLabel,
-                         QWidgetItem, QSplitter, QComboBox, QCheckBox)
+                         QWidgetItem, QSplitter, QComboBox, QCheckBox, QTabWidget)
 
 try:
     from PyQt5.QtCore import QString
@@ -129,6 +129,14 @@ class MainWindow(QSplitter):
         self.btn_load = QPushButton('Load')
         self.btn_prev = QPushButton(QIcon('../icons/previous.png'), '')
         self.btn_next = QPushButton(QIcon('../icons/next.png'), '')
+        self.cmb_plusminus = QComboBox()
+        for s in ['+', '-']:
+            self.cmb_plusminus.addItem(s)
+        self.cmb_parameter = QComboBox()
+        for s in ['Y11', 'Y12', 'Y21', 'Y22']:
+            self.cmb_parameter.addItem(s)
+        self.cmb_plusminus.setCurrentText(self.fitted_param[0])
+        self.cmb_parameter.setCurrentText(self.fitted_param[1:])
         l = QVBoxLayout()
         for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut],
                       [QLabel('Thru:'), self.txt_thru, self.btn_browsethru],
@@ -138,23 +146,60 @@ class MainWindow(QSplitter):
                 hl.addWidget(w)
             l.addLayout(hl)
         hl = QHBoxLayout()
-        for w in [self.btn_load, self.btn_prev, self.btn_next]:
+        for w in [self.btn_load, self.btn_prev, self.btn_next,
+                  QLabel('Fitted parameter:'), self.cmb_plusminus, self.cmb_parameter]:
             hl.addWidget(w)
         l.addLayout(hl)
         self.data_loading.setLayout(l)
 
-        # set up plotting area
-        self.plotting = QWidget()
+        # set up tabbed widget for different plots
+        self.plotting = QTabWidget()
+        self.plotting_s = QWidget()
+        self.plotting_y = QWidget()
+        self.plotting_yandfit = QWidget()
+        self.plotting.addTab(self.plotting_yandfit, 'Y and fit')
+        self.plotting.addTab(self.plotting_y, 'All Y')
+        self.plotting.addTab(self.plotting_s, 'All S')
+
+        # set up default plotting (Y and fit)
         self.figure = plt.figure()
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlabel('f [GHz]')
-        self.ax.set_ylabel('Y12 [mS]')
+        self.ax.set_ylabel(self.fitted_param+' [mS]')
         self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self.plotting)
+        self.toolbar = NavigationToolbar(self.canvas, self.plotting_yandfit)
         l = QVBoxLayout()
         for w in [self.toolbar, self.canvas]:
             l.addWidget(w)
-        self.plotting.setLayout(l)
+        self.plotting_yandfit.setLayout(l)
+
+        # set up plotting of all Y parameters
+        self.figure_y = plt.figure()
+        self.ax_y_list = [self.figure_y.add_subplot(221+i) for i in range(4)]
+        for i, ax in enumerate(self.ax_y_list):
+            ax.set_xlabel(r'$f [GHz]$')
+            ax.set_ylabel(r'$Y_{'+['11', '12', '21', '22'][i]+r'} [mS]$')
+        self.canvas_y = FigureCanvas(self.figure_y)
+        self.toolbar_y = NavigationToolbar(self.canvas_y, self.plotting_y)
+        l = QVBoxLayout()
+        for w in [self.toolbar_y, self.canvas_y]:
+            l.addWidget(w)
+        self.plotting_y.setLayout(l)
+        self.figure_y.tight_layout()
+
+        # set up plotting of all S parameters
+        self.figure_s = plt.figure()
+        self.ax_s_list = [self.figure_s.add_subplot(221+i) for i in range(4)]
+        for i, ax in enumerate(self.ax_s_list):
+            ax.set_xlabel(r'$f [GHz]$')
+            ax.set_ylabel(r'$S_{'+['11', '12', '21', '22'][i]+r'}$')
+        self.canvas_s = FigureCanvas(self.figure_s)
+        self.toolbar_s = NavigationToolbar(self.canvas_s, self.plotting_s)
+        l = QVBoxLayout()
+        for w in [self.toolbar_s, self.canvas_s]:
+            l.addWidget(w)
+        self.plotting_s.setLayout(l)
+        self.figure_s.tight_layout()
 
         # set up left widget of the splitter
         self.left_widget = QWidget(self)
@@ -221,6 +266,8 @@ class MainWindow(QSplitter):
         self.btn_load.clicked.connect(self.load)
         self.btn_prev.clicked.connect(self.prev_spectrum)
         self.btn_next.clicked.connect(self.next_spectrum)
+        self.cmb_plusminus.currentTextChanged.connect(self.parameter_modified)
+        self.cmb_parameter.currentTextChanged.connect(self.parameter_modified)
         self.btn_browsemodel.clicked.connect(self.browse_model)
         self.btn_loadmodel.clicked.connect(self.load_model)
         self.btn_fit.clicked.connect(self.fit_model)
@@ -250,7 +297,7 @@ class MainWindow(QSplitter):
         self.show()
 
         # make the window big
-        self.resize(1000,800)
+        self.resize(1200,800)
 
         # Set window title
         self.setWindowTitle("Spectrum Fitter")
@@ -299,11 +346,13 @@ class MainWindow(QSplitter):
         self.load_spectrum(True)
 
     def clear_ax(self):
-        for artist in self.ax.lines + self.ax.collections:
-            artist.remove()
-        self.ax.set_prop_cycle(None)
-        self.ax.set_title('')
-        self.canvas.draw()
+        for ax in [self.ax]+self.ax_y_list+self.ax_s_list:
+            for artist in ax.lines+ax.collections:
+                artist.remove()
+            ax.set_prop_cycle(None)
+            ax.set_title('')
+        for canvas in [self.canvas, self.canvas_y, self.canvas_s]:
+            canvas.draw()
 
     def load_spectrum(self, first_load=False):
         # clean up the axis
@@ -323,18 +372,44 @@ class MainWindow(QSplitter):
                 self.dut.y -= self.dummy.y
             self.duts[self.dut_files[self.current_index]] = copy(self.dut)
 
-        self.ax.set_title(', '.join([key+'='+str(params[key]) for key in params]))
-        if self.fitted_param == 'Y12':
-            self.y = self.dut.y[:,0,1]
-        elif self.fitted_param == '-Y12':
-            self.y = -self.dut.y[:,0,1]
-        else:
-            raise Exception('Unsupported parameter')
-        self.ax.plot(self.dut.f/1e9, self.y.real*1e3, label='Real')
-        self.ax.plot(self.dut.f/1e9, self.y.imag*1e3, label='Imag')
+        # plot single Y parameter
+        pm = -1. if self.fitted_param[0] == '-' else +1
+        i = int(self.fitted_param[2])-1
+        j = int(self.fitted_param[3])-1
+        self.y = pm*self.dut.y[:,i,j]
+        self.ax.plot(self.dut.f/1e9, self.y.real*1e3, label='Re')
+        self.ax.plot(self.dut.f/1e9, self.y.imag*1e3, label='Im')
+        self.ax.legend()
+
+        # plot all Y parameters
+        for i,ax in enumerate(self.ax_y_list):
+            y = self.dut.y[:,i//2,i%2]
+            ax.plot(self.dut.f/1e9, y.real*1e3, label='Re')
+            ax.plot(self.dut.f/1e9, y.imag*1e3, label='Im')
+            if not i:
+                ax.legend()
+
+        # plot all S parameters
+        for i,ax in enumerate(self.ax_s_list):
+            s = self.dut.s[:,i//2,i%2]
+            ax.plot(self.dut.f/1e9, s.real, label='Re')
+            ax.plot(self.dut.f/1e9, s.imag, label='Im')
+            if not i:
+                ax.legend()
+
+        # update titles
+        title = ', '.join([key + '=' + str(params[key]) for key in params])
+        self.ax.set_title(title)
+        for fig in [self.figure_y, self.figure_s]:
+            fig.suptitle(title)
+            fig.subplots_adjust(top=0.9)
+
         if first_load:
-            self.ax.set_xlim([min(self.dut.f/1e9), max(self.dut.f/1e9)])
-            self.figure.canvas.toolbar.update()
+            for ax in [self.ax]+self.ax_y_list+self.ax_s_list:
+                ax.set_xlim([min(self.dut.f/1e9), max(self.dut.f/1e9)])
+            for toolbar in [self.toolbar, self.toolbar_y, self.toolbar_s]:
+                toolbar.update()
+                toolbar.push_current()
 
         # draw model if available
         if self.model:
@@ -344,7 +419,15 @@ class MainWindow(QSplitter):
                 self.reset_values()
 
         # update canvas
+        for canvas in [self.canvas, self.canvas_y, self.canvas_s]:
+            canvas.draw()
+
+    def parameter_modified(self):
+        self.fitted_param = self.cmb_plusminus.currentText()+self.cmb_parameter.currentText()
+        self.ax.set_ylabel(self.fitted_param+' [mS]')
         self.canvas.draw()
+        if self.dut_files:
+            self.load_spectrum()
 
     def prev_spectrum(self):
         self.current_index -= 1
@@ -378,7 +461,8 @@ class MainWindow(QSplitter):
         self.model_params[self.dut_files[self.current_index]] = copy(self.model.values)
 
     def browse_model(self):
-        model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model', directory=os.path.dirname(__file__),
+        model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model',
+                                                         directory=os.path.join(os.path.dirname(__file__), 'models'),
                                                          filter='*.py')
         self.txt_model.setText(model_file)
         config.set('main', 'model', model_file)

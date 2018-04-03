@@ -1,18 +1,17 @@
-* enable user to choose which Y parameter (or even S?)
-* spectrum fitter should replace backslashes in results file
-* indicate typical quantities like Z0 and vpl below the fitting sliders
-* do not crash on exceptions, show error message
-* add button to readjust x+y axis and to reset zoom home
-  or make the navigation toolbar work properly
-* put button to de-embed Ra
-
-* check touchstone import (made the script crash last time)
-* put version string in result files
+* do not crash on exceptions, show error message // model bugs should be treated independently
 * script should not crash when trying to load invalid DUT folder
-* check if results recognition works if thru or dummy is not defined
-* when saving the results, make sure there is no KeyError for filename parameters
+* spectrum fitter should replace backslashes in results file
+* put version string in result files
+* add button to unload the model / remove the model curves
 * for model, dut, dummy, thru, config should be updated also if the text field is changed
   (not only if browse button is used)
+  -> config should be saved on successful load
+
+* add button to plot raw DUT, dummy, Thru S params
+* add button to de-embed Ra
+* check touchstone import (made the script crash last time)
+* check if results recognition works if thru or dummy is not defined
+* when saving the results, make sure there is no KeyError for filename parameters
 * loading the fitting parameters
   -> need to verify that model params are compatible
   -> need to verify that dataset is compatible
@@ -21,12 +20,9 @@
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
 * put a function to export deembedded admittance spectra
-* add button to plot raw DUT, dummy, Thru S params
-* add button to unload the model / remove the model curves
 * make a program that can plot spectra from fitresults (by clicking on datapoints)
 * error when loading model before spectra
-* legend real and imag
-* we should impose the order of the parameters
+* we should impose the order of the fitting parameters
 * the default fit method could be created automatically / be in a base class
 * make a history of fitting values every time they change so that the user can restore what was before fit
 * add fit result "grade"
