@@ -8,7 +8,8 @@ from P13pt.rfspectrum import Network
 from P13pt.params_from_filename import params_from_filename
 import ConfigParser
 
-from PyQt5.QtCore import Qt, QSignalMapper
+from PyQt5.QtCore import (Qt, QSignalMapper, qInstallMessageHandler, QtInfoMsg, QtCriticalMsg, QtDebugMsg,
+                          QtWarningMsg, QtFatalMsg)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                          QPushButton, QFileDialog, QMessageBox, QSlider, QSpinBox, QLabel,
@@ -479,13 +480,13 @@ class MainWindow(QSplitter):
         mod_name, file_ext = os.path.splitext(os.path.split(filename)[-1])
         try:
             mod = imp.load_source(mod_name, filename)
-        except IOError as e:
-            QMessageBox.critical(self, "Error", "Could not load module: " + str(e.args[1]))
+            if not hasattr(mod, 'Model'):
+                QMessageBox.critical(self, "Error", "Could not get correct class from file.")
+                return
+            self.model = getattr(mod, 'Model')()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", "Could not load module: " + str(e.message))
             return
-        if not hasattr(mod, 'Model'):
-            QMessageBox.critical(self, "Error", "Could not get correct class from file.")
-            return
-        self.model = getattr(mod, 'Model')()
         self.model_file = filename
         for member in inspect.getmembers(self.model, predicate=inspect.ismethod):
             if member[0].startswith('fit_'):
@@ -534,10 +535,14 @@ class MainWindow(QSplitter):
     def fit_model(self):
         if self.model:
             fit_method = getattr(self.model, 'fit_' + str(self.cmb_fitmethod.currentText()))
-            if self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()):
-                fit_method(self.dut.f, self.y, self.checkboxes)
-            else:
-                fit_method(self.dut.f, self.y)
+            try:
+                if self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()):
+                    fit_method(self.dut.f, self.y, self.checkboxes)
+                else:
+                    fit_method(self.dut.f, self.y)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", "Error during fit: " + str(e.message))
+                return
             for p in self.model.values:
                 self.sliders[p].setValue(self.model.values[p] / self.model.params[p][3])
 
@@ -680,8 +685,21 @@ class MainWindow(QSplitter):
             self.savepic()
             QApplication.processEvents()
 
+def msghandler(type, context, message):
+    if type == QtInfoMsg:
+        QMessageBox.information(None, 'Info', message)
+    elif type == QtDebugMsg:
+        QMessageBox.information(None, 'Debug', message)
+    elif type == QtCriticalMsg:
+        QMessageBox.critical(None, 'Critical', message)
+    elif type == QtWarningMsg:
+        QMessageBox.warning(None, 'Warning', message)
+    elif type == QtFatalMsg:
+        QMessageBox.critical(None, 'Fatal error', message)
 
 if __name__ == '__main__':
+    qInstallMessageHandler(msghandler)
+
     # CD into directory where this script is saved
     d = os.path.dirname(__file__)
     if d != '': os.chdir(d)

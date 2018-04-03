@@ -1,4 +1,3 @@
-* do not crash on exceptions, show error message // model bugs should be treated independently
 * script should not crash when trying to load invalid DUT folder
 * spectrum fitter should replace backslashes in results file
 * put version string in result files
