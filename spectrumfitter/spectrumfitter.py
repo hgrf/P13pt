@@ -474,7 +474,7 @@ class MainWindow(QSplitter):
 
     def plotdummy(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle('Dummy')
+        dialog.setWindowTitle('Dummy'+(' (deembedded thru)' if self.thru and self.thru_toggle_status else ''))
         dialog.setModal(True)
         figure = plt.figure()
         canvas = FigureCanvas(figure)
