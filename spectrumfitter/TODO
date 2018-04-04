@@ -1,5 +1,4 @@
 high priority:
-* check if results recognition works if thru or dummy is not defined
 * script should not crash when trying to load invalid DUT folder
 * error when loading model before spectra
 * put version string in result files
