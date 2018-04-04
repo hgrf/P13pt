@@ -13,7 +13,7 @@ from PyQt5.QtCore import (Qt, QSignalMapper, qInstallMessageHandler, QtInfoMsg, 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                          QPushButton, QFileDialog, QMessageBox, QSlider, QSpinBox, QLabel,
-                         QWidgetItem, QSplitter, QComboBox, QCheckBox, QTabWidget)
+                         QWidgetItem, QSplitter, QComboBox, QCheckBox, QTabWidget, QDialog)
 
 try:
     from PyQt5.QtCore import QString
@@ -113,11 +113,16 @@ class MainWindow(QSplitter):
     model_file = None
     sliders = {}
     checkboxes = {}
+    dummy_toggle_status = True
+    thru_toggle_status = True
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
         browse_icon = QIcon('../icons/folder.png')
+        plot_icon = QIcon('../icons/plot.png')
+        self.toggleon_icon = QIcon('../icons/on.png')
+        self.toggleoff_icon = QIcon('../icons/off.png')
 
         # set up data loading area
         self.data_loading = QWidget()
@@ -125,8 +130,18 @@ class MainWindow(QSplitter):
         self.btn_browsedut = QPushButton(browse_icon, '')
         self.txt_thru = QLineEdit('Path to thru...')
         self.btn_browsethru = QPushButton(browse_icon, '')
+        self.btn_togglethru = QPushButton(self.toggleon_icon, '')
+        self.btn_togglethru.setEnabled(False)
+        self.btn_plotthru = QPushButton(plot_icon, '')
+        self.btn_plotthru.setToolTip('Plot')
+        self.btn_plotthru.setEnabled(False)
         self.txt_dummy = QLineEdit('Path to dummy...')
         self.btn_browsedummy = QPushButton(browse_icon, '')
+        self.btn_toggledummy = QPushButton(self.toggleon_icon, '')
+        self.btn_toggledummy.setEnabled(False)
+        self.btn_plotdummy = QPushButton(plot_icon, '')
+        self.btn_plotdummy.setToolTip('Plot')
+        self.btn_plotdummy.setEnabled(False)
         self.btn_load = QPushButton('Load')
         self.btn_prev = QPushButton(QIcon('../icons/previous.png'), '')
         self.btn_next = QPushButton(QIcon('../icons/next.png'), '')
@@ -140,8 +155,8 @@ class MainWindow(QSplitter):
         self.cmb_parameter.setCurrentText(self.fitted_param[1:])
         l = QVBoxLayout()
         for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut],
-                      [QLabel('Thru:'), self.txt_thru, self.btn_browsethru],
-                      [QLabel('Dummy:'), self.txt_dummy, self.btn_browsedummy]]:
+                      [QLabel('Thru:'), self.txt_thru, self.btn_browsethru, self.btn_togglethru, self.btn_plotthru],
+                      [QLabel('Dummy:'), self.txt_dummy, self.btn_browsedummy, self.btn_toggledummy, self.btn_plotdummy]]:
             hl = QHBoxLayout()
             for w in field:
                 hl.addWidget(w)
@@ -264,7 +279,11 @@ class MainWindow(QSplitter):
             self.__dict__['btn_browse'+x].clicked.connect(self.map_browse.map)
             self.map_browse.setMapping(self.__dict__['btn_browse'+x], x)
         self.map_browse.mapped[str].connect(self.browse)
-        self.btn_load.clicked.connect(self.load)
+        self.btn_toggledummy.clicked.connect(self.toggledummy)
+        self.btn_togglethru.clicked.connect(self.togglethru)
+        self.btn_plotdummy.clicked.connect(self.plotdummy)
+        self.btn_plotthru.clicked.connect(self.plotthru)
+        self.btn_load.clicked.connect(self.load_clicked)
         self.btn_prev.clicked.connect(self.prev_spectrum)
         self.btn_next.clicked.connect(self.next_spectrum)
         self.cmb_plusminus.currentTextChanged.connect(self.parameter_modified)
@@ -311,9 +330,10 @@ class MainWindow(QSplitter):
         # save in config file
         config.set('main', str(x), folder)
 
-    def load(self):
+    def load(self, reinitialise=True):
         self.clear_ax()
-        self.current_index = 0
+        if reinitialise:
+            self.current_index = 0
         self.model_params = {}
         self.duts = {}
         self.dut_folder = str(self.txt_dut.text())
@@ -329,22 +349,33 @@ class MainWindow(QSplitter):
             self.txt_dummy.setText('Please select a valid dummy folder')
             self.dummy_file = ''
             self.dummy = None
+            self.btn_toggledummy.setEnabled(False)
+            self.btn_plotdummy.setEnabled(False)
         else:
             self.dummy_file, = dummy_files
             self.dummy = Network(self.dummy_file)
+            self.btn_toggledummy.setEnabled(True)
+            self.btn_plotdummy.setEnabled(True)
 
         thru_files = glob(os.path.join(str(self.txt_thru.text()), '*.txt'))
         if len(thru_files) != 1:
             self.txt_thru.setText('Please select a valid thru folder')
             self.thru_file = ''
             self.thru = None
+            self.btn_togglethru.setEnabled(False)
+            self.btn_plotthru.setEnabled(False)
         else:
             self.thru_file, = thru_files
             self.thru = Network(self.thru_file)
-            if self.dummy:
+            if self.dummy and self.thru_toggle_status:
                 self.dummy = self.dummy.deembed_thru(self.thru)
+            self.btn_togglethru.setEnabled(True)
+            self.btn_plotthru.setEnabled(True)
 
-        self.load_spectrum(True)
+        self.load_spectrum(reinitialise)
+
+    def load_clicked(self):     # workaround: if we connect button signal directly to load, we get reinitialise=False
+        self.load(True)
 
     def clear_ax(self):
         for ax in [self.ax]+self.ax_y_list+self.ax_s_list:
@@ -367,9 +398,9 @@ class MainWindow(QSplitter):
         else:
             # load spectra
             self.dut = Network(os.path.join(self.dut_folder, self.dut_files[self.current_index]))
-            if self.thru:
+            if self.thru and self.thru_toggle_status:
                 self.dut = self.dut.deembed_thru(self.thru)
-            if self.dummy:
+            if self.dummy and self.dummy_toggle_status:
                 self.dut.y -= self.dummy.y
             self.duts[self.dut_files[self.current_index]] = copy(self.dut)
 
@@ -422,6 +453,61 @@ class MainWindow(QSplitter):
         # update canvas
         for canvas in [self.canvas, self.canvas_y, self.canvas_s]:
             canvas.draw()
+
+    def toggledummy(self):
+        if self.dummy_toggle_status:
+            self.dummy_toggle_status = False
+            self.btn_toggledummy.setIcon(self.toggleoff_icon)
+        else:
+            self.dummy_toggle_status = True
+            self.btn_toggledummy.setIcon(self.toggleon_icon)
+        self.load(reinitialise=False)
+
+    def togglethru(self):
+        if self.thru_toggle_status:
+            self.thru_toggle_status = False
+            self.btn_togglethru.setIcon(self.toggleoff_icon)
+        else:
+            self.thru_toggle_status = True
+            self.btn_togglethru.setIcon(self.toggleon_icon)
+        self.load(reinitialise=False)
+
+    def plotdummy(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Dummy')
+        dialog.setModal(True)
+        figure = plt.figure()
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas, dialog)
+        l = QVBoxLayout()
+        for w in [toolbar, canvas]:
+            l.addWidget(w)
+        dialog.setLayout(l)
+        self.dummy.plot_mat('y', ylim=1e-3, fig=figure)
+        figure.suptitle(self.dummy.name)
+        figure.subplots_adjust(top=0.9)
+        canvas.draw()
+        dialog.show()
+
+    def plotthru(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Thru')
+        dialog.setModal(True)
+        figure = plt.figure()
+        ax = figure.add_subplot(111)
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas, dialog)
+        l = QVBoxLayout()
+        for w in [toolbar, canvas]:
+            l.addWidget(w)
+        dialog.setLayout(l)
+        name = self.thru.name
+        self.thru.name = None       # workaround to avoid cluttering the legend
+        self.thru.plot_s_deg(ax=ax)
+        ax.set_title(name)
+        self.thru.name = name
+        canvas.draw()
+        dialog.show()
 
     def parameter_modified(self):
         self.fitted_param = self.cmb_plusminus.currentText()+self.cmb_parameter.currentText()

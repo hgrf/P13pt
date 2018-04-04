@@ -6,7 +6,6 @@
   (not only if browse button is used)
   -> config should be saved on successful load
 
-* add button to plot raw DUT, dummy, Thru S params
 * add button to de-embed Ra
 * check touchstone import (made the script crash last time)
 * check if results recognition works if thru or dummy is not defined
