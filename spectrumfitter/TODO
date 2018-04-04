@@ -25,7 +25,6 @@ medium priority:
 * the default fit method could be created automatically / be in a base class
 * make a history of fitting values every time they change so that the user can restore what was before fit
 * check dataset coherence (i.e. all spectra have same number of frequency points and values can be read etc.)
-* when using "fit all", should disable interface but add stop button
 * the save results section should rather be controlled by the main widget since it manages all the model results too
 * no need for signal mapper for sliders, can just update all model values using slider dictionary
 * reset_values should not be in the model class

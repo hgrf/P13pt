@@ -115,6 +115,7 @@ class MainWindow(QSplitter):
     checkboxes = {}
     dummy_toggle_status = True
     thru_toggle_status = True
+    fitting_all = 0
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -233,15 +234,15 @@ class MainWindow(QSplitter):
         self.cmb_fitmethod = QComboBox()
         self.btn_fit = QPushButton('Fit')
         self.btn_fitall = QPushButton('Fit all')
-        self.sliders = QWidget()
+        self.sliderwidget = QWidget()
         self.sl_layout = QVBoxLayout()
-        self.sliders.setLayout(self.sl_layout)
+        self.sliderwidget.setLayout(self.sl_layout)
         l1 = QHBoxLayout()
         for w in [self.txt_model, self.btn_browsemodel, self.btn_loadmodel]:
             l1.addWidget(w)
         l = QVBoxLayout()
         l.addLayout(l1)
-        for w in [self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliders]:
+        for w in [self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliderwidget]:
             l.addWidget(w)
         self.fitting.setLayout(l)
 
@@ -633,11 +634,30 @@ class MainWindow(QSplitter):
                 self.sliders[p].setValue(self.model.values[p] / self.model.params[p][3])
 
     def fit_all(self):
+        self.fitting_all += 1
+        if self.fitting_all > 1:
+            return
+
+        self.btn_fitall.setText('Stop fitting')
+
+        widgets = [self.data_loading, self.sliderwidget, self.saving, self.btn_fit, self.txt_model, self.btn_browsemodel,
+                   self.btn_loadmodel]
+        for w in widgets:
+            w.setEnabled(False)
+
         for i in range(len(self.dut_files)):
+            if self.fitting_all > 1: # user requested stop
+                break
             self.current_index = i
             self.load_spectrum()
             self.fit_model()
             QApplication.processEvents()
+
+        for w in widgets:
+            w.setEnabled(True)
+
+        self.btn_fitall.setText('Fit all')
+        self.fitting_all = 0
 
     def value_changed(self, slider):
         self.model.values[slider.id] = slider.value() * self.model.params[slider.id][3]
