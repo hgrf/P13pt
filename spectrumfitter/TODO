@@ -1,7 +1,4 @@
 high priority:
-* script should not crash when trying to load invalid DUT folder
-* error when loading model before spectra
-* put version string in result files
 * add button to unload the model / remove the model curves
 * for model, dut, dummy, thru, config should be updated also if the text field is changed
   (not only if browse button is used)
@@ -19,7 +16,6 @@ medium priority:
 * let the user also decide a frequency range in which he wants to fit
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
-* put a function to export deembedded admittance spectra
 * we should impose the order of the fitting parameters
 * the default fit method could be created automatically / be in a base class
 * make a history of fitting values every time they change so that the user can restore what was before fit
@@ -31,3 +27,4 @@ medium priority:
 low priority:
 * make a program that can plot spectra from fitresults (by clicking on datapoints)
 * add fit result "grade"
+* put a function to export deembedded admittance spectra

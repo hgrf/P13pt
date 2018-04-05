@@ -355,7 +355,12 @@ class MainWindow(QSplitter):
             self.btn_plotdummy.setEnabled(False)
         else:
             self.dummy_file, = dummy_files
-            self.dummy = Network(self.dummy_file)
+            try:
+                self.dummy = Network(self.dummy_file)
+            except Exception as e:
+                QMessageBox.warning(self, 'Warning',
+                                    'File: ' + self.dummy_file + ' is not a valid RF spectrum file.')
+                return
             self.btn_toggledummy.setEnabled(True)
             self.btn_plotdummy.setEnabled(True)
 
@@ -368,9 +373,18 @@ class MainWindow(QSplitter):
             self.btn_plotthru.setEnabled(False)
         else:
             self.thru_file, = thru_files
-            self.thru = Network(self.thru_file)
+            try:
+                self.thru = Network(self.thru_file)
+            except Exception as e:
+                QMessageBox.warning(self, 'Warning',
+                                    'File: ' + self.thru_file + ' is not a valid RF spectrum file.')
+                return
             if self.dummy and self.thru_toggle_status:
-                self.dummy = self.dummy.deembed_thru(self.thru)
+                if self.dummy.number_of_ports == self.thru.number_of_ports and np.all(self.dummy.f==self.thru.f):
+                    self.dummy = self.dummy.deembed_thru(self.thru)
+                else:
+                    QMessageBox.warning(self, 'Warning', 'Could not deembed deembed thru from dummy.')
+                    return
             self.btn_togglethru.setEnabled(True)
             self.btn_plotthru.setEnabled(True)
 
@@ -398,12 +412,22 @@ class MainWindow(QSplitter):
         if not first_load and self.dut_files[self.current_index] in self.duts:
             self.dut = self.duts[self.dut_files[self.current_index]]
         else:
-            # load spectra
-            self.dut = Network(os.path.join(self.dut_folder, self.dut_files[self.current_index]))
+            # try to load spectrum and check its compatibility
+            try:
+                self.dut = Network(os.path.join(self.dut_folder, self.dut_files[self.current_index]))
+            except Exception as e:
+                QMessageBox.warning(self, 'Warning', 'File: '+self.dut_files[self.current_index]+' is not a valid RF spectrum file.')
+                return
             if self.thru and self.thru_toggle_status:
-                self.dut = self.dut.deembed_thru(self.thru)
+                if self.thru.number_of_ports == self.dut.number_of_ports and np.all(self.thru.f==self.dut.f):
+                    self.dut = self.dut.deembed_thru(self.thru)
+                else:
+                    QMessageBox.warning(self, 'Warning', 'Could not deembed thru.')
             if self.dummy and self.dummy_toggle_status:
-                self.dut.y -= self.dummy.y
+                if self.dummy.number_of_ports == self.dut.number_of_ports and np.all(self.dummy.f==self.dut.f):
+                    self.dut.y -= self.dummy.y
+                else:
+                    QMessageBox.warning(self, 'Warning', 'Could not deembed dummy.')
             self.duts[self.dut_files[self.current_index]] = copy(self.dut)
 
         # plot single Y parameter
@@ -621,6 +645,9 @@ class MainWindow(QSplitter):
             pass
 
     def fit_model(self):
+        if not self.dut:
+            QMessageBox.warning(self, 'Warning', 'Please load some data first.')
+            return
         if self.model:
             fit_method = getattr(self.model, 'fit_' + str(self.cmb_fitmethod.currentText()))
             try:
