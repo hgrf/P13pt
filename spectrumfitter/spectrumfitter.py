@@ -155,6 +155,7 @@ class MainWindow(QSplitter):
             self.cmb_parameter.addItem(s)
         self.cmb_plusminus.setCurrentText(self.fitted_param[0])
         self.cmb_parameter.setCurrentText(self.fitted_param[1:])
+        self.txt_ra = QLineEdit('0')
         l = QVBoxLayout()
         for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut],
                       [QLabel('Thru:'), self.txt_thru, self.btn_browsethru, self.btn_togglethru, self.btn_plotthru],
@@ -164,7 +165,7 @@ class MainWindow(QSplitter):
                 hl.addWidget(w)
             l.addLayout(hl)
         hl = QHBoxLayout()
-        for w in [self.btn_load, self.btn_prev, self.btn_next,
+        for w in [QLabel('Ra:'), self.txt_ra, self.btn_load, self.btn_prev, self.btn_next,
                   QLabel('Fitted parameter:'), self.cmb_plusminus, self.cmb_parameter]:
             hl.addWidget(w)
         l.addLayout(hl)
@@ -428,6 +429,18 @@ class MainWindow(QSplitter):
                     self.dut.y -= self.dummy.y
                 else:
                     QMessageBox.warning(self, 'Warning', 'Could not deembed dummy.')
+            try:
+                ra = float(self.txt_ra.text())
+            except:
+                QMessageBox.warning(self, 'Warning', 'Invalid value for Ra.')
+                ra = 0.
+            if not ra == 0:
+                y = np.zeros(self.dut.y.shape, dtype=complex)
+                y[:,0,0] = 1./(1./self.dut.y[:,0,0]-ra)
+                y[:,0,1] = 1./(1./self.dut.y[:,0,1]+ra)
+                y[:,1,0] = 1./(1./self.dut.y[:,1,0]+ra)
+                y[:,1,1] = 1./(1./self.dut.y[:,1,1]-ra)
+                self.dut.y = y
             self.duts[self.dut_files[self.current_index]] = copy(self.dut)
 
         # plot single Y parameter

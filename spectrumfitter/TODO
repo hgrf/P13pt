@@ -6,7 +6,6 @@ high priority:
 * indicate if de-embedding went well (otherwise show error or something)
 
 medium priority:
-* add button to de-embed Ra
 * check touchstone import (made the script crash last time)
 * when saving the results, make sure there is no KeyError for filename parameters
 * loading the fitting parameters
@@ -16,15 +15,15 @@ medium priority:
 * let the user also decide a frequency range in which he wants to fit
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
-* we should impose the order of the fitting parameters
 * the default fit method could be created automatically / be in a base class
 * make a history of fitting values every time they change so that the user can restore what was before fit
 * check dataset coherence (i.e. all spectra have same number of frequency points and values can be read etc.)
 * the save results section should rather be controlled by the main widget since it manages all the model results too
-* no need for signal mapper for sliders, can just update all model values using slider dictionary
 * reset_values should not be in the model class
 
 low priority:
 * make a program that can plot spectra from fitresults (by clicking on datapoints)
 * add fit result "grade"
 * put a function to export deembedded admittance spectra
+* we should impose the order of the fitting parameters
+* no need for signal mapper for sliders, can just update all model values using slider dictionary
