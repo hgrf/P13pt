@@ -104,13 +104,16 @@ class Model:
             W = float(self.txt_width.text())/1e6
         except ValueError:
             return
-        #r = self.values['r']/L*W
+        r = self.values['r']
+        rlo = self.values['rlo']
+        # the following values per unit length
         l = self.values['l']/L*W
         c = self.values['c']/L/W
         self.infolabel.setText('------------------------\n'+
                                'Z0 = '+str(np.sqrt(self.values['l']/self.values['c']))+' Ohm\n'+
                                'vpl/vf = '+str(1./np.sqrt(l*c)/1e6)+'\n'+
-                               'fres = '+str(1./(4.*np.sqrt(self.values['l']*self.values['c']))/1e9)+' GHz')
+                               'fres = '+str(1./(4.*np.sqrt(self.values['l']*self.values['c']))/1e9)+' GHz\n'+
+                               'rcont = '+str(rlo-r/3.)+' Ohm')
 
     def fit_RCRa(self, base_f, base_y):
         # define initial values
