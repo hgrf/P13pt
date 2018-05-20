@@ -233,3 +233,49 @@ class Model:
                 res = minimize(self.objective, params, args=(w, y))
             for p in self.values:
                 self.values[p] = res.params[p].value
+
+    def fit_RCLRa_2(self, base_f, base_y):
+        # define initial values
+        self.values['r'] = 40.
+        self.values['c'] = 180-15        
+        self.values['l'] = 100e-12
+        self.values['rlo'] = 40.
+        
+        # get crossover frequency
+        # avoid detecting the crossover associated with the leak
+        mask = base_f > 2e8
+        # try to detect crossover using threshold
+        f_below_thresh = base_f[mask][np.abs(base_y[mask].real-base_y[mask].imag)<5e-5]
+        if len(f_below_thresh):
+            fc = f_below_thresh[0]
+        else:
+            print "Threshold detection did not work"
+            fc = base_f[mask][np.argmin(np.abs(base_y[mask].real-base_y[mask].imag))]
+        
+        print "Detected fc:", fc/1e9, "GHz"
+        
+        # define masks
+        masks = [base_f < fc]
+        masks += [base_f > 0]    # here we will only fit C
+
+        # fit
+        for i, mask in enumerate(masks):
+            print "Fitting step ", i+1
+            w = 2.*np.pi*base_f[mask]
+            y = base_y[mask]  # minus sign because Y12 and not Y11
+
+            # create fit parameters
+            params = Parameters()
+            params.add('c', value=self.values['c'], min=self.params['c'][0]*self.params['c'][3], max=self.params['c'][1]*self.params['c'][3], vary=True if i in [0,1] else False)
+            params.add('rlo', value=self.values['rlo'], min=self.params['rlo'][0]*self.params['rlo'][3], max=self.params['rlo'][1]*self.params['rlo'][3], vary=True if i in [0,1] else False)
+            params.add('r', value=self.values['r'], min=self.params['r'][0]*self.params['r'][3], max=self.params['r'][1]*self.params['r'][3], vary=True if i in [1] else False)
+            params.add('l', value=self.values['l'], min=self.params['l'][0]*self.params['l'][3], max=self.params['l'][1]*self.params['l'][3], vary=True if i in [1] else False)
+        
+            # execute fit
+            if i in []:
+                # fit only imaginary part
+                res = minimize(self.objective, params, args=(w, y, 1))
+            else:
+                res = minimize(self.objective, params, args=(w, y))
+            for p in self.values:
+                self.values[p] = res.params[p].value
