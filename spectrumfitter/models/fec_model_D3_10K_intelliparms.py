@@ -114,7 +114,8 @@ class Model:
                                'Z0 = '+str(np.sqrt(self.values['l']/self.values['c']))+' Ohm\n'+
                                'vpl/vf = '+str(1./np.sqrt(l*c)/1e6)+'\n'+
                                'fres = '+str(1./(4.*np.sqrt(self.values['l']*self.values['c']))/1e9)+' GHz\n'+
-                               'rcont = '+str(rlo-r/3.)+' Ohm')
+                               'rcont = '+str(rlo-r/3.)+' Ohm\n'+
+                               'Q = '+str(np.sqrt(self.values['l']/self.values['c'])/self.values['r']))
 
     def fit_RCRa(self, base_f, base_y):
         # define initial values
