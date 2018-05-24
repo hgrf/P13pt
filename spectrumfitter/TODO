@@ -1,4 +1,5 @@
 high priority:
+* need to store and re-store access resistance in results file
 * for model, dut, dummy, thru, config should be updated also if the text field is changed
   (not only if browse button is used)
   -> config should be saved on successful load
@@ -11,6 +12,7 @@ medium priority:
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
 * reset_values should not be in the model class
+* spectrum fitter bug: when data is on C: and results file is on D:
 
 low priority:
 * make a program that can plot spectra from fitresults (by clicking on datapoints)
