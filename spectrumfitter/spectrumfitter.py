@@ -28,7 +28,7 @@ import numpy as np
 from copy import copy
 
 def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
-    dummy = thru = dut = model = None
+    dummy = thru = dut = model = ra = None
     # read results file
     with open(filename, 'r') as f:
         # read the header
@@ -49,6 +49,8 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
                         dut = line[4:].strip()
                     elif line.startswith('model:'):
                         model = line[6:].strip()
+                    elif line.startswith('ra:'):
+                        ra = float(line[3:].strip())
                 else:
                     # check if we reached the end of the header (or if we already had reached it previously)
                     # and if there is a last header line
@@ -79,7 +81,7 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
     if not extrainfo:
         return data
     else:
-        return data, dut, thru, dummy, model
+        return data, dut, thru, dummy, model, ra
 
 
 def clearLayout(layout):
@@ -751,6 +753,12 @@ class MainWindow(QSplitter):
             if self.dummy and self.dummy_toggle_status:
                 f.write('# dummy: ' + os.path.relpath(self.dummy_file, res_folder).replace('\\', '/') + '\r\n')
             f.write('# model: ' + os.path.basename(self.model_file).replace('\\', '/') + '\r\n')
+            try:
+                ra = float(self.txt_ra.text())
+            except:
+                ra = 0.
+            if not ra == 0:
+                f.write('# ra: ' + str(ra) + '\r\n')
 
             # determine columns
             f.write('# filename\t')
@@ -774,7 +782,7 @@ class MainWindow(QSplitter):
         res_folder = os.path.dirname(res_fname)
         # read the data
         try:
-            data, dut, thru, dummy, model = load_fitresults(res_fname, readfilenameparams=False, extrainfo=True)
+            data, dut, thru, dummy, model, ra = load_fitresults(res_fname, readfilenameparams=False, extrainfo=True)
         except IOError:
             QMessageBox.warning(self, 'Error', 'Could not load data')
             return
@@ -784,10 +792,15 @@ class MainWindow(QSplitter):
             QMessageBox.warning(self, 'Error', 'Could not load data')
             return
 
+        # try to load the model provided in the results file
+        self.txt_model.setText(os.path.join(os.path.dirname(__file__), 'models', model))
+        self.load_model()
+
         # load the dataset provided in the results file
         self.txt_dut.setText(os.path.join(res_folder, dut))
         self.txt_thru.setText(os.path.dirname(os.path.join(res_folder, thru)) if thru else '')
         self.txt_dummy.setText(os.path.dirname(os.path.join(res_folder, dummy)) if dummy else '')
+        self.txt_ra.setText(str(ra) if ra else '0')
         self.load()
 
         # get a list of parameter names
