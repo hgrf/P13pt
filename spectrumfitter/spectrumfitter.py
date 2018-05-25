@@ -598,6 +598,7 @@ class MainWindow(QSplitter):
     def load_model(self):
         # unload previous model
         clearLayout(self.sl_layout)
+        self.model = None
         self.sliders = {}
         self.checkboxes = {}
         self.cmb_fitmethod.clear()
@@ -609,11 +610,11 @@ class MainWindow(QSplitter):
             mod = imp.load_source(mod_name, filename)
             if not hasattr(mod, 'Model'):
                 QMessageBox.critical(self, "Error", "Could not get correct class from file.")
-                return
+                return False
             self.model = getattr(mod, 'Model')()
         except Exception as e:
             QMessageBox.critical(self, "Error", "Could not load module: " + str(e.message))
-            return
+            return False
         self.model_file = filename
         for member in inspect.getmembers(self.model, predicate=inspect.ismethod):
             if member[0].startswith('fit_'):
@@ -658,6 +659,8 @@ class MainWindow(QSplitter):
             self.model.update_info_widget()
         except AttributeError:
             pass
+
+        return True
 
     def fit_model(self):
         if not self.dut:
@@ -792,10 +795,6 @@ class MainWindow(QSplitter):
             QMessageBox.warning(self, 'Error', 'Could not load data')
             return
 
-        # try to load the model provided in the results file
-        self.txt_model.setText(os.path.join(os.path.dirname(__file__), 'models', model))
-        self.load_model()
-
         # load the dataset provided in the results file
         self.txt_dut.setText(os.path.join(res_folder, dut))
         self.txt_thru.setText(os.path.dirname(os.path.join(res_folder, thru)) if thru else '')
@@ -803,23 +802,26 @@ class MainWindow(QSplitter):
         self.txt_ra.setText(str(ra) if ra else '0')
         self.load()
 
-        # get a list of parameter names
-        params = [p for p in data]
-        unusable = []
-        # now check float conversion compatibility of the data columns, removing the ones that we cannot use
-        for p in params:
-            try:
-                data[p] = [float(x) for x in data[p]]
-            except ValueError:
-                unusable.append(p)
-        for p in unusable:
-            params.remove(p)
+        # try to load the model provided in the results file
+        self.txt_model.setText(os.path.join(os.path.dirname(__file__), 'models', model))
+        if self.load_model():
+            # get a list of parameter names
+            params = [p for p in data]
+            unusable = []
+            # now check float conversion compatibility of the data columns, removing the ones that we cannot use
+            for p in params:
+                try:
+                    data[p] = [float(x) for x in data[p]]
+                except ValueError:
+                    unusable.append(p)
+            for p in unusable:
+                params.remove(p)
 
-        for i, f in enumerate(data['filename']):
-            # careful, this will also add the parameters from the filename to the model params
-            # TODO: repair this (i.e. let the load_fitresults function inform the user about the number of filename parameters that need to be taken into account)
-            values = [float(data[p][i]) for p in params]
-            self.model_params[f] = dict(zip(params, values))
+            for i, f in enumerate(data['filename']):
+                # careful, this will also add the parameters from the filename to the model params
+                # TODO: repair this (i.e. let the load_fitresults function inform the user about the number of filename parameters that need to be taken into account)
+                values = [float(data[p][i]) for p in params]
+                self.model_params[f] = dict(zip(params, values))
 
         # just reload the spectrum to be sure that the model is plotted correctly
         self.load_spectrum()
