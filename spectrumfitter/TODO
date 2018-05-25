@@ -1,5 +1,6 @@
 high priority:
-* do not crash when trying to open results file that has double newlines
+* figure out icons and models folder for exe file creation
+* fix file saving for results file in Windows
 * for model, dut, dummy, thru, config should be updated also if the text field is changed
   (not only if browse button is used)
   -> config should be saved on successful load
