@@ -311,6 +311,7 @@ class MainWindow(QSplitter):
             if config.has_option('main', 'thru'): self.txt_thru.setText(config.get('main', 'thru'))
             if config.has_option('main', 'dummy'): self.txt_dummy.setText(config.get('main', 'dummy'))
             if config.has_option('main', 'model'): self.txt_model.setText(config.get('main', 'model'))
+            if config.has_option('main', 'ra'): self.txt_ra.setText(config.get('main', 'ra'))
         else:
             config.add_section('main')
 
@@ -330,10 +331,8 @@ class MainWindow(QSplitter):
     def browse(self, x):
         # open browser and update the text field
         folder = QFileDialog.getExistingDirectory(self, 'Choose dataset')
-        self.__dict__['txt_'+str(x)].setText(folder)
-
-        # save in config file
-        config.set('main', str(x), folder)
+        if folder:
+            self.__dict__['txt_'+str(x)].setText(folder)
 
     def load(self, reinitialise=True):
         self.clear_ax()
@@ -391,6 +390,10 @@ class MainWindow(QSplitter):
             self.btn_togglethru.setEnabled(True)
             self.btn_plotthru.setEnabled(True)
 
+        config.set('main', 'dut', self.txt_dut.text() if self.dut_folder else None)
+        config.set('main', 'thru', self.txt_thru.text() if self.thru_file else None)
+        config.set('main', 'dummy', self.txt_dummy.text() if self.dummy_file else None)
+        config.set('main', 'ra', self.txt_ra.text())
         self.load_spectrum(reinitialise)
 
     def load_clicked(self):     # workaround: if we connect button signal directly to load, we get reinitialise=False
@@ -596,8 +599,9 @@ class MainWindow(QSplitter):
         model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model',
                                                          directory=os.path.join(os.path.dirname(__file__), 'models'),
                                                          filter='*.py')
-        self.txt_model.setText(model_file)
-        config.set('main', 'model', model_file)
+
+        if model_file:
+            self.txt_model.setText(model_file)
 
     def load_model(self):
         # unload previous model
@@ -664,6 +668,7 @@ class MainWindow(QSplitter):
         except AttributeError:
             pass
 
+        config.set('main', 'model', filename)
         return True
 
     def fit_model(self):
@@ -740,7 +745,8 @@ class MainWindow(QSplitter):
 
     def browse_results(self):
         results_file, filter = QFileDialog.getSaveFileName(self, 'Results file', options=QFileDialog.DontConfirmOverwrite)
-        self.txt_resultsfile.setText(results_file)
+        if results_file:
+            self.txt_resultsfile.setText(results_file)
 
     def save_results(self):
         res_fname = self.txt_resultsfile.text()
@@ -832,7 +838,8 @@ class MainWindow(QSplitter):
 
     def browse_picfolder(self):
         folder = QFileDialog.getExistingDirectory(self, 'Choose folder')
-        self.txt_picfolder.setText(folder)
+        if folder:
+            self.txt_picfolder.setText(folder)
 
     def savepic(self):
         if self.dut:
