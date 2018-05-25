@@ -1,16 +1,18 @@
 high priority:
-* do not crash when fitting script has division / 0
+* do not crash when trying to open results file that has double newlines
 * for model, dut, dummy, thru, config should be updated also if the text field is changed
   (not only if browse button is used)
   -> config should be saved on successful load
 * do not crash when trying to save results file without model loaded
 * file and folder fields should be reset to previous value when browse is cancelled, not to nothing
+* make a history for results files
+* enable displaying model on a broader frequency range
+* let the user also decide a frequency range in which he wants to fit
 
 medium priority:
 * add button to unload the model / remove the model curves
 * when saving the results, make sure there is no KeyError for filename parameters
 * loading the fitting parameters: verify that model params / dataset are compatible
-* let the user also decide a frequency range in which he wants to fit
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
 * reset_values should not be in the model class

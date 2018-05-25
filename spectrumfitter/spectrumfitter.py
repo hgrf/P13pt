@@ -575,7 +575,11 @@ class MainWindow(QSplitter):
 
         # update model lines on plot
         f = np.asarray(self.dut.f)
-        y = self.model.admittance(2.*np.pi*f, **self.model.values)
+        try:
+            y = self.model.admittance(2.*np.pi*f, **self.model.values)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", "Could not calculate model admittance: " + str(e.message))
+            return
 
         if self.line_r:
             self.line_r.set_ydata(y.real*1e3)

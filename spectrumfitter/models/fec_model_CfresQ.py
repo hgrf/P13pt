@@ -6,12 +6,6 @@ class Model:
     # dictionary of the model's parameters
     # for each parameter, we store the minimum and maximum value,
     # an initial value, a multiplier value and a unit
-#    params = {
-#        'r': [1., 1000., 1000., 1, 'Ohm'],
-#        'c': [0.1, 400., 200., 1e-15, 'fF'],
-#        'l': [0, 2000, 0., 1e-12, 'pH'],
-#        'rlo': [0, 1000, 200., 1, 'Ohm'],
-#    }
     params = {
         'c': [1., 400., 200., 1e-15, 'fF'],
         'fres': [1., 100., 30., 1e9, 'GHz'],
