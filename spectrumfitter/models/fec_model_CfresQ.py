@@ -110,12 +110,12 @@ class Model:
 #                               'fres = '+str(1./(4.*np.sqrt(self.values['l']*self.values['c']))/1e9)+' GHz\n'+
 #                               'rcont = '+str(rlo-r/3.)+' Ohm')
 
-    def fit_RCRa(self, base_f, base_y):
+    def fit_CfresQ(self, base_f, base_y):
         # define initial values
         self.values['c'] = 200e-15
-        self.values['fres'] = 30e9
-        self.values['q'] = 0.6
-        self.values['rcont'] = 0.
+        self.values['fres'] = 40e9
+        self.values['q'] = 0.5
+        #self.values['rcont'] = 0.
         
         # get crossover frequency
         # avoid detecting the crossover associated with the possible leak
@@ -132,8 +132,6 @@ class Model:
         
         # define masks
         masks = [base_f > 0.]    # fit everything except for Q
-        masks += [base_f < fc/2.]   # fit C as best as possible
-        masks += [base_f > 0.]   # fit C as best as possible
 
         # fit
         for i, mask in enumerate(masks):
@@ -142,10 +140,10 @@ class Model:
 
             # create fit parameters
             params = Parameters()
-            params.add('c', value=self.values['c'], min=self.params['c'][0]*self.params['c'][3], max=self.params['c'][1]*self.params['c'][3], vary=True if i in [0,1] else False)
-            params.add('fres', value=self.values['fres'], min=self.params['fres'][0]*self.params['fres'][3], max=self.params['fres'][1]*self.params['fres'][3], vary=True if i in [0,2] else False)
-            params.add('q', value=self.values['q'], min=self.params['q'][0]*self.params['q'][3], max=self.params['q'][1]*self.params['q'][3], vary=True if i in [2] else False)
-            params.add('rcont', value=self.values['rcont'], min=self.params['rcont'][0]*self.params['rcont'][3], max=self.params['rcont'][1]*self.params['rcont'][3], vary=True if i in [0,2] else False)
+            params.add('c', value=self.values['c'], min=self.params['c'][0]*self.params['c'][3], max=self.params['c'][1]*self.params['c'][3], vary=True if i in [0] else False)
+            params.add('fres', value=self.values['fres'], min=self.params['fres'][0]*self.params['fres'][3], max=self.params['fres'][1]*self.params['fres'][3], vary=True if i in [0] else False)
+            params.add('q', value=self.values['q'], min=self.params['q'][0]*self.params['q'][3], max=self.params['q'][1]*self.params['q'][3], vary=True if i in [0] else False)
+            params.add('rcont', value=self.values['rcont'], min=self.params['rcont'][0]*self.params['rcont'][3], max=self.params['rcont'][1]*self.params['rcont'][3], vary=True if i in [] else False)
         
             # execute fit
             if i in []:
