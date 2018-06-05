@@ -1,6 +1,10 @@
-high priority:
+distribution for windows:
+* make sure "updating" works
 * figure out icons and models folder for exe file creation
-* fix file saving for results file in Windows
+* there is an error message when we execute and close in Win10
+
+high priority:
+* fix file saving for results file in Windows (CR <-> LF)
 * for model, dut, dummy, thru, config should be updated also if the text field is changed
   (not only if browse button is used)
   -> config should be saved on successful load
@@ -9,6 +13,7 @@ high priority:
 * make a history for results files
 * enable displaying model on a broader frequency range
 * let the user also decide a frequency range in which he wants to fit
+* it should be possible to load a read-only fitresults file
 
 medium priority:
 * add button to unload the model / remove the model curves

@@ -1,6 +1,6 @@
 @echo off
-echo You should make sure you have the correct version of pandas:
-echo     conda install pandas==0.20.3
+echo Check out conda-spec-file.txt for the recommended setup.
+echo ---
 pause
 pyinstaller spectrumfitter.spec
 mkdir dist\spectrumfitter\platforms
