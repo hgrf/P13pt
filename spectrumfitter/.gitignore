@@ -1,1 +1,4 @@
 spectrumfitter.cfg
+build/
+dist/
+Output/
