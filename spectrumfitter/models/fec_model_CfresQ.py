@@ -8,7 +8,7 @@ class Model:
     # an initial value, a multiplier value and a unit
     params = {
         'c': [1., 400., 200., 1e-15, 'fF'],
-        'fres': [1., 100., 30., 1e9, 'GHz'],
+        'fres': [1., 1000., 300., 1e8, 'dGHz'],
         'q': [1., 1000, 600, 1e-3, 'm'],
         'rcont': [0., 100., 0., 1, 'Ohm'],
     }
