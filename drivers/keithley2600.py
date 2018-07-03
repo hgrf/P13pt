@@ -4,6 +4,8 @@ Driver for the Keithley 2600 SourceMeter
 for PyVISA 1.8
 
 @author: Holger Graef
+
+contains elements from an acquisition script written by Romaric Le Goff
 """
 
 import visa
