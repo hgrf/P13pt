@@ -96,7 +96,8 @@ class MeasurementBase(QThread):
         self.new_observables_data.emit(row)
 
     def end_saving(self):
-        self.data_file.close()
+        if self.data_file is not None:
+            self.data_file.close()
         self.data_file = None
 
     def measure(self):
