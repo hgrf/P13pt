@@ -32,7 +32,10 @@ def n_from_vg(Vg, d, Vdp, include_Cq=False, T=0., eps_r=3.2):
     if include_Cq:
         # include 1st order quantum capacitance correction
         mu = hbar*vf*np.sqrt(np.pi*np.abs(n))
-        Cq = 2.*e**2*kB*T/(np.pi*(vf*hbar)**2)*np.log(2.+2.*np.cosh(mu/(kB*T)))
+        if T == 0.:
+            Cq = 2.*e**2*mu/(np.pi*(vf*hbar)**2)
+        else:    
+            Cq = 2.*e**2*kB*T/(np.pi*(vf*hbar)**2)*np.log(2.+2.*np.cosh(mu/(kB*T)))
         C = 1./(1./Cgeo+1./Cq)
         n = C*(Vg-Vdp)/e
     return n
