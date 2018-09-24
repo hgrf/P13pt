@@ -1,4 +1,4 @@
-# P13 python tools
+﻿# P13 python tools
 
 P13pt is a set of python tools (some helper scripts, rudimentary instrument drivers,
 automation software, a plotting tool and a fitting tool for vector network analyzer - VNA -
@@ -15,8 +15,8 @@ algorithm.
 ## Components
 
 * Instrument drivers for Anritsu VNA MS4644B, iTest Bilt voltage sources and meters, Keithley
-2400 and 2600 SMUs and the SI9700 temperature controller (zilockin.py is not a driver, just
-a "frontend" for the Zurich Instruments lock-in driver)
+2400 and 2600 SMUs, the Yokogawa 7651 source and the SI9700 temperature controller (zilockin.py
+is not a driver, just a "frontend" for the Zurich Instruments lock-in driver)
 * [SpectrumFitter](https://github.com/green-mercury/P13pt/tree/master/spectrumfitter), a
 fitting tool for 2-port network VNA spectra.
 * [Graphulator](https://github.com/green-mercury/P13pt/tree/master/graphulator), a calculator
