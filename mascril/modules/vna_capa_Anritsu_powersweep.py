@@ -3,11 +3,19 @@ from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.mascril.progressbar import progressbar_wait
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.anritsuvna import AnritsuVNA
+from P13pt.drivers.yoko7651 import Yoko7651
 
 import time
 import numpy as np
 import os
 import errno
+
+def create_path(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 class Measurement(MeasurementBase):
     params = {
@@ -17,8 +25,9 @@ class Measurement(MeasurementBase):
         'Vg_stabilise_time': 5.,
         'pwr_stabilise_time': 5.,
         'comment': String(''),
-        'data_dir': Folder(r''),
+        'data_dir': Folder(r'D:\MeasurementJANIS\Holger\test'),
         'use_vna': Boolean(True),
+        'use_chuck': Boolean(True), # we are not controlling the chuck here, just recording the value of the chuck voltage
         'init_bilt': Boolean(False)
     }
 
@@ -29,56 +38,54 @@ class Measurement(MeasurementBase):
     ]
 
     def measure(self, data_dir, Vgs, pwrs, Rg, comment, Vg_stabilise_time,
-                pwr_stabilise_time, use_vna, init_bilt, **kwargs):
+                pwr_stabilise_time, use_chuck, use_vna, init_bilt, **kwargs):
         print "==================================="        
         print "Starting acquisition script..."
 
-        # initialise instruments
-        try:
-            print "Setting up DC sources and voltmeters..."
-            bilt = Bilt('TCPIP0::192.168.0.2::5025::SOCKET')
-            if init_bilt:
-                # source (bilt, channel, range, filter, slope in V/ms, label):
-                self.sourceVg = sourceVg = BiltVoltageSource(bilt, "I1", "12", "1", 0.005, "Vg")
-            else:
-                self.sourceVg = sourceVg = BiltVoltageSource(bilt, "I1", initialise=False)
-            # voltmeter (bilt, channel, filt, label=None)
-            self.meterVg = meterVg = BiltVoltMeter(bilt, "I5;C1", "2", "Vgm")
-            print "DC sources and voltmeters are set up."
-        except:
-            print "There has been an error setting up DC sources and voltmeters."
-            raise
-            
-        try:
-            print "Setting up VNA..."
-            vna = AnritsuVNA('GPIB::6::INSTR')
-            sweeptime = vna.get_sweep_time()
-            source_att = vna.get_source_att(1)
-            source_att2 = vna.get_source_att(2)
-            if not source_att == source_att2:
-                print "This module should only be used when the two sources use the same attenuator."
-                raise Exception
-            print "Detected same source attenuator on ports 1 and 2:"
-            print source_att, "dB"
-            print "VNA is set up."
-        except:
-            print "There has been an error setting up the VNA."
-            raise
+        chuck_string = ''
 
-        timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
+        # initialise instruments
+        print "Setting up DC sources and voltmeters..."
+        bilt = Bilt('TCPIP0::192.168.0.2::5025::SOCKET')
+        if init_bilt:
+            # source (bilt, channel, range, filter, slope in V/ms, label):
+            self.sourceVg = sourceVg = BiltVoltageSource(bilt, "I1", "12", "1", 0.005, "Vg")
+        else:
+            self.sourceVg = sourceVg = BiltVoltageSource(bilt, "I1", initialise=False)
+        # voltmeter (bilt, channel, filt, label=None)
+        self.meterVg = meterVg = BiltVoltMeter(bilt, "I5;C1", "2", "Vgm")
+        print "DC sources and voltmeters are set up."
+
+        if use_chuck:
+           print "Setting up Yokogawa for chuck voltage..."
+           # connect to the Yoko without initialising, this will lead to
+           # an exception if the Yoko is not properly configured (voltage
+           # source, range 30V, output ON)
+           yoko = Yoko7651('GPIB::3::INSTR', initialise=False, rang=30)
+           chuck_string = '_Vchuck={:.1f}'.format(yoko.get_voltage())
+           print "Yokogawa is set up."
+        
+        print "Setting up VNA..."
+        vna = AnritsuVNA('GPIB::6::INSTR')
+        sweeptime = vna.get_sweep_time()
+        source_att = vna.get_source_att(1)
+        source_att2 = vna.get_source_att(2)
+        if not source_att == source_att2:
+            print "This module should only be used when the two sources use the same attenuator."
+            raise Exception
+        print "Detected same source attenuator on ports 1 and 2:"
+        print source_att, "dB"
+        print "VNA is set up."
 
         # prepare saving DC data
-        filename = timestamp + ('_'+comment if comment else '')
+        timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
+        filename = timestamp+chuck_string+('_'+comment if comment else '')
         self.prepare_saving(os.path.join(data_dir, filename+'.txt'))
 
         if use_vna:
             # prepare saving RF data
             spectra_fol = os.path.join(data_dir, filename)
-            try:
-                os.makedirs(spectra_fol)
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
+            create_path(spectra_fol)
             if vna.get_sweep_type() != 'FSEGM':
                 print "This module should only be used when the VNA is in segmented sweep mode."
                 raise Exception
@@ -133,7 +140,7 @@ class Measurement(MeasurementBase):
                         time.sleep(0.5)
                     table = vna.get_table([1,2,3,4])
                     timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
-                    spectrum_file = timestamp+'_Vg=%2.4f'%(Vg)+'_pwr='+str(pwr)+'.txt'
+                    spectrum_file = timestamp+'_Vg={:.3f}_pwr={:.0f}.format(Vg).txt'.format(Vg, pwr)
                     np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
 
         print "Acquisition done."
