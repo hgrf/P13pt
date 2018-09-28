@@ -57,7 +57,7 @@ class ReadOnlyConsole(QTextEdit):
                 break
 
         # insert remaining text
-        self.insertPlainText(QString(data))
+        self.insertPlainText(data)
         sb = self.verticalScrollBar()
         sb.setValue(sb.maximum())
 
