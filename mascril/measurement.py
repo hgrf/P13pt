@@ -1,6 +1,7 @@
 import sys
 import os
 import errno
+import traceback
 from io import BytesIO as StringIO
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
 from P13pt.mascril.parameter import MeasurementParameter
@@ -60,7 +61,8 @@ class MeasurementBase(QThread):
         try:
             l = self.measure(**params)
         except Exception as e:
-            print "Error: "+e.message
+            print "An exception occured\n-----------------------------"
+            traceback.print_exc(file=sys.stdout)
 
         self.tidy_up()
         self.reset_console()
