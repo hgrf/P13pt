@@ -31,7 +31,7 @@ class Measurement(MeasurementBase):
         try:
             print "Setting up DC sources..."
             self.sourceVg = sourceVg = K2400('GPIB::24::INSTR', sourcemode='v',
-                vrang=200, irang=10e-6, slope=0.1, initialise=init)
+                vrang=200, irang=10e-6, slope=1, initialise=init)
             self.sourceVds = sourceVds = K2600('GPIB::26::INSTR', slope=0.005,
                 initialise=init)
             print "DC sources and voltmeters are set up."
