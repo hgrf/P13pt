@@ -10,6 +10,7 @@ class Measurement(MeasurementBase):
     params = {
         'Vds': 10e-3,
         'Vgs': Sweep([0.]),
+	'Vg_speed': 5,
         'Rg': 100e3,
         'stabilise_time': 0.05,
         'init': Boolean(True),
@@ -23,7 +24,7 @@ class Measurement(MeasurementBase):
         ['np.abs(Ileak) > 1e-8', MeasurementBase.ALARM_CALLCOPS]                                                           # is applied between the two gates
     ]
 
-    def measure(self, Vds, Vgs, Rg, stabilise_time, init, data_dir, comment, **kwargs):
+    def measure(self, Vds, Vgs, Vg_speed, Rg, stabilise_time, init, data_dir, comment, **kwargs):
         print "==================================="        
         print "Starting acquisition script..."
 
@@ -31,7 +32,7 @@ class Measurement(MeasurementBase):
         try:
             print "Setting up DC sources..."
             self.sourceVg = sourceVg = K2400('GPIB::24::INSTR', sourcemode='v',
-                vrang=200, irang=10e-6, slope=1, initialise=init)
+                vrang=200, irang=10e-6, slope=Vg_speed, initialise=init)
             self.sourceVds = sourceVds = K2600('GPIB::26::INSTR', slope=0.005,
                 initialise=init)
             print "DC sources and voltmeters are set up."
@@ -51,21 +52,37 @@ class Measurement(MeasurementBase):
             if self.flags['quit_requested']:
                 return locals()
 
+            #t0 = time.time()
             print 'Setting Vg='+str(Vg)+' V...'
             sourceVg.set_voltage(Vg)
+            #print 'Voltage setting time', time.time()-t0
+
+            #t0 = time.time()
             time.sleep(stabilise_time)
+            #print 'Stabilising time', time.time()-t0
 
             # measure
+            #t0 = time.time()
             Vgm = sourceVg.get_voltage()
+            #print 'Acquisition time Vgm', time.time()-t0
+            #t0 = time.time()
             Ileak = sourceVg.get_current()
+            #print 'Acquisition time Ileak', time.time()-t0
+            #t0 = time.time()
             Vdsm = sourceVds.get_voltage()
+            #print 'Acquisition time Vdsm', time.time()-t0
+            #t0 = time.time()
             Ids = sourceVds.get_current()
+            #print 'Acquisition time Ids', time.time()-t0
+
 
             # do calculations
             Rds = Vds/Ids
 
+            #t0 = time.time()
             # save data
             self.save_row(locals())
+            #print 'Data saving time', time.time()-t0
 
         print "Acquisition done."
         
