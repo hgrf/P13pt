@@ -141,7 +141,7 @@ class Measurement(MeasurementBase):
                     time.sleep(0.5)
                 table = vna.get_table([1,2,3,4])
                 timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
-                spectrum_file = timestamp+'_Vg={:.3f}'.format(Vg)
+                spectrum_file = timestamp+'_Vg={:.3f}.txt'.format(Vg)
                 np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
 
         print "Acquisition done."
