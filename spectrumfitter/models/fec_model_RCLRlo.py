@@ -175,7 +175,66 @@ class Model:
                 res = minimize(self.objective, params, args=(w, y))
             for p in self.values:
                 self.values[p] = res.params[p].value
-                
+
+    def fit_RCRa_D9(self, base_f, base_y):
+        # define initial values
+        self.values['r'] = 200.
+        self.values['c'] = 100e-15        
+        self.values['l'] = 0.
+        self.values['rlo'] = 230.
+        
+        # get crossover frequency
+        # avoid detecting the crossover associated with the leak or associated to high frequency weirdness
+        mask = np.logical_and(base_f > 2e8, base_f < 12e9)
+        # try to detect crossover using threshold
+        f_below_thresh = base_f[mask][np.abs(base_y[mask].real-base_y[mask].imag)<5e-5]
+        if len(f_below_thresh):
+            fc = f_below_thresh[0]
+        else:
+            print "Threshold detection did not work"
+            fc = base_f[mask][np.argmin(np.abs(base_y[mask].real-base_y[mask].imag))]
+        
+        print "Detected fc:", fc/1e9, "GHz"
+        #if fc < 3.1e8: fc = 1e9
+        
+        # define masks
+        masks = [base_f < fc/5.]    # here we will only fit C
+        masks += [base_f < 2.*fc]   # here we will only fit Rlo
+        
+        # do it again
+        masks += [base_f < fc/2.]
+        masks += [base_f < 2.*fc]
+        
+        # now fit R
+        masks += [base_f < 5.*fc]
+        
+        # Rlo again
+        masks += [base_f < 2.*fc]
+        
+        # L
+        #masks += [np.logical_and(base_f > 2e9, base_f < 15e9)]
+
+        # fit
+        for i, mask in enumerate(masks):
+            w = 2.*np.pi*base_f[mask]
+            y = base_y[mask]  # minus sign because Y12 and not Y11
+
+            # create fit parameters
+            params = Parameters()
+            params.add('c', value=self.values['c'], min=self.params['c'][0]*self.params['c'][3], max=self.params['c'][1]*self.params['c'][3], vary=True if i in [0, 2] else False)
+            params.add('rlo', value=self.values['rlo'], min=self.params['rlo'][0]*self.params['rlo'][3], max=self.params['rlo'][1]*self.params['rlo'][3], vary=True if i in [1, 3, 5] else False)
+            params.add('r', value=self.values['r'], min=self.params['r'][0]*self.params['r'][3], max=self.params['r'][1]*self.params['r'][3], vary=True if i in [4,6] else False)
+            params.add('l', value=self.values['l'], min=self.params['l'][0]*self.params['l'][3], max=self.params['l'][1]*self.params['l'][3], vary=True if i in [6] else False)
+        
+            # execute fit
+            if i in []:
+                # fit only imaginary part
+                res = minimize(self.objective, params, args=(w, y, 1))
+            else:
+                res = minimize(self.objective, params, args=(w, y))
+            for p in self.values:
+                self.values[p] = res.params[p].value
+
     def fit_RCLRa(self, base_f, base_y):
         # define initial values
         self.values['r'] = 200.
