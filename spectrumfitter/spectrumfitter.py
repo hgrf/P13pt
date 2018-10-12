@@ -349,6 +349,7 @@ class MainWindow(QSplitter):
             return
 
         dummy_files = glob(os.path.join(str(self.txt_dummy.text()), '*.txt'))
+        dummy_files += glob(os.path.join(str(self.txt_dummy.text()), '*.s2p'))
         if len(dummy_files) != 1:
             self.txt_dummy.setText('Please select a valid dummy folder')
             self.dummy_file = ''
@@ -367,6 +368,7 @@ class MainWindow(QSplitter):
             self.btn_plotdummy.setEnabled(True)
 
         thru_files = glob(os.path.join(str(self.txt_thru.text()), '*.txt'))
+        thru_files += glob(os.path.join(str(self.txt_thru.text()), '*.s2p'))
         if len(thru_files) != 1:
             self.txt_thru.setText('Please select a valid thru folder')
             self.thru_file = ''
@@ -382,7 +384,7 @@ class MainWindow(QSplitter):
                                     'File: ' + self.thru_file + ' is not a valid RF spectrum file.')
                 return
             if self.dummy and self.thru_toggle_status:
-                if self.dummy.number_of_ports == self.thru.number_of_ports and np.all(self.dummy.f==self.thru.f):
+                if self.dummy.number_of_ports == self.thru.number_of_ports and np.max(np.abs(self.dummy.f-self.thru.f))<1e-3: # check for mHz deviation, since sometimes the frequency value saved is not 100% equal when importing from different file formats...
                     self.dummy = self.dummy.deembed_thru(self.thru)
                 else:
                     QMessageBox.warning(self, 'Warning', 'Could not deembed deembed thru from dummy.')
@@ -425,12 +427,12 @@ class MainWindow(QSplitter):
                 QMessageBox.warning(self, 'Warning', 'File: '+self.dut_files[self.current_index]+' is not a valid RF spectrum file.')
                 return
             if self.thru and self.thru_toggle_status:
-                if self.thru.number_of_ports == self.dut.number_of_ports and np.all(self.thru.f==self.dut.f):
+                if self.thru.number_of_ports == self.dut.number_of_ports and np.max(np.abs(self.dummy.f-self.thru.f))<1e-3:
                     self.dut = self.dut.deembed_thru(self.thru)
                 else:
                     QMessageBox.warning(self, 'Warning', 'Could not deembed thru.')
             if self.dummy and self.dummy_toggle_status:
-                if self.dummy.number_of_ports == self.dut.number_of_ports and np.all(self.dummy.f==self.dut.f):
+                if self.dummy.number_of_ports == self.dut.number_of_ports and np.max(np.abs(self.dummy.f-self.thru.f))<1e-3:
                     self.dut.y -= self.dummy.y
                 else:
                     QMessageBox.warning(self, 'Warning', 'Could not deembed dummy.')
