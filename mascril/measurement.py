@@ -61,10 +61,15 @@ class MeasurementBase(QThread):
         try:
             l = self.measure(**params)
         except Exception as e:
-            print "An exception occured\n-----------------------------"
+            print "An exception occured during the acquisition\n-------------------------"
             traceback.print_exc(file=sys.stdout)
 
-        self.tidy_up()
+        try:
+            self.tidy_up()
+        except Exception as e:
+            print "An exception occured during the clean-up\n-------------------------"
+            traceback.print_exc(file=sys.stdout)
+
         self.reset_console()
 
     def prepare_saving(self, filename):

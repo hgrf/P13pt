@@ -30,6 +30,10 @@ class Measurement(MeasurementBase):
                                                                     # is applied between the two gates
     ]
 
+    def __init__(self, redirect_console=False, parent=None):
+        super(Measurement, self).__init__(redirect_console=redirect_console, parent=parent)
+        time.sleep(0.5)      # take some time to load
+
     def measure(self, data_dir, Vg1s, Vg2s, Vds, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
         print "Starting acquisition script..."
         print "Because I need to save my data somewhere, I will save it in the following directory:"
