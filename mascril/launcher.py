@@ -1,8 +1,8 @@
 import sys
 import imp
 import os
-from PyQt5.QtCore import (pyqtSlot, Qt, QSize, qInstallMessageHandler, QtInfoMsg, QtCriticalMsg, QtDebugMsg,
-                          QtWarningMsg, QtFatalMsg)
+from PyQt5.QtCore import (pyqtSlot, pyqtSignal, Qt, QSize, qInstallMessageHandler, QtInfoMsg, QtCriticalMsg, QtDebugMsg,
+                          QtWarningMsg, QtFatalMsg, QPoint)
 from PyQt5.QtGui import QFont, QTextCursor, QIcon
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QPushButton, QLineEdit, QVBoxLayout, QHBoxLayout,
                          QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox, QApplication,
@@ -62,14 +62,27 @@ class ReadOnlyConsole(QTextEdit):
         sb.setValue(sb.maximum())
 
 
-class mainwindow(QSplitter):
+class mainwindow(QWidget):
+    # set up signals
+    module_selected = pyqtSignal()
+    module_loaded = pyqtSignal()
+
     def __init__(self, parent=None):
         super(mainwindow, self).__init__(parent)
 
+        # this is where we will store the acquisition module later
         self.m = None
 
-        scriptinterfacewidget = QWidget(self)
+        # set up splitter widget
+        l = QVBoxLayout()
+        self.setLayout(l)
+        self.splitter = QSplitter(self)
+        l.addWidget(self.splitter)
+
+        # set up module interface widget
+        scriptinterfacewidget = QWidget(self.splitter)
         self.txt_acquisition_script = QLineEdit('Path to acquistion script...')
+        self.txt_acquisition_script.setReadOnly(True)
         self.btn_browse = QPushButton(QIcon('../icons/folder.png'), '')
         self.btn_browse.setToolTip('Browse')
         l1 = QHBoxLayout()
@@ -83,12 +96,14 @@ class mainwindow(QSplitter):
         self.btn_stopmod.setToolTip('Stop module')
         self.btn_forcestopmod = QPushButton(QIcon('../icons/kill.png'), '')
         self.btn_forcestopmod.setToolTip('Kill module')
-        for btn in [self.btn_load, self.btn_run, self.btn_stopmod, self.btn_forcestopmod]:
+        self.btn_help = QPushButton(QIcon('../icons/help.png'), '')
+        self.btn_help.setToolTip('Show step-by-step help')
+        for btn in [self.btn_load, self.btn_run, self.btn_stopmod, self.btn_forcestopmod, self.btn_help]:
             btn.setIconSize(QSize(32,32))
         for btn in [self.btn_run, self.btn_stopmod, self.btn_forcestopmod]:
             btn.setEnabled(False)
         l2 = QHBoxLayout()
-        for w in [self.btn_load, self.btn_run, self.btn_stopmod, self.btn_forcestopmod]:
+        for w in [self.btn_load, self.btn_run, self.btn_stopmod, self.btn_forcestopmod, self.btn_help]:
             l2.addWidget(w)
         # set up parameters table
         self.lbl_params = QLabel('<b>Module parameters:</b>')
@@ -105,9 +120,12 @@ class mainwindow(QSplitter):
         for w in [self.lbl_params, self.tbl_params,
                   self.lbl_readonlyconsole, self.readonlyconsole]:
             l_siw.addWidget(w)
-        self.plotter = Plotter(self)
 
-        observablesinterfacewidget = QWidget(self)  # this widget will contain the observables list and the alarms
+        # set up plotter widget
+        self.plotter = Plotter(self.splitter)
+
+        # set up observables widget
+        observablesinterfacewidget = QWidget(self.splitter)  # this widget will contain the observables list and the alarms
         # set up observables table
         self.lbl_observables = QLabel('<b>Observables:</b>', observablesinterfacewidget)
         self.tbl_observables = QTableWidget(observablesinterfacewidget)
@@ -132,22 +150,99 @@ class mainwindow(QSplitter):
         self.btn_browse.clicked.connect(self.browse_acquisition_script)
         self.btn_load.clicked.connect(self.load_module)
         self.btn_run.clicked.connect(self.run_module)
+        self.btn_help.clicked.connect(lambda: self.update_step_help(reinit=True))
         self.btn_addalarm.clicked.connect(self.add_alarm)
 
-        # Set window size.
+        # set window size.
         self.setWindowState(Qt.WindowMaximized)
 
-        # Set window title
+        # set window title
         self.setWindowTitle("MAScriL - Mercury Acquisition Script Launcher")
+
+        # set up step by step help
+        self.lbl_step_help = QLabel(self)
+        self.lbl_step_help.setWindowFlag(Qt.ToolTip)
+        self.lbl_step_help.setStyleSheet('QLabel {background-color: #FF6666; padding: 5px; padding-bottom: 15px;}')
+        self.lbl_step_help.linkActivated.connect(self.on_step_help_link)
+        self.step_help_count = 1
+
+        # set up the step help list: message, reference widget, relative position, signal for next step
+        self.step_help = [('Select a module', self.btn_browse, 'bottomright', self.module_selected),
+                          ('Load the module', self.btn_load, 'bottomright', self.module_loaded),
+                          ('Set the paramters', self.tbl_params, 'bottomright', self.tbl_params.clicked),
+                          ('Select X and Y values for plotting', self.plotter.yvar, 'bottomright', self.plotter.yvar.clicked),
+                          ('Set up the alarms', self.lbl_alarm, 'topleft', self.tbl_alarms.clicked),
+                          ('Run the script', self.btn_run, 'bottomright', self.btn_run.clicked)]
+
+        def make_lambda(i):
+            return lambda: self.next_step_help(check_step=i+1, close_last=True)
+        for i, step in enumerate(self.step_help):
+            step[3].connect(make_lambda(i))
+
+    @pyqtSlot(QString)
+    def on_step_help_link(self, str):
+        if str == 'close':
+            self.lbl_step_help.hide()
+            self.step_help_count = 0
+        elif str == 'next':
+            self.next_step_help()
+        else:
+            raise Exception('Unsupported link')
+
+    @pyqtSlot()
+    def next_step_help(self, check_step=None, close_last=False):
+        # check if we should update the step help
+        if self.step_help_count == 0 or (check_step and check_step != self.step_help_count):
+            return
+
+        # update the step help
+        self.step_help_count += 1
+        if self.step_help_count > len(self.step_help):
+            if close_last:
+                self.lbl_step_help.hide()
+                self.step_help_count = 0
+            else:
+                self.step_help_count = 1
+        self.update_step_help()
+
+    def update_step_help(self, reinit=False):
+        if reinit:
+            self.step_help_count = 1
+        title = 'Step '+str(self.step_help_count)+':'
+        text = self.step_help[self.step_help_count-1][0]
+        widget = self.step_help[self.step_help_count-1][1]
+        point = self.step_help[self.step_help_count-1][2]
+        self.lbl_step_help.setText('&#x1f854;'+
+                                   '<a href="close" style="text-decoration: none;">&#x2716;</a>'+
+                                   '<a href="next" style="text-decoration: none;">&#x1f846;</a>'
+                                   '<div style="margin-left: 10px; margin-right: 10px;">'+
+                                       '<b>'+title+'</b><br>'+text+
+                                   '</div>')
+        self.lbl_step_help.adjustSize()
+        if point == 'bottomright':
+            self.lbl_step_help.move(widget.mapToGlobal(QPoint(widget.width()-5, widget.height()-5)))
+        elif point == 'topleft':
+            self.lbl_step_help.move(widget.mapToGlobal(QPoint(5, 5)))
+        else:
+            raise Exception("Invalid position")
+
+        self.lbl_step_help.show()
+
+    def paintEvent(self, event):
+        super(mainwindow, self).paintEvent(event)
+        if self.step_help_count > 0:
+            if self.isActiveWindow():
+                self.update_step_help()
+            else:
+                self.lbl_step_help.hide()
 
     @pyqtSlot()
     def browse_acquisition_script(self):
-        modulespath = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   'modules')
-        filename, filt = QFileDialog.getOpenFileName(self, 'Open File',
-                                               directory=modulespath,
-                                               filter='*.py')
-        self.txt_acquisition_script.setText(filename)
+        modulespath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'modules')
+        filename, filt = QFileDialog.getOpenFileName(self, 'Open File', directory=modulespath, filter='*.py')
+        if filename:
+            self.txt_acquisition_script.setText(filename)
+            self.module_selected.emit()
 
     @pyqtSlot()
     def load_module(self):
@@ -215,12 +310,14 @@ class mainwindow(QSplitter):
             self.tbl_alarms.cellWidget(i, 1).setCurrentIndex(self.m.alarms[i][1])
 
         # connect signals
-        self.m.new_observables_data[object].connect(self.new_data_handler)
+        self.m.new_observables_data[list].connect(self.new_data_handler)
         self.m.new_console_data[QString].connect(self.readonlyconsole.write)
         self.btn_stopmod.clicked.connect(self.m.quit)
         self.btn_stopmod.clicked.connect(self.quit_requested)
         self.btn_forcestopmod.clicked.connect(self.m.terminate)
         self.m.finished.connect(self.module_done)
+
+        self.module_loaded.emit()
 
     @pyqtSlot()
     def run_module(self):
