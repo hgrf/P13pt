@@ -251,6 +251,21 @@ class mainwindow(QWidget):
             QMessageBox.critical(self, "Error", "Cannot load a new module when the previous one is not done.")
             return
 
+        # tidy up
+        self.tbl_params.clearContents()
+        self.plotter.clear()
+        self.plotter.xvar.clear()
+        self.plotter.yvar.clear()
+        self.tbl_observables.clearContents()
+        self.tbl_alarms.clearContents()
+        for w in [self.btn_run, self.btn_browse, self.btn_load, self.btn_help]:
+            w.setEnabled(False)
+
+        # indicate we are loading
+        self.btn_load.setIcon(QIcon('../icons/wait.png'))
+        self.repaint()
+        self.plotter.repaint()
+
         # check if we are dealing with a valid module
         filename = str(self.txt_acquisition_script.text())
         mod_name, file_ext = os.path.splitext(os.path.split(filename)[-1])
@@ -268,7 +283,6 @@ class mainwindow(QWidget):
         self.m = getattr(mod, 'Measurement')(redirect_console=True)
 
         # set up parameter table
-        self.tbl_params.clearContents()
         self.tbl_params.setRowCount(len(self.m.params))
         for i,key in enumerate(self.m.params):
             item = QTableWidgetItem(key)
@@ -289,11 +303,9 @@ class mainwindow(QWidget):
         self.btn_run.setEnabled(True)
 
         # set up plotter
-        self.plotter.clear()
         self.plotter.set_header(self.m.observables)
 
         # set up observables table
-        self.tbl_observables.clearContents()
         self.tbl_observables.setRowCount(len(self.m.observables))
         for i, label in enumerate(self.m.observables):
             for j in [0, 1]:
@@ -302,7 +314,6 @@ class mainwindow(QWidget):
                 self.tbl_observables.setItem(i, j, item)
 
         # set up alarms table
-        self.tbl_alarms.clearContents()
         self.tbl_alarms.setRowCount(0)
         for i, alarm in enumerate(self.m.alarms):
             self.add_alarm() # this has the advantage of directly setting up the combobox as well
@@ -318,6 +329,9 @@ class mainwindow(QWidget):
         self.m.finished.connect(self.module_done)
 
         self.module_loaded.emit()
+        self.btn_load.setIcon(QIcon('tools-wizard.png'))
+        for w in [self.btn_run, self.btn_browse, self.btn_load, self.btn_help]:
+            w.setEnabled(True)
 
     @pyqtSlot()
     def run_module(self):
@@ -354,15 +368,8 @@ class mainwindow(QWidget):
         #    alarms.append([condition, action])
         #self.m.alarms = alarms
 
-        # disable parameter editing (here we have to distinguish between "custom" MeasurementParameter widgets and the
-        # basic cell items
-        for i in range(self.tbl_params.rowCount()):
-            widget = self.tbl_params.cellWidget(i, 1)
-            item = self.tbl_params.item(i, 1)
-            if widget:
-                widget.setEnabled(False)
-            if item:
-                item.setFlags(item.flags()^Qt.ItemIsEnabled)
+        # disable parameter editing
+        self.tbl_params.setEnabled(False)
 
         # update buttons
         self.btn_load.setEnabled(False)
@@ -378,13 +385,7 @@ class mainwindow(QWidget):
 
     def module_done(self):
         # enable parameter editing
-        for i in range(self.tbl_params.rowCount()):
-            widget = self.tbl_params.cellWidget(i, 1)
-            item = self.tbl_params.item(i, 1)
-            if widget:
-                widget.setEnabled(True)
-            if item:
-                item.setFlags(item.flags()^Qt.ItemIsEnabled)
+        self.tbl_params.setEnabled(True)
 
         # update buttons
         self.btn_stopmod.setEnabled(False)
