@@ -201,9 +201,11 @@ class mainwindow(QWidget):
             if close_last:
                 self.lbl_step_help.hide()
                 self.step_help_count = 0
+                return
             else:
                 self.step_help_count = 1
         self.update_step_help()
+
 
     def update_step_help(self, reinit=False):
         if reinit:
