@@ -183,9 +183,9 @@ class Sweep(MeasurementParameter):
         self.value = np.arange(start, stop, step)
         if self.chk_allerretour.isChecked():
             self.value = np.concatenate((self.value, np.flip(self.value, 0)))
-        if self.chk_from0.isChecked():
+        if self.chk_from0.isChecked() and self.value[0] != 0.:
             self.value = np.concatenate((np.arange(0, self.value[0], np.sign(self.value[0])*abs(step)), self.value))
-        if self.chk_to0.isChecked():
+        if self.chk_to0.isChecked() and self.value[-1] != 0.:
             self.value = np.concatenate((self.value, np.arange(self.value[-1], 0, -np.sign(self.value[-1])*abs(step))))
         text = '[' + ",".join(map(str, self.value.tolist())) + ']'
         self.txt_values.setText(text)
