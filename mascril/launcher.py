@@ -161,7 +161,7 @@ class mainwindow(QWidget):
 
         # set up step by step help
         self.lbl_step_help = QLabel(self)
-        self.lbl_step_help.setWindowFlag(Qt.ToolTip)
+        #self.lbl_step_help.setWindowFlag(Qt.ToolTip)
         self.lbl_step_help.setStyleSheet('QLabel {background-color: #FF6666; padding: 5px; padding-bottom: 15px;}')
         self.lbl_step_help.linkActivated.connect(self.on_step_help_link)
         self.step_help_count = 1
@@ -212,9 +212,10 @@ class mainwindow(QWidget):
         text = self.step_help[self.step_help_count-1][0]
         widget = self.step_help[self.step_help_count-1][1]
         point = self.step_help[self.step_help_count-1][2]
-        self.lbl_step_help.setText('&#x1f854;'+
+        self.lbl_step_help.setText('<span style="font-size: 16px; font-family: DejaVu Sans;"><b>&#x2196;</b>'+
                                    '<a href="close" style="text-decoration: none;">&#x2716;</a>'+
-                                   '<a href="next" style="text-decoration: none;">&#x1f846;</a>'
+                                   '<a href="next" style="text-decoration: none;">&#x27a1;</a>'+
+                                   '</span>'+
                                    '<div style="margin-left: 10px; margin-right: 10px;">'+
                                        '<b>'+title+'</b><br>'+text+
                                    '</div>')
