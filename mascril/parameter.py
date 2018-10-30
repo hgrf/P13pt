@@ -1,4 +1,5 @@
 import numpy as np
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QApplication,
                              QLabel, QLineEdit, QFileDialog, QCheckBox, QDialog, QMessageBox,
@@ -156,7 +157,17 @@ class Sweep(MeasurementParameter):
         self.group_sweep_manual = QGroupBox('Manual sweep values')
         self.group_sweep_manual.setCheckable(True)
         lbl_manual = QLabel('Here you can manually define the values for the sweep. This can be a single value, '
-                            'a python list or a numpy array (numpy can be accessed via np.*).')
+                            'a python list of values/lists or a numpy array (numpy can be accessed via np.*).<br>'
+                            'You can use the following shortcuts:<br>'
+                            'r(start, stop, step) for '
+                            '<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.arange.html">'
+                            'np.arange</a><br>'
+                            'l(start, stop, num) for '
+                            '<a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.linspace.html">'
+                            'np.linspace</a>')
+        lbl_manual.setTextFormat(Qt.RichText)
+        lbl_manual.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        lbl_manual.setOpenExternalLinks(True)
         self.txt_sweep_manual = QLineEdit(text)
 
         l2 = QVBoxLayout()
@@ -186,7 +197,13 @@ class Sweep(MeasurementParameter):
         if isinstance(value, str) or isinstance(value, QString) or isinstance(value, unicode):
             text = str(value)
             try:
-                value = np.asarray(eval(text, {'np': np}), dtype=float).flatten()
+                values = eval(text, {'np': np, 'r': np.arange, 'l': np.linspace})
+                value = np.asarray([])
+                if isinstance(values, list) or isinstance(values, tuple):
+                    for v in values:
+                        value = np.append(value, np.asarray(v, dtype=float).flatten())
+                else:
+                    value = np.asarray(values, dtype=float).flatten()
             except Exception as e:
                 value = self.def_value
                 text = 'could not evaluate'
