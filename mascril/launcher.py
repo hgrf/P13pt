@@ -223,9 +223,9 @@ class mainwindow(QWidget):
                                    '</div>')
         self.lbl_step_help.adjustSize()
         if point == 'bottomright':
-            self.lbl_step_help.move(widget.mapToGlobal(QPoint(widget.width()-5, widget.height()-5)))
+            self.lbl_step_help.move(widget.mapTo(self, QPoint(widget.width()-5, widget.height()-5)))
         elif point == 'topleft':
-            self.lbl_step_help.move(widget.mapToGlobal(QPoint(5, 5)))
+            self.lbl_step_help.move(widget.mapTo(self, QPoint(5, 5)))
         else:
             raise Exception("Invalid position")
 
