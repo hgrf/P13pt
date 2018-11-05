@@ -254,7 +254,7 @@ class Sweep(MeasurementParameter):
                 value = np.concatenate((np.arange(0, value[0], np.sign(value[0])*step), value))
             if self.chk_to0.isChecked() and value[-1] != 0.:
                 value = np.concatenate((value, np.arange(value[-1], 0, -np.sign(value[-1])*step)))
-            self.value = value
+            self.value = np.round(value, 12)         # workaround to avoid floating point issues with np.arange
             self.txt_values.setText('[' + ",".join(map(str, self.value.tolist())) + ']')
             self.dialog.close()
         else:
