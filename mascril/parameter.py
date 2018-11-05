@@ -276,6 +276,12 @@ class Sweep(MeasurementParameter):
 
         if step != 0.:
             arfactor = 2 if self.chk_allerretour.isChecked() else 1
-            from0steps = int(abs(start/step))+1 if self.chk_from0.isChecked() else 0
-            to0steps = int(abs((start if self.chk_allerretour.isChecked() else stop)/step))+1 if self.chk_to0.isChecked() else 0
+            from0steps = int(abs(start/step))+1 \
+                if self.chk_from0.isChecked() and start != 0 \
+                else 0
+            to0steps = int(abs((start if self.chk_allerretour.isChecked() else stop)/step))+1 \
+                if self.chk_to0.isChecked() and not (
+                    (not self.chk_allerretour.isChecked() and stop == 0)
+                    or (self.chk_allerretour.isChecked() and start == 0)) \
+                else 0
             self.txt_num.setText(str((int((stop-start)/step)+1)*arfactor+from0steps+to0steps))
