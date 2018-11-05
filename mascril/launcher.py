@@ -1,6 +1,7 @@
 import sys
 import imp
 import os
+import traceback
 from PyQt5.QtCore import (pyqtSlot, pyqtSignal, Qt, QSize, qInstallMessageHandler, QtInfoMsg, QtCriticalMsg, QtDebugMsg,
                           QtWarningMsg, QtFatalMsg, QPoint)
 from PyQt5.QtGui import QFont, QTextCursor, QIcon
@@ -169,7 +170,7 @@ class mainwindow(QWidget):
         # set up the step help list: message, reference widget, relative position, signal for next step
         self.step_help = [('Select a module', self.btn_browse, 'bottomright', self.module_selected),
                           ('Load the module', self.btn_load, 'bottomright', self.module_loaded),
-                          ('Set the paramters', self.tbl_params, 'bottomright', self.tbl_params.clicked),
+                          ('Set the parameters', self.tbl_params, 'bottomright', self.tbl_params.clicked),
                           ('Select X and Y values for plotting', self.plotter.yvar, 'bottomright', self.plotter.yvar.clicked),
                           ('Set up the alarms', self.lbl_alarm, 'topleft', self.tbl_alarms.clicked),
                           ('Run the script', self.btn_run, 'bottomright', self.btn_run.clicked)]
@@ -270,70 +271,74 @@ class mainwindow(QWidget):
         self.plotter.repaint()
 
         # check if we are dealing with a valid module
+        module_loaded = False
         filename = str(self.txt_acquisition_script.text())
         mod_name, file_ext = os.path.splitext(os.path.split(filename)[-1])
         try:
             mod = imp.load_source(mod_name, filename)
+            if not hasattr(mod, 'Measurement') or not issubclass(getattr(mod, 'Measurement'), MeasurementBase):
+                QMessageBox.critical(self, "Error", "Could not get correct class from file.")
+            else:
+                module_loaded = True
         except IOError as e:
             QMessageBox.critical(self, "Error", "Could not load file: "+str(e.args[1]))
-            return
         except Exception as e:
-            QMessageBox.critical(self, "Error", "Could not load module: "+str(e.args[0]))
-            return
-        if not hasattr(mod, 'Measurement') or not issubclass(getattr(mod, 'Measurement'), MeasurementBase):
-            QMessageBox.critical(self, "Error", "Could not get correct class from file.")
-            return
-        self.m = getattr(mod, 'Measurement')(redirect_console=True)
+            QMessageBox.critical(self, "Error", "Could not load module: "+traceback.format_exc())
 
-        # set up parameter table
-        self.tbl_params.setRowCount(len(self.m.params))
-        for i,key in enumerate(self.m.params):
-            item = QTableWidgetItem(key)
-            item.setFlags(item.flags()^Qt.ItemIsEditable)
-            self.tbl_params.setItem(i, 0, item)
-            value = self.m.params[key]
-            if isinstance(value, list):
-                value = '['+','.join(map(str, value))+']'
-            elif isinstance(value, np.ndarray):
-                value = '['+",".join(map(str, value.tolist()))+']'
-            if isinstance(value, MeasurementParameter):
-                self.tbl_params.setCellWidget(i, 1, value.widget)
-                value.mainwindow = self
-            else:
-                self.tbl_params.setItem(i, 1, QTableWidgetItem(str(value)))
+        if module_loaded:
+            self.m = getattr(mod, 'Measurement')(redirect_console=True)
 
-        # activate run button
-        self.btn_run.setEnabled(True)
-
-        # set up plotter
-        self.plotter.set_header(self.m.observables)
-
-        # set up observables table
-        self.tbl_observables.setRowCount(len(self.m.observables))
-        for i, label in enumerate(self.m.observables):
-            for j in [0, 1]:
-                item = QTableWidgetItem(label if j==0 else '')
+            # set up parameter table
+            self.tbl_params.setRowCount(len(self.m.params))
+            for i,key in enumerate(self.m.params):
+                item = QTableWidgetItem(key)
                 item.setFlags(item.flags()^Qt.ItemIsEditable)
-                self.tbl_observables.setItem(i, j, item)
+                self.tbl_params.setItem(i, 0, item)
+                value = self.m.params[key]
+                if isinstance(value, list):
+                    value = '['+','.join(map(str, value))+']'
+                elif isinstance(value, np.ndarray):
+                    value = '['+",".join(map(str, value.tolist()))+']'
+                if isinstance(value, MeasurementParameter):
+                    self.tbl_params.setCellWidget(i, 1, value.widget)
+                    value.mainwindow = self
+                else:
+                    self.tbl_params.setItem(i, 1, QTableWidgetItem(str(value)))
 
-        # set up alarms table
-        self.tbl_alarms.setRowCount(0)
-        for i, alarm in enumerate(self.m.alarms):
-            self.add_alarm() # this has the advantage of directly setting up the combobox as well
-            self.tbl_alarms.item(i, 0).setText(self.m.alarms[i][0])
-            self.tbl_alarms.cellWidget(i, 1).setCurrentIndex(self.m.alarms[i][1])
+            # activate run button
+            self.btn_run.setEnabled(True)
 
-        # connect signals
-        self.m.new_observables_data[list].connect(self.new_data_handler)
-        self.m.new_console_data[QString].connect(self.readonlyconsole.write)
-        self.btn_stopmod.clicked.connect(self.m.quit)
-        self.btn_stopmod.clicked.connect(self.quit_requested)
-        self.btn_forcestopmod.clicked.connect(self.m.terminate)
-        self.m.finished.connect(self.module_done)
+            # set up plotter
+            self.plotter.set_header(self.m.observables)
 
-        self.module_loaded.emit()
+            # set up observables table
+            self.tbl_observables.setRowCount(len(self.m.observables))
+            for i, label in enumerate(self.m.observables):
+                for j in [0, 1]:
+                    item = QTableWidgetItem(label if j==0 else '')
+                    item.setFlags(item.flags()^Qt.ItemIsEditable)
+                    self.tbl_observables.setItem(i, j, item)
+
+            # set up alarms table
+            self.tbl_alarms.setRowCount(0)
+            for i, alarm in enumerate(self.m.alarms):
+                self.add_alarm() # this has the advantage of directly setting up the combobox as well
+                self.tbl_alarms.item(i, 0).setText(self.m.alarms[i][0])
+                self.tbl_alarms.cellWidget(i, 1).setCurrentIndex(self.m.alarms[i][1])
+
+            # connect signals
+            self.m.new_observables_data[list].connect(self.new_data_handler)
+            self.m.new_console_data[QString].connect(self.readonlyconsole.write)
+            self.btn_stopmod.clicked.connect(self.m.quit)
+            self.btn_stopmod.clicked.connect(self.quit_requested)
+            self.btn_forcestopmod.clicked.connect(self.m.terminate)
+            self.m.finished.connect(self.module_done)
+
+            self.module_loaded.emit()
+            self.btn_run.setEnabled(True)
+
         self.btn_load.setIcon(QIcon('tools-wizard.png'))
-        for w in [self.btn_run, self.btn_browse, self.btn_load, self.btn_help]:
+        for w in [self.btn_browse, self.btn_load, self.btn_help]:
             w.setEnabled(True)
 
     @pyqtSlot()
