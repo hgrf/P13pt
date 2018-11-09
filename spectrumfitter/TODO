@@ -1,3 +1,11 @@
+- rename "Load/Save fit results" to "Load/Save session"
+- add "Recent sessions"
+- indicate in navigator which files have been fitted
+- give priority for full vertical display for fitter
+- put loader, plotter, fitter in separate classes
+- add mag/phase view for all parameters
+- add automatic folder monitor
+
 distribution for windows:
 * make sure "updating" works
 * figure out icons and models folder for exe file creation
