@@ -1,10 +1,32 @@
-- rename "Load/Save fit results" to "Load/Save session"
-- add "Recent sessions"
-- indicate in navigator which files have been fitted
 - give priority for full vertical display for fitter
-- put loader, plotter, fitter in separate classes
+- add reset button for layout
+
+- rename "Load/Save fit results" to "Load/Save session"
+- check if thru is correctly NOT de-embeedded from dummy if thru-deembedding is deactivated
+- improve initial data display (ax limits)
+- show units in Fitting tab in plotter
+
+- for all sources user should be able to define single file instead of folder
+- add .dat Format a la madar to rfspectrum and spectrumfitter
+- enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
+
+- ask user for a file format when saving all spectra images
+- disable interface when saving all spectra images
+- enable user to stop saving all spectra images
+
+- improve management of fitted parameter (+/- S/Y 11,12,21,22)
+- fitted parameter should also be saved in results file (and loaded from it)
+
+- find easy way to create link for SpectrumFitter in Anaconda and add pythonpath etc.
+- indicate in navigator which files are in cache
+- indicate in navigator which files have been fitted
+
 - add mag/phase view for all parameters
 - add automatic folder monitor
+- add button to unload the model / remove the model curves
+- do not crash when trying to save results file without model loaded
+- add functions for fitting thru delay and dummy capacitance and for manual thru and dummy deembedding
+
 
 distribution for windows:
 * make sure "updating" works
@@ -12,19 +34,12 @@ distribution for windows:
 * there is an error message when we execute and close in Win10
 
 high priority:
-* fix file saving for results file in Windows (CR <-> LF)
-* for model, dut, dummy, thru, config should be updated also if the text field is changed
-  (not only if browse button is used)
-  -> config should be saved on successful load
-* do not crash when trying to save results file without model loaded
 * file and folder fields should be reset to previous value when browse is cancelled, not to nothing
-* make a history for results files
 * enable displaying model on a broader frequency range
 * let the user also decide a frequency range in which he wants to fit
 * it should be possible to load a read-only fitresults file
 
 medium priority:
-* add button to unload the model / remove the model curves
 * when saving the results, make sure there is no KeyError for filename parameters
 * loading the fitting parameters: verify that model params / dataset are compatible
 * allow non-integer values for fitting params

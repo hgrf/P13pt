@@ -18,6 +18,21 @@ def clearLayout(layout):
             clearLayout(item.layout())
         layout.removeItem(item)
 
+def parse_fitted_param_str(s):
+    sign = -1. if s[0] == '-' else +1
+    param = s[1]
+    i = int(s[2]) - 1
+    j = int(s[3]) - 1
+    return sign, param, i, j
+
+def create_fitted_param_str(sign, param, i, j, unit=False):
+    unit_string = ' [mS]' if param.lower() == 'y' else ''
+    return ('+' if sign > 0 else '-') + \
+        param + \
+        str(i + 1) + \
+        str(j + 1) + \
+        (unit_string if unit else '')
+
 class Fitter(QWidget):
     filename = None
     network = None
@@ -26,15 +41,24 @@ class Fitter(QWidget):
     sliders = {}
     checkboxes = {}
     fit_changed = pyqtSignal()
+    fitted_param_changed = pyqtSignal(str)
+    fitted_param = None       # default value
     model_params = {}
-    # TODO: remove fitted_param redundancy
-    fitted_param = '-Y12'
 
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent)
 
         # set up fitting area
         browse_icon = QIcon('../icons/folder.png')
+        self.cmb_sign = QComboBox()
+        self.cmb_paramtofit = QComboBox()
+        self.cmb_elemtofit = QComboBox()
+        for s in ['+', '-']:
+            self.cmb_sign.addItem(s)
+        for p in ['Y', 'S']:
+            self.cmb_paramtofit.addItem(p)
+        for e in range(4):
+            self.cmb_elemtofit.addItem(str(e//2+1)+str(e%2+1))
         self.txt_model = QLineEdit('Path to model...')
         self.btn_browsemodel = QPushButton(browse_icon, '')
         self.btn_loadmodel = QPushButton('Load')
@@ -42,13 +66,19 @@ class Fitter(QWidget):
         self.btn_fit = QPushButton('Fit')
         self.btn_fitall = QPushButton('Fit all')
         self.sliderwidget = QWidget()
+
+        # layouts
         self.sl_layout = QVBoxLayout()
         self.sliderwidget.setLayout(self.sl_layout)
         l1 = QHBoxLayout()
-        for w in [self.txt_model, self.btn_browsemodel, self.btn_loadmodel]:
+        for w in [QLabel('Parameter:'), self.cmb_sign, self.cmb_paramtofit, self.cmb_elemtofit]:
             l1.addWidget(w)
+        l2 = QHBoxLayout()
+        for w in [self.txt_model, self.btn_browsemodel, self.btn_loadmodel]:
+            l2.addWidget(w)
         l = QVBoxLayout()
         l.addLayout(l1)
+        l.addLayout(l2)
         for w in [self.cmb_fitmethod, self.btn_fit, self.btn_fitall, self.sliderwidget]:
             l.addWidget(w)
         self.setLayout(l)
@@ -57,7 +87,23 @@ class Fitter(QWidget):
         self.btn_browsemodel.clicked.connect(self.browse_model)
         self.btn_loadmodel.clicked.connect(self.load_model)
         self.btn_fit.clicked.connect(self.fit_model)
-        #self.btn_fitall.clicked.connect(self.fit_all)
+        for w in [self.cmb_sign, self.cmb_paramtofit, self.cmb_elemtofit]:
+            w.currentIndexChanged.connect(self.cmb_fitted_param_changed)
+
+    def cmb_fitted_param_setup(self):
+        sign, param, i, j = parse_fitted_param_str(self.fitted_param)
+        self.cmb_sign.setCurrentText('+' if sign > 0 else '-')
+        self.cmb_paramtofit.setCurrentText(param)
+        self.cmb_elemtofit.setCurrentText(str(i+1)+str(j+1))
+
+    def cmb_fitted_param_changed(self):
+        self.fitted_param = create_fitted_param_str(
+            +1 if self.cmb_sign.currentText() == '+' else -1,
+            self.cmb_paramtofit.currentText(),
+            int(self.cmb_elemtofit.currentText()[0])-1,
+            int(self.cmb_elemtofit.currentText()[1])-1
+        )
+        self.fitted_param_changed.emit(self.fitted_param)
 
     def browse_model(self):
         model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model',
@@ -184,48 +230,21 @@ class Fitter(QWidget):
             QMessageBox.warning(self, 'Warning', 'Please load some data first.')
             return
 
-        pm = -1. if self.fitted_param[0] == '-' else +1
-        i = int(self.fitted_param[2])-1
-        j = int(self.fitted_param[3])-1
-        y = self.network.y[:,i,j]
+        sign, param, i, j = parse_fitted_param_str(self.fitted_param)
+
+        param = self.network.y[:,i,j] if param == 'Y' \
+            else self.network.s[:,i,j]
 
         # TODO: instead disable fit buttons when no model is loaded
         if self.model:
             fit_method = getattr(self.model, 'fit_' + str(self.cmb_fitmethod.currentText()))
             try:
                 if self.cmb_fitmethod.itemData(self.cmb_fitmethod.currentIndex()):
-                    fit_method(self.network.f, y, self.checkboxes)
+                    fit_method(self.network.f, sign*param, self.checkboxes)
                 else:
-                    fit_method(self.network.f, y)
+                    fit_method(self.network.f, sign*param)
             except Exception as e:
                 QMessageBox.critical(self, "Error", "Error during fit: " + str(e))
                 return
             for p in self.model.values:
                 self.sliders[p].setValue(self.model.values[p] / self.model.params[p][3])
-
-    #TODO: reimplement fit_all
-    # def fit_all(self):
-    #     self.fitting_all += 1
-    #     if self.fitting_all > 1:
-    #         return
-    #
-    #     self.btn_fitall.setText('Stop fitting')
-    #
-    #     widgets = [self.data_loading, self.sliderwidget, self.saving, self.btn_fit, self.txt_model, self.btn_browsemodel,
-    #                self.btn_loadmodel]
-    #     for w in widgets:
-    #         w.setEnabled(False)
-    #
-    #     for i in range(len(self.dut_files)):
-    #         if self.fitting_all > 1: # user requested stop
-    #             break
-    #         self.current_index = i
-    #         self.load_spectrum()
-    #         self.fit_model()
-    #         QApplication.processEvents()
-    #
-    #     for w in widgets:
-    #         w.setEnabled(True)
-    #
-    #     self.btn_fitall.setText('Fit all')
-    #     self.fitting_all = 0

@@ -1,3 +1,4 @@
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QMessageBox)
 
 import numpy as np
@@ -5,11 +6,17 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
+from fitter import parse_fitted_param_str
+
 class Plotter(QTabWidget):
-    fitted_param = '-Y12'
     network = None
+    params = None
+    model = None
     line_r = None               # matplotlib line for real part of model plot
     line_i = None               # matplotlib line for imag part of model plot
+    # TODO: this still remains a redundancy between plotter.py and fitter.py, can one of the two not simply take care
+    # of the data ? (i.e. fitter.py)
+    fitted_param = None
 
     def __init__(self, parent=None):
         super(QTabWidget, self).__init__(parent)
@@ -18,7 +25,7 @@ class Plotter(QTabWidget):
         self.plotting_yandfit = QWidget()
         self.plotting_s = QWidget()
         self.plotting_y = QWidget()
-        self.addTab(self.plotting_yandfit, 'Y and fit')
+        self.addTab(self.plotting_yandfit, 'Fitting')
         self.addTab(self.plotting_y, 'All Y')
         self.addTab(self.plotting_s, 'All S')
 
@@ -26,7 +33,6 @@ class Plotter(QTabWidget):
         self.figure = plt.figure()
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlabel('f [GHz]')
-        self.ax.set_ylabel(self.fitted_param+' [mS]')
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar(self.canvas, self.plotting_yandfit)
         l = QVBoxLayout()
@@ -66,16 +72,20 @@ class Plotter(QTabWidget):
         self.clear()
 
         self.network = network
+        self.params = params
         self.f = self.network.f[:]
         self.s = self.network.s[:,:,:]
         self.y = self.network.y[:,:,:]
 
-        # plot single Y parameter
-        pm = -1. if self.fitted_param[0] == '-' else +1
-        i = int(self.fitted_param[2])-1
-        j = int(self.fitted_param[3])-1
-        self.ax.plot(self.f/1e9, pm*self.y[:,i,j].real*1e3, label='Re')
-        self.ax.plot(self.f/1e9, pm*self.y[:,i,j].imag*1e3, label='Im')
+        sign, param, i, j = parse_fitted_param_str(self.fitted_param)
+
+        # plot parameter to be fitted
+        if param == 'Y':
+            self.ax.plot(self.f/1e9, sign*self.y[:,i,j].real*1e3, label='Re')
+            self.ax.plot(self.f/1e9, sign*self.y[:,i,j].imag*1e3, label='Im')
+        else:
+            self.ax.plot(self.f/1e9, sign*self.s[:,i,j].real, label='Re')
+            self.ax.plot(self.f/1e9, sign*self.s[:,i,j].imag, label='Im')
         self.ax.legend()
 
         # plot all Y parameters
@@ -112,8 +122,10 @@ class Plotter(QTabWidget):
             canvas.draw()
 
     def plot_fit(self, model):
+        # TODO: this should be in fitter.py
         if self.network is None:
             return
+        self.model = model
 
         # update model lines on plot
         try:
@@ -130,9 +142,18 @@ class Plotter(QTabWidget):
             self.line_i, = self.ax.plot(self.f/1e9, y.imag*1e3, '-.')
         self.canvas.draw()
 
-        # TODO: put this in a correct place
-        # # store new model data
-        # self.model_params[self.dut_files[self.current_index]] = copy(self.model.values)
+    def save_fig(self, filename):
+        # determine active figure
+        # TODO: could probably do this better with a dictionary or by creating subwidgets with figure property
+        if self.currentIndex() == 0:     # fitting
+            figure = self.figure
+        elif self.currentIndex() == 1:   # all Y
+            figure = self.figure_y
+        elif self.currentIndex() == 2:   # all S
+            figure = self.figure_s
+        else:
+            return
+        figure.savefig(filename)
 
     def clear(self):
         for ax in [self.ax] + self.ax_y_list + self.ax_s_list:
@@ -144,3 +165,13 @@ class Plotter(QTabWidget):
             canvas.draw()
         self.line_r = None
         self.line_i = None
+
+    @pyqtSlot(str)
+    def fitted_param_changed(self, s):
+        self.fitted_param = s
+        self.ax.set_ylabel(s) # TODO add unit
+        if self.network:
+            self.plot(self.network, self.params)
+        if self.model:
+            self.plot_fit(self.model)
+        self.canvas.draw()

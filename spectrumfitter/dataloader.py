@@ -195,11 +195,11 @@ class DataLoader(QWidget):
                 QMessageBox.warning(self, 'Warning', 'Invalid value for contact resistance. Using zero.')
                 ra = 0.
             if not ra == 0:
-                y = np.zeros(self.dut.y.shape, dtype=complex)
-                y[:, 0, 0] = 1. / (1. / self.dut.y[:, 0, 0] - ra)
-                y[:, 0, 1] = 1. / (1. / self.dut.y[:, 0, 1] + ra)
-                y[:, 1, 0] = 1. / (1. / self.dut.y[:, 1, 0] + ra)
-                y[:, 1, 1] = 1. / (1. / self.dut.y[:, 1, 1] - ra)
+                y = np.zeros(dut.y.shape, dtype=complex)
+                y[:, 0, 0] = 1. / (1. / dut.y[:, 0, 0] - ra)
+                y[:, 0, 1] = 1. / (1. / dut.y[:, 0, 1] + ra)
+                y[:, 1, 0] = 1. / (1. / dut.y[:, 1, 0] + ra)
+                y[:, 1, 1] = 1. / (1. / dut.y[:, 1, 1] - ra)
                 dut.y = y
             self.duts[filename] = dut
             return dut
