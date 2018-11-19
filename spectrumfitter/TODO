@@ -13,8 +13,6 @@
 - enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
 
 - ask user for a file format when saving all spectra images
-- disable interface when saving all spectra images
-- enable user to stop saving all spectra images
 
 - improve management of fitted parameter (+/- S/Y 11,12,21,22)
 - fitted parameter should also be saved in results file (and loaded from it)
