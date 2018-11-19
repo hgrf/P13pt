@@ -1,7 +1,7 @@
 from P13pt.params_from_filename import params_from_filename
 
 def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
-    dummy = thru = dut = model = ra = None
+    dummy = thru = dut = model = ra = fitted_param = None
     # read results file
     with open(filename, 'r') as f:
         # read the header
@@ -24,6 +24,8 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
                         model = line[6:].strip()
                     elif line.startswith('ra:'):
                         ra = float(line[3:].strip())
+                    elif line.startswith('fitted_param:'):
+                        fitted_param = line[13:].strip()
                 else:
                     # check if we reached the end of the header (or if we already had reached it previously)
                     # and if there is a last header line
@@ -55,4 +57,4 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
     if not extrainfo:
         return data
     else:
-        return data, dut, thru, dummy, model, ra
+        return data, dut, thru, dummy, model, ra, fitted_param

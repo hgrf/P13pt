@@ -48,3 +48,6 @@ class Navigator(QWidget):
             self.file_list.setCurrentRow(self.file_list.count()-1)
         else:
             self.file_list.setCurrentRow(i)
+
+    def clear(self):
+        self.file_list.clear()

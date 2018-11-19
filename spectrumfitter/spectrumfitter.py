@@ -16,6 +16,8 @@ from load_fitresults import load_fitresults
 from P13pt.params_from_filename import params_from_filename
 
 class MainWindow(QMainWindow):
+    session_file = None
+
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
@@ -50,9 +52,11 @@ class MainWindow(QMainWindow):
 
         # set up menus
         fileMenu = self.menuBar().addMenu('File')
-        load_fitresults_action = QAction('Load fit results', self)
-        save_fitresults_action = QAction('Save fit results', self)
-        for a in [load_fitresults_action, save_fitresults_action]:
+        new_session_action = QAction('New session', self)
+        load_session_action = QAction('Load session', self)
+        save_session_action = QAction('Save session', self)
+        save_session_as_action = QAction('Save session as...', self)
+        for a in [new_session_action, load_session_action, save_session_action, save_session_as_action]:
             fileMenu.addAction(a)
         self.recent_menu = fileMenu.addMenu('Recent sessions')
         self.update_recent_list()
@@ -73,17 +77,18 @@ class MainWindow(QMainWindow):
         self.fitter.fit_changed.connect(self.fit_changed)
         self.fitter.fitted_param_changed.connect(self.plotter.fitted_param_changed)
         self.fitter.btn_fitall.clicked.connect(self.fit_all)
-        load_fitresults_action.triggered.connect(self.load_fitresults)
-        save_fitresults_action.triggered.connect(self.save_fitresults)
+        new_session_action.triggered.connect(self.new_session)
+        load_session_action.triggered.connect(self.load_session)
+        save_session_action.triggered.connect(self.save_session)
+        save_session_as_action.triggered.connect(self.save_session_as)
         save_image_action.triggered.connect(self.save_image)
         save_allimages_action.triggered.connect(self.save_all_images)
 
         # set up fitted parameter (this has to be done after making connections, so that fitter and plotter sync)
         self.fitter.fitted_param = '-Y12'       # default value
-        self.fitter.cmb_fitted_param_setup()
 
         # set window title and show
-        self.setWindowTitle("Spectrum Fitter")
+        self.setWindowTitle('Spectrum Fitter - New session')
         self.show()
 
         # restore layout from config (this has to be done AFTER self.show())
@@ -124,8 +129,18 @@ class MainWindow(QMainWindow):
     def fit_changed(self):
         self.plotter.plot_fit(self.fitter.model)
 
-    def save_fitresults(self):
-        res_file, filter = QFileDialog.getSaveFileName(self, 'Fit results file', filter='*.txt')
+    def new_session(self):
+        self.session_file = None
+        self.setWindowTitle('Spectrum Fitter - New session')
+        self.loader.clear()
+        self.navigator.clear()
+        self.fitter.clear()
+        self.plotter.clear()
+
+    @pyqtSlot()
+    def save_session_as(self, res_file=None):
+        if not res_file:
+            res_file, filter = QFileDialog.getSaveFileName(self, 'Fit results file', filter='*.txt')
         if not res_file:
             return
         res_folder = os.path.dirname(res_file)
@@ -146,7 +161,7 @@ class MainWindow(QMainWindow):
                  f.write('# ra: ' + str(ra) + '\n')
              if self.fitter.model:
                  f.write('# model: ' + os.path.basename(self.fitter.model_file).replace('\\', '/') + '\n')
-                 f.write('# fitted parameter: '+ self.plotter.fitted_param +'\n')
+                 f.write('# fitted_param: '+ self.plotter.fitted_param +'\n')
                  # determine columns
                  f.write('# filename\t')
                  for p in params_from_filename(self.loader.dut_files[0]):
@@ -165,8 +180,11 @@ class MainWindow(QMainWindow):
                      f.write('\n')
         self.update_recent_list(res_file)
 
+    def save_session(self):
+        self.save_session_as(self.session_file)
+
     @pyqtSlot()
-    def load_fitresults(self, res_file=None):
+    def load_session(self, res_file=None):
         if not res_file:
             res_file, filter = QFileDialog.getOpenFileName(self, 'Fit results file', filter='*.txt')
         if not res_file:
@@ -176,9 +194,9 @@ class MainWindow(QMainWindow):
 
         # read the data
         try:
-            data, dut, thru, dummy, model, ra = load_fitresults(res_file, readfilenameparams=False, extrainfo=True)
-        except IOError:
-            QMessageBox.warning(self, 'Error', 'Could not load data')
+            data, dut, thru, dummy, model, ra, fitted_param = load_fitresults(res_file, readfilenameparams=False, extrainfo=True)
+        except IOError as e:
+            QMessageBox.warning(self, 'Error', 'Could not load data: '+str(e))
             return
         #TODO: put this in correct place (should at least be able to load spectra even if there are no fitresults)
         # # check at least the filename field is present in the data
@@ -193,6 +211,8 @@ class MainWindow(QMainWindow):
         self.loader.txt_dummy.setText(os.path.dirname(os.path.join(res_folder, dummy)) if dummy else '')
         self.loader.txt_ra.setText(str(ra) if ra else '0')
         self.loader.load_dataset()
+        if fitted_param:
+            self.fitter.fitted_param = fitted_param
 
         # try to load the model provided in the results file
         #TODO: Fitter should have a function for this
@@ -215,6 +235,9 @@ class MainWindow(QMainWindow):
                      values = [float(data[p][i]) for p in params]
                      self.fitter.model_params[f] = dict(zip(params, values))
             self.fitter.update_network(self.loader.get_spectrum(0), self.loader.dut_files[0])
+
+        self.setWindowTitle('Spectrum Fitter - '+res_file)
+        self.session_file = res_file
 
     #TODO: this is not really in the right place
     @pyqtSlot()
@@ -269,7 +292,7 @@ class MainWindow(QMainWindow):
 
     def load_recent(self):
         action = self.sender()
-        self.load_fitresults(action.text())
+        self.load_session(action.text())
 
     def update_recent_list(self, filename=None):
         recentlist = list(self.settings.value('recentSessions')) if self.settings.contains('recentSessions') \

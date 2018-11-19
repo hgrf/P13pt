@@ -1,9 +1,8 @@
-- memorize which session is open and enable user to save file (i.e. filename or * New session in title)
+- detect when session was modified (*)
 
 - give priority for full vertical display for fitter
 - add reset button for layout
 
-- rename "Load/Save fit results" to "Load/Save session"
 - check if thru is correctly NOT de-embeedded from dummy if thru-deembedding is deactivated
 - improve initial data display (ax limits)
 - show units in Fitting tab in plotter

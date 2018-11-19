@@ -42,7 +42,7 @@ class Fitter(QWidget):
     checkboxes = {}
     fit_changed = pyqtSignal()
     fitted_param_changed = pyqtSignal(str)
-    fitted_param = None       # default value
+    _fitted_param = None       # default value
     model_params = {}
 
     def __init__(self, parent=None):
@@ -90,11 +90,18 @@ class Fitter(QWidget):
         for w in [self.cmb_sign, self.cmb_paramtofit, self.cmb_elemtofit]:
             w.currentIndexChanged.connect(self.cmb_fitted_param_changed)
 
-    def cmb_fitted_param_setup(self):
-        sign, param, i, j = parse_fitted_param_str(self.fitted_param)
+    @property
+    def fitted_param(self):
+        return self._fitted_param
+
+    @fitted_param.setter
+    def fitted_param(self, value):
+        self._fitted_param = value
+        sign, param, i, j = parse_fitted_param_str(value)
         self.cmb_sign.setCurrentText('+' if sign > 0 else '-')
         self.cmb_paramtofit.setCurrentText(param)
         self.cmb_elemtofit.setCurrentText(str(i+1)+str(j+1))
+        self.fitted_param_changed.emit(self._fitted_param)
 
     def cmb_fitted_param_changed(self):
         self.fitted_param = create_fitted_param_str(
@@ -103,7 +110,6 @@ class Fitter(QWidget):
             int(self.cmb_elemtofit.currentText()[0])-1,
             int(self.cmb_elemtofit.currentText()[1])-1
         )
-        self.fitted_param_changed.emit(self.fitted_param)
 
     def browse_model(self):
         model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model',
@@ -248,3 +254,6 @@ class Fitter(QWidget):
                 return
             for p in self.model.values:
                 self.sliders[p].setValue(self.model.values[p] / self.model.params[p][3])
+
+    def clear(self):
+        self.unload_model()

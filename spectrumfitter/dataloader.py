@@ -36,16 +36,16 @@ class DataLoader(QWidget):
         plot_icon = QIcon('../icons/plot.png')
         self.toggleon_icon = QIcon('../icons/on.png')
         self.toggleoff_icon = QIcon('../icons/off.png')
-        self.txt_dut = QLineEdit('Path to DUT...')
+        self.txt_dut = QLineEdit()
         self.btn_browsedut = QPushButton(browse_icon, '')
-        self.txt_thru = QLineEdit('Path to thru...')
+        self.txt_thru = QLineEdit()
         self.btn_browsethru = QPushButton(browse_icon, '')
         self.btn_togglethru = QPushButton(self.toggleon_icon, '')
         self.btn_togglethru.setEnabled(False)
         self.btn_plotthru = QPushButton(plot_icon, '')
         self.btn_plotthru.setToolTip('Plot')
         self.btn_plotthru.setEnabled(False)
-        self.txt_dummy = QLineEdit('Path to dummy...')
+        self.txt_dummy = QLineEdit()
         self.btn_browsedummy = QPushButton(browse_icon, '')
         self.btn_toggledummy = QPushButton(self.toggleon_icon, '')
         self.btn_toggledummy.setEnabled(False)
@@ -53,16 +53,8 @@ class DataLoader(QWidget):
         self.btn_plotdummy.setToolTip('Plot')
         self.btn_plotdummy.setEnabled(False)
         self.btn_load = QPushButton('Load dataset')
-        # TODO: put in correct place
+        self.clear()
 
-        # self.cmb_plusminus = QComboBox()
-        # for s in ['+', '-']:
-        #     self.cmb_plusminus.addItem(s)
-        # self.cmb_parameter = QComboBox()
-        # for s in ['Y11', 'Y12', 'Y21', 'Y22']:
-        #     self.cmb_parameter.addItem(s)
-        # self.cmb_plusminus.setCurrentText(self.fitted_param[0])
-        # self.cmb_parameter.setCurrentText(self.fitted_param[1:])
         self.txt_ra = QLineEdit('0')
         l = QVBoxLayout()
         for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut],
@@ -161,12 +153,6 @@ class DataLoader(QWidget):
 
         self.dataset_changed.emit()
 
-        # TODO: put this in correct place
-        # config.set('main', 'dut', self.txt_dut.text() if self.dut_folder else None)
-        # config.set('main', 'thru', self.txt_thru.text() if self.thru_file else None)
-        # config.set('main', 'dummy', self.txt_dummy.text() if self.dummy_file else None)
-        # config.set('main', 'ra', self.txt_ra.text())
-
     def get_spectrum(self, index):
         # check if the spectrum is already prepared
         filename = self.dut_files[index]
@@ -258,3 +244,8 @@ class DataLoader(QWidget):
         self.thru.name = name
         canvas.draw()
         dialog.show()
+
+    def clear(self):
+        self.txt_dut.setText('Path to DUT...')
+        self.txt_thru.setText('Path to thru...')
+        self.txt_dummy.setText('Path to dummy...')
