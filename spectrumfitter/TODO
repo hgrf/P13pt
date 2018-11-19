@@ -1,3 +1,5 @@
+- memorize which session is open and enable user to save file (i.e. filename or * New session in title)
+
 - give priority for full vertical display for fitter
 - add reset button for layout
 
@@ -5,6 +7,7 @@
 - check if thru is correctly NOT de-embeedded from dummy if thru-deembedding is deactivated
 - improve initial data display (ax limits)
 - show units in Fitting tab in plotter
+- try to block interface with modal progress dialog for fitting and saving all spectra
 
 - for all sources user should be able to define single file instead of folder
 - add .dat Format a la madar to rfspectrum and spectrumfitter

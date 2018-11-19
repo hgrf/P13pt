@@ -6,7 +6,7 @@ from PyQt5.QtCore import (Qt, qInstallMessageHandler, QtInfoMsg, QtCriticalMsg, 
                           QtWarningMsg, QtFatalMsg, QSettings, pyqtSlot)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMessageBox, QMainWindow, QDockWidget, QAction,
-                             QFileDialog)
+                             QFileDialog, QProgressDialog)
 
 from dataloader import DataLoader
 from navigator import Navigator
@@ -16,8 +16,6 @@ from load_fitresults import load_fitresults
 from P13pt.params_from_filename import params_from_filename
 
 class MainWindow(QMainWindow):
-    fitting_all = 0
-
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
@@ -148,7 +146,7 @@ class MainWindow(QMainWindow):
                  f.write('# ra: ' + str(ra) + '\n')
              if self.fitter.model:
                  f.write('# model: ' + os.path.basename(self.fitter.model_file).replace('\\', '/') + '\n')
-                 f.write('# fitted parameter: '+ self.plotter.fitted_param_string() +'\n')
+                 f.write('# fitted parameter: '+ self.plotter.fitted_param +'\n')
                  # determine columns
                  f.write('# filename\t')
                  for p in params_from_filename(self.loader.dut_files[0]):
@@ -165,6 +163,7 @@ class MainWindow(QMainWindow):
                          f.write(str(params_from_filename(filename)[p]) + '\t')
                      f.write('\t'.join([str(self.fitter.model_params[filename][p]) for p in self.fitter.model.params]))
                      f.write('\n')
+        self.update_recent_list(res_file)
 
     @pyqtSlot()
     def load_fitresults(self, res_file=None):
@@ -220,31 +219,21 @@ class MainWindow(QMainWindow):
     #TODO: this is not really in the right place
     @pyqtSlot()
     def fit_all(self):
-         self.fitting_all += 1
-         if self.fitting_all > 1:
-             return
+         totalnum = len(self.loader.dut_files)
 
-         self.fitter.btn_fitall.setText('Stop fitting')
+         progressdialog = QProgressDialog('Fitting all spectra...', 'Cancel', 0, totalnum-1, self)
+         progressdialog.setWindowTitle('Progress')
+         progressdialog.setModal(True)
+         progressdialog.setAutoClose(True)
+         progressdialog.show()
 
-         #TODO: deactivate other widgets
-         #
-         # widgets = [self.data_loading, self.sliderwidget, self.saving, self.btn_fit, self.txt_model, self.btn_browsemodel,
-         #            self.btn_loadmodel]
-         # for w in widgets:
-         #     w.setEnabled(False)
-
-         for i in range(len(self.loader.dut_files)):
-             if self.fitting_all > 1: # user requested stop
+         for i in range(totalnum):
+             QApplication.processEvents()
+             if progressdialog.wasCanceled():
                  break
              self.navigator.file_list.setCurrentRow(i)
              self.fitter.fit_model()
-             QApplication.processEvents()
-
-         # for w in widgets:
-         #     w.setEnabled(True)
-
-         self.fitter.btn_fitall.setText('Fit all')
-         self.fitting_all = 0
+             progressdialog.setValue(i)
 
     def save_image(self):
         # TODO: the menu action should just be deactivated when no data is loaded
@@ -261,11 +250,22 @@ class MainWindow(QMainWindow):
         foldername = QFileDialog.getExistingDirectory(self, 'Choose folder',
                                                       self.loader.dut_folder)
 
-        for i in range(len(self.loader.dut_files)):
+        totalnum = len(self.loader.dut_files)
+
+        progressdialog = QProgressDialog('Saving all images...', 'Cancel', 0, totalnum - 1, self)
+        progressdialog.setWindowTitle('Progress')
+        progressdialog.setModal(True)
+        progressdialog.setAutoClose(True)
+        progressdialog.show()
+
+        for i in range(totalnum):
+            QApplication.processEvents()
+            if progressdialog.wasCanceled():
+                break
             self.navigator.file_list.setCurrentRow(i)
             basename, ext = os.path.splitext(self.loader.dut_files[self.navigator.file_list.currentRow()])
             self.plotter.save_fig(os.path.join(foldername, basename+'.png'))
-            QApplication.processEvents()
+            progressdialog.setValue(i)
 
     def load_recent(self):
         action = self.sender()
