@@ -169,7 +169,14 @@ class Plotter(QTabWidget):
     @pyqtSlot(str)
     def fitted_param_changed(self, s):
         self.fitted_param = s
-        self.ax.set_ylabel(s) # TODO add unit
+        sign, param, i, j = parse_fitted_param_str(s)
+        unit = r'\/\mathrm{[mS]}' if param == 'Y' else ''
+        self.ax.set_ylabel('$' +
+                           ('+' if sign > 0 else '-') +
+                           param +
+                           '_{' + str(i+1) + str(j+1) + '}' +
+                           unit +
+                           '$')
         if self.network:
             self.plot(self.network, self.params)
         if self.model:
