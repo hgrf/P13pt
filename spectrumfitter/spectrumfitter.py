@@ -98,6 +98,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Spectrum Fitter - New session')
         self.show()
 
+<<<<<<< HEAD
         self.default_state = self.saveState()
 
         # restore layout from config (this has to be done AFTER self.show())
@@ -127,6 +128,264 @@ class MainWindow(QMainWindow):
         else:
             self.plotter.clear()
         self.fitter.update_network(spectrum, self.loader.dut_files[i])
+=======
+        # make the window big
+        self.resize(1200,800)
+
+        # Set window title
+        self.setWindowTitle("Spectrum Fitter")
+
+    def browse(self, x):
+        # open browser and update the text field
+        folder = QFileDialog.getExistingDirectory(self, 'Choose dataset')
+        if folder:
+            self.__dict__['txt_'+str(x)].setText(folder)
+
+    def load(self, reinitialise=True):
+        self.clear_ax()
+        if reinitialise:
+            self.current_index = 0
+        self.model_params = {}
+        self.duts = {}
+        self.dut_folder = str(self.txt_dut.text())
+        self.dut_files = [os.path.basename(x) for x in sorted(glob(os.path.join(self.dut_folder, '*.txt')))]
+        self.dut_files += [os.path.basename(x) for x in sorted(glob(os.path.join(self.dut_folder, '*.s2p')))]
+
+        if len(self.dut_files) < 1:
+            QMessageBox.warning(self, 'Warning', 'Please select a valid DUT folder')
+            self.dut_folder = ''
+            return
+
+        dummy_files = glob(os.path.join(str(self.txt_dummy.text()), '*.txt'))
+        dummy_files += glob(os.path.join(str(self.txt_dummy.text()), '*.s2p'))
+        if len(dummy_files) != 1:
+            self.txt_dummy.setText('Please select a valid dummy folder')
+            self.dummy_file = ''
+            self.dummy = None
+            self.btn_toggledummy.setEnabled(False)
+            self.btn_plotdummy.setEnabled(False)
+        else:
+            self.dummy_file, = dummy_files
+            try:
+                self.dummy = Network(self.dummy_file)
+            except Exception as e:
+                QMessageBox.warning(self, 'Warning',
+                                    'File: ' + self.dummy_file + ' is not a valid RF spectrum file.')
+                return
+            self.btn_toggledummy.setEnabled(True)
+            self.btn_plotdummy.setEnabled(True)
+
+        thru_files = glob(os.path.join(str(self.txt_thru.text()), '*.txt'))
+        thru_files += glob(os.path.join(str(self.txt_thru.text()), '*.s2p'))
+        if len(thru_files) != 1:
+            self.txt_thru.setText('Please select a valid thru folder')
+            self.thru_file = ''
+            self.thru = None
+            self.btn_togglethru.setEnabled(False)
+            self.btn_plotthru.setEnabled(False)
+        else:
+            self.thru_file, = thru_files
+            try:
+                self.thru = Network(self.thru_file)
+            except Exception as e:
+                QMessageBox.warning(self, 'Warning',
+                                    'File: ' + self.thru_file + ' is not a valid RF spectrum file.')
+                return
+            if self.dummy and self.thru_toggle_status:
+                if self.dummy.number_of_ports == self.thru.number_of_ports and np.max(np.abs(self.dummy.f-self.thru.f))<1e-3: # check for mHz deviation, since sometimes the frequency value saved is not 100% equal when importing from different file formats...
+                    self.dummy = self.dummy.deembed_thru(self.thru)
+                else:
+                    QMessageBox.warning(self, 'Warning', 'Could not deembed deembed thru from dummy.')
+                    return
+            self.btn_togglethru.setEnabled(True)
+            self.btn_plotthru.setEnabled(True)
+
+        config.set('main', 'dut', self.txt_dut.text() if self.dut_folder else None)
+        config.set('main', 'thru', self.txt_thru.text() if self.thru_file else None)
+        config.set('main', 'dummy', self.txt_dummy.text() if self.dummy_file else None)
+        config.set('main', 'ra', self.txt_ra.text())
+        self.load_spectrum(reinitialise)
+
+    def load_clicked(self):     # workaround: if we connect button signal directly to load, we get reinitialise=False
+        self.load(True)
+
+    def clear_ax(self):
+        for ax in [self.ax]+self.ax_y_list+self.ax_s_list:
+            for artist in ax.lines+ax.collections:
+                artist.remove()
+            ax.set_prop_cycle(None)
+            ax.set_title('')
+        for canvas in [self.canvas, self.canvas_y, self.canvas_s]:
+            canvas.draw()
+
+    def load_spectrum(self, first_load=False):
+        # clean up the axis
+        self.clear_ax()
+        self.line_r = None
+        self.line_i = None
+
+        params = params_from_filename(os.path.join(self.dut_folder, self.dut_files[self.current_index]))
+        if not first_load and self.dut_files[self.current_index] in self.duts:
+            self.dut = self.duts[self.dut_files[self.current_index]]
+        else:
+            # try to load spectrum and check its compatibility
+            try:
+                self.dut = Network(os.path.join(self.dut_folder, self.dut_files[self.current_index]))
+            except Exception as e:
+                QMessageBox.warning(self, 'Warning', 'File: '+self.dut_files[self.current_index]+' is not a valid RF spectrum file.')
+                return
+            if self.thru and self.thru_toggle_status:
+                if self.thru.number_of_ports == self.dut.number_of_ports and np.max(np.abs(self.dut.f-self.thru.f))<1e-3:
+                    self.dut = self.dut.deembed_thru(self.thru)
+                else:
+                    QMessageBox.warning(self, 'Warning', 'Could not deembed thru.')
+            if self.dummy and self.dummy_toggle_status:
+                if self.dummy.number_of_ports == self.dut.number_of_ports and np.max(np.abs(self.dummy.f-self.thru.f))<1e-3:
+                    self.dut.y -= self.dummy.y
+                else:
+                    QMessageBox.warning(self, 'Warning', 'Could not deembed dummy.')
+            try:
+                ra = float(self.txt_ra.text())
+            except:
+                QMessageBox.warning(self, 'Warning', 'Invalid value for Ra.')
+                ra = 0.
+            if not ra == 0:
+                y = np.zeros(self.dut.y.shape, dtype=complex)
+                y[:,0,0] = 1./(1./self.dut.y[:,0,0]-ra)
+                y[:,0,1] = 1./(1./self.dut.y[:,0,1]+ra)
+                y[:,1,0] = 1./(1./self.dut.y[:,1,0]+ra)
+                y[:,1,1] = 1./(1./self.dut.y[:,1,1]-ra)
+                self.dut.y = y
+            self.duts[self.dut_files[self.current_index]] = copy(self.dut)
+
+        # plot single Y parameter
+        pm = -1. if self.fitted_param[0] == '-' else +1
+        i = int(self.fitted_param[2])-1
+        j = int(self.fitted_param[3])-1
+        self.y = pm*self.dut.y[:,i,j]
+        self.ax.plot(self.dut.f/1e9, self.y.real*1e3, label='Re')
+        self.ax.plot(self.dut.f/1e9, self.y.imag*1e3, label='Im')
+        self.ax.legend()
+
+        # plot all Y parameters
+        for i,ax in enumerate(self.ax_y_list):
+            y = self.dut.y[:,i//2,i%2]
+            ax.plot(self.dut.f/1e9, y.real*1e3, label='Re')
+            ax.plot(self.dut.f/1e9, y.imag*1e3, label='Im')
+            if not i:
+                ax.legend()
+
+        # plot all S parameters
+        for i,ax in enumerate(self.ax_s_list):
+            s = self.dut.s[:,i//2,i%2]
+            ax.plot(self.dut.f/1e9, s.real, label='Re')
+            ax.plot(self.dut.f/1e9, s.imag, label='Im')
+            if not i:
+                ax.legend()
+
+        # update titles
+        title = ', '.join([key + '=' + str(params[key]) for key in params])
+        self.ax.set_title(title)
+        for fig in [self.figure_y, self.figure_s]:
+            fig.suptitle(title)
+            fig.subplots_adjust(top=0.9)
+
+        if first_load:
+            for ax in [self.ax]+self.ax_y_list+self.ax_s_list:
+                ax.set_xlim([min(self.dut.f/1e9), max(self.dut.f/1e9)])
+            for toolbar in [self.toolbar, self.toolbar_y, self.toolbar_s]:
+                toolbar.update()
+                toolbar.push_current()
+
+        # draw model if available
+        if self.model:
+            if self.dut_files[self.current_index] in self.model_params:
+                self.update_values(self.model_params[self.dut_files[self.current_index]])
+            else:
+                self.reset_values()
+
+        # update canvas
+        for canvas in [self.canvas, self.canvas_y, self.canvas_s]:
+            canvas.draw()
+
+    def toggledummy(self):
+        if self.dummy_toggle_status:
+            self.dummy_toggle_status = False
+            self.btn_toggledummy.setIcon(self.toggleoff_icon)
+        else:
+            self.dummy_toggle_status = True
+            self.btn_toggledummy.setIcon(self.toggleon_icon)
+        self.load(reinitialise=False)
+
+    def togglethru(self):
+        if self.thru_toggle_status:
+            self.thru_toggle_status = False
+            self.btn_togglethru.setIcon(self.toggleoff_icon)
+        else:
+            self.thru_toggle_status = True
+            self.btn_togglethru.setIcon(self.toggleon_icon)
+        self.load(reinitialise=False)
+
+    def plotdummy(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Dummy'+(' (deembedded thru)' if self.thru and self.thru_toggle_status else ''))
+        dialog.setModal(True)
+        figure = plt.figure()
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas, dialog)
+        l = QVBoxLayout()
+        for w in [toolbar, canvas]:
+            l.addWidget(w)
+        dialog.setLayout(l)
+        self.dummy.plot_mat('y', ylim=1e-3, fig=figure)
+        figure.suptitle(self.dummy.name)
+        figure.subplots_adjust(top=0.9)
+        canvas.draw()
+        dialog.show()
+
+    def plotthru(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Thru')
+        dialog.setModal(True)
+        figure = plt.figure()
+        ax = figure.add_subplot(111)
+        canvas = FigureCanvas(figure)
+        toolbar = NavigationToolbar(canvas, dialog)
+        l = QVBoxLayout()
+        for w in [toolbar, canvas]:
+            l.addWidget(w)
+        dialog.setLayout(l)
+        name = self.thru.name
+        self.thru.name = None       # workaround to avoid cluttering the legend
+        self.thru.plot_s_deg(ax=ax)
+        ax.set_title(name)
+        self.thru.name = name
+        canvas.draw()
+        dialog.show()
+
+    def parameter_modified(self):
+        self.fitted_param = self.cmb_plusminus.currentText()+self.cmb_parameter.currentText()
+        self.ax.set_ylabel(self.fitted_param+' [mS]')
+        self.canvas.draw()
+        if self.dut_files:
+            self.load_spectrum()
+
+    def prev_spectrum(self):
+        self.current_index -= 1
+        if self.current_index < 0:
+            self.current_index = len(self.dut_files)-1
+        self.load_spectrum()
+
+    def next_spectrum(self):
+        self.current_index += 1
+        if self.current_index >= len(self.dut_files):
+            self.current_index = 0
+        self.load_spectrum()
+
+    def plot_fit(self):
+        if not self.dut_files:
+            return
+>>>>>>> master
 
     def selection_changed(self, i):
         QApplication.setOverrideCursor(Qt.WaitCursor)
