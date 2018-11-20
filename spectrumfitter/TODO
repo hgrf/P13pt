@@ -1,3 +1,4 @@
+- plot title disappears when changing the deembedding -> fix this
 - do not crash when file saving fails (e.g. when trying to write to read-only file)
 - improve initial data display (ax limits)
 - spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
