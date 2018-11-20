@@ -1,44 +1,28 @@
-- do not crash when file saving fails (e.g. when trying to write to read-only file)
-- improve initial data display (ax limits)
-- spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
-  save on same drive)
-
-- create PyPI and conda packages
-- find easy way to create link for SpectrumFitter in Anaconda and add pythonpath etc.
-
-- detect when session was modified (*)
-
-- give priority for full vertical display for fitter
-
-- enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
-
-- ask user for a file format when saving all spectra images
-
-- indicate in navigator which files are in cache
-- indicate in navigator which files have been fitted
-
-- add mag/phase view for all parameters
-- add button to unload the model / remove the model curves
-- do not crash when trying to save results file without model loaded
-- add functions for fitting thru delay and dummy capacitance and for manual thru and dummy deembedding
-
-
 distribution for windows:
 * make sure "updating" works
 * figure out icons and models folder for exe file creation
 * there is an error message when we execute and close in Win10
 
 high priority:
+* fix file saving for results file in Windows (CR <-> LF)
+* for model, dut, dummy, thru, config should be updated also if the text field is changed
+  (not only if browse button is used)
+  -> config should be saved on successful load
+* do not crash when trying to save results file without model loaded
 * file and folder fields should be reset to previous value when browse is cancelled, not to nothing
+* make a history for results files
 * enable displaying model on a broader frequency range
 * let the user also decide a frequency range in which he wants to fit
+* it should be possible to load a read-only fitresults file
 
 medium priority:
+* add button to unload the model / remove the model curves
 * when saving the results, make sure there is no KeyError for filename parameters
 * loading the fitting parameters: verify that model params / dataset are compatible
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
 * reset_values should not be in the model class
+* spectrum fitter bug: when data is on C: and results file is on D:
 
 low priority:
 * make a program that can plot spectra from fitresults (by clicking on datapoints)
@@ -46,4 +30,5 @@ low priority:
 * put a function to export deembedded admittance spectra
 * we should impose the order of the fitting parameters
 * no need for signal mapper for sliders, can just update all model values using slider dictionary
+* in order to support touchstone support, need to scan for s2p files, too
 * the default fit method could be created automatically / be in a base class

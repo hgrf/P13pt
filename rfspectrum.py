@@ -55,7 +55,7 @@ class Network(skrf.Network):
                     is_skrf_compatible = False
             
             # check if we are dealing with a pickle file
-            if ext in ['ntwk', 'p']:
+            if ext in ['.ntwk', '.p']:
                 is_skrf_compatible = True
                 
             if is_skrf_compatible:
@@ -69,12 +69,8 @@ class Network(skrf.Network):
                 # that we are dealing with a 2 port network and the values
                 # are stored in the order f, Real(S11), Imag(S11) and so forth
                 # for S12, S21, S22 ("P13 standard")
-                if ext == 'dat':       # Matthieu Dartiailh's file format
-                    # get rid of first row of data since it corresponds to the column headers
-                    self.raw = np.genfromtxt(file)[1:].T
-                else:
-                    self.raw = np.genfromtxt(file).T
-
+                self.raw = np.genfromtxt(file).T
+                
                 if len(self.raw) != 9:
                     raise Exception('Invalid number of columnns')
                 
