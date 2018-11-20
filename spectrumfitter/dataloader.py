@@ -3,7 +3,7 @@ from glob import glob
 import numpy as np
 from matplotlib import pyplot as plt
 from P13pt.rfspectrum import Network
-from PyQt5.QtCore import QSignalMapper, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QSignalMapper, pyqtSignal, pyqtSlot, QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QLabel,
                              QFileDialog, QMessageBox, QDialog)
@@ -17,6 +17,7 @@ def check_deembedding_compatibility(ntwk1, ntwk2):
 
 class DataLoader(QWidget):
     dataset_changed = pyqtSignal()
+    new_file_in_dataset = pyqtSignal(str)
     deembedding_changed = pyqtSignal()
     dut_folder = None
     dut_files = None
@@ -86,6 +87,11 @@ class DataLoader(QWidget):
         l.addLayout(hl)
         self.setLayout(l)
 
+        # set up folder watcher
+        self.timer = QTimer()
+        self.timer.setInterval(1000)       # check for changes every second
+        self.timer.timeout.connect(self.watch_folder)
+
         # make connections
         self.map_browse = QSignalMapper(self)
         for x in ['dut', 'thru', 'dummy']:
@@ -112,15 +118,17 @@ class DataLoader(QWidget):
             if filename:
                 self.__dict__['txt_'+field].setText(filename)
 
-    def get_spectra_files(self, path):
+    def get_spectra_files(self, path, tellmeifitsafolder=False):
         supported_exts = ['.txt', '.s2p', '.dat']
         folder = None
         files = []
+        itsafolder = False
 
         if os.path.isdir(path):
             folder = path
             for ext in supported_exts:
                 files += [os.path.basename(x) for x in sorted(glob(os.path.join(folder, '*'+ext)))]
+            itsafolder = True
         elif os.path.isfile(path):
             basename, ext = os.path.splitext(path)
             if ext.lower() in supported_exts:
@@ -129,7 +137,10 @@ class DataLoader(QWidget):
         else:
             pass
 
-        return folder, files
+        if tellmeifitsafolder:
+            return folder, files, itsafolder
+        else:
+            return folder, files
 
     @pyqtSlot()
     def load_dataset(self, dut=None, thru=None, dummy=None):
@@ -159,9 +170,15 @@ class DataLoader(QWidget):
         self.txt_dummy.setText(dummy)
 
         # check provided files
-        self.dut_folder, self.dut_files = self.get_spectra_files(dut)
+        self.dut_folder, self.dut_files, itsafolder = self.get_spectra_files(dut, tellmeifitsafolder=True)
         if not self.dut_files:
             QMessageBox.warning(self, 'Warning', 'Please select a valid DUT folder or file')
+
+        # if the user loaded a folder, switch on the folder watcher
+        if itsafolder:
+            self.timer.start()
+        else:
+            self.timer.stop()
 
         thru_folder, thru_files = self.get_spectra_files(thru)
         if len(thru_files) != 1:
@@ -307,3 +324,10 @@ class DataLoader(QWidget):
         self.txt_dut.setText('Path to DUT...')
         self.txt_thru.setText('Path to thru...')
         self.txt_dummy.setText('Path to dummy...')
+
+    def watch_folder(self):
+        folder, files = self.get_spectra_files(self.dut_folder)
+        for f in files:
+            if f not in self.dut_files:
+                self.dut_files.append(f)
+                self.new_file_in_dataset.emit(f)

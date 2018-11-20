@@ -1,17 +1,14 @@
+- do not crash when file saving fails (e.g. when trying to write to read-only file)
 - improve initial data display (ax limits)
-
-- add automatic folder monitor
 - spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
   save on same drive)
+
 - create PyPI and conda packages
 - find easy way to create link for SpectrumFitter in Anaconda and add pythonpath etc.
 
 - detect when session was modified (*)
 
 - give priority for full vertical display for fitter
-- add reset button for layout
-
-- try to block interface with modal progress dialog for fitting and saving all spectra
 
 - enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
 
@@ -35,7 +32,6 @@ high priority:
 * file and folder fields should be reset to previous value when browse is cancelled, not to nothing
 * enable displaying model on a broader frequency range
 * let the user also decide a frequency range in which he wants to fit
-* it should be possible to load a read-only fitresults file
 
 medium priority:
 * when saving the results, make sure there is no KeyError for filename parameters
@@ -50,5 +46,4 @@ low priority:
 * put a function to export deembedded admittance spectra
 * we should impose the order of the fitting parameters
 * no need for signal mapper for sliders, can just update all model values using slider dictionary
-* in order to support touchstone support, need to scan for s2p files, too
 * the default fit method could be created automatically / be in a base class

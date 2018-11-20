@@ -72,9 +72,12 @@ class MainWindow(QMainWindow):
         viewMenu = self.menuBar().addMenu('View')
         for w in [self.dock_loader, self.dock_navigator, self.dock_fitter]:
             viewMenu.addAction(w.toggleViewAction())
+        self.act_restore_default_view = QAction('Restore default')
+        viewMenu.addAction(self.act_restore_default_view)
 
         # make connections
         self.loader.dataset_changed.connect(self.dataset_changed)
+        self.loader.new_file_in_dataset.connect(self.navigator.new_file_in_dataset)
         self.loader.deembedding_changed.connect(self.deembedding_changed)
         self.navigator.selection_changed.connect(self.selection_changed)
         self.fitter.fit_changed.connect(self.fit_changed)
@@ -86,6 +89,7 @@ class MainWindow(QMainWindow):
         self.act_save_session_as.triggered.connect(self.save_session_as)
         self.act_save_image.triggered.connect(self.save_image)
         self.act_save_allimages.triggered.connect(self.save_all_images)
+        self.act_restore_default_view.triggered.connect(lambda: self.restoreState(self.default_state))
 
         # set up fitted parameter (this has to be done after making connections, so that fitter and plotter sync)
         self.fitter.fitted_param = '-Y12'       # default value
@@ -94,11 +98,18 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Spectrum Fitter - New session')
         self.show()
 
+        self.default_state = self.saveState()
+
         # restore layout from config (this has to be done AFTER self.show())
         if self.settings.contains('geometry'):
             self.restoreGeometry(self.settings.value("geometry"))
         if self.settings.contains('windowState'):
             self.restoreState(self.settings.value("windowState"))
+
+    def closeEvent(self, event):
+        self.settings.setValue("geometry", self.saveGeometry())
+        self.settings.setValue("windowState", self.saveState())
+        super(MainWindow, self).closeEvent(event)
 
     def dataset_changed(self):
         self.fitter.empty_cache()
@@ -324,11 +335,6 @@ class MainWindow(QMainWindow):
             a = QAction(r, self)
             self.recent_menu.addAction(a)
             a.triggered.connect(self.load_recent)
-
-    def closeEvent(self, event):
-        self.settings.setValue("geometry", self.saveGeometry())
-        self.settings.setValue("windowState", self.saveState())
-        super(MainWindow, self).closeEvent(event)
 
 
 def msghandler(type, context, message):
