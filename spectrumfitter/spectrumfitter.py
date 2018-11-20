@@ -342,7 +342,6 @@ class MainWindow(QSplitter):
         self.duts = {}
         self.dut_folder = str(self.txt_dut.text())
         self.dut_files = [os.path.basename(x) for x in sorted(glob(os.path.join(self.dut_folder, '*.txt')))]
-        self.dut_files += [os.path.basename(x) for x in sorted(glob(os.path.join(self.dut_folder, '*.s2p')))]
 
         if len(self.dut_files) < 1:
             QMessageBox.warning(self, 'Warning', 'Please select a valid DUT folder')
@@ -428,7 +427,7 @@ class MainWindow(QSplitter):
                 QMessageBox.warning(self, 'Warning', 'File: '+self.dut_files[self.current_index]+' is not a valid RF spectrum file.')
                 return
             if self.thru and self.thru_toggle_status:
-                if self.thru.number_of_ports == self.dut.number_of_ports and np.max(np.abs(self.dut.f-self.thru.f))<1e-3:
+                if self.thru.number_of_ports == self.dut.number_of_ports and np.max(np.abs(self.dummy.f-self.thru.f))<1e-3:
                     self.dut = self.dut.deembed_thru(self.thru)
                 else:
                     QMessageBox.warning(self, 'Warning', 'Could not deembed thru.')
