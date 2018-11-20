@@ -1,5 +1,3 @@
-- add .dat Format a la madar to rfspectrum and spectrumfitter (already works but first data point is imported as NaN)
-
 - when no data is loaded, menu functions like "Save spectrum", "Save session" etc. should be disabled
 - add automatic folder monitor
 - spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
