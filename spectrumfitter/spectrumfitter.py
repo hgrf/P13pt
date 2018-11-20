@@ -52,19 +52,22 @@ class MainWindow(QMainWindow):
 
         # set up menus
         fileMenu = self.menuBar().addMenu('File')
-        new_session_action = QAction('New session', self)
-        load_session_action = QAction('Load session', self)
-        save_session_action = QAction('Save session', self)
-        save_session_as_action = QAction('Save session as...', self)
-        for a in [new_session_action, load_session_action, save_session_action, save_session_as_action]:
+        self.act_new_session = QAction('New session', self)
+        self.act_load_session = QAction('Load session', self)
+        self.act_save_session = QAction('Save session', self)
+        self.act_save_session_as = QAction('Save session as...', self)
+        for a in [self.act_new_session, self.act_load_session, self.act_save_session, self.act_save_session_as]:
             fileMenu.addAction(a)
         self.recent_menu = fileMenu.addMenu('Recent sessions')
         self.update_recent_list()
         fileMenu.addSeparator()
-        save_image_action = QAction('Save spectrum as image', self)
-        save_allimages_action = QAction('Save all spectra as images', self)
-        for a in [save_image_action, save_allimages_action]:
+        self.act_save_image = QAction('Save spectrum as image', self)
+        self.act_save_allimages = QAction('Save all spectra as images', self)
+        for a in [self.act_save_image, self.act_save_allimages]:
             fileMenu.addAction(a)
+
+        for a in [self.act_save_session, self.act_save_session_as, self.act_save_image, self.act_save_allimages]:
+            a.setEnabled(False)
 
         viewMenu = self.menuBar().addMenu('View')
         for w in [self.dock_loader, self.dock_navigator, self.dock_fitter]:
@@ -77,12 +80,12 @@ class MainWindow(QMainWindow):
         self.fitter.fit_changed.connect(self.fit_changed)
         self.fitter.fitted_param_changed.connect(self.plotter.fitted_param_changed)
         self.fitter.btn_fitall.clicked.connect(self.fit_all)
-        new_session_action.triggered.connect(self.new_session)
-        load_session_action.triggered.connect(self.load_session)
-        save_session_action.triggered.connect(self.save_session)
-        save_session_as_action.triggered.connect(self.save_session_as)
-        save_image_action.triggered.connect(self.save_image)
-        save_allimages_action.triggered.connect(self.save_all_images)
+        self.act_new_session.triggered.connect(self.new_session)
+        self.act_load_session.triggered.connect(self.load_session)
+        self.act_save_session.triggered.connect(self.save_session)
+        self.act_save_session_as.triggered.connect(self.save_session_as)
+        self.act_save_image.triggered.connect(self.save_image)
+        self.act_save_allimages.triggered.connect(self.save_all_images)
 
         # set up fitted parameter (this has to be done after making connections, so that fitter and plotter sync)
         self.fitter.fitted_param = '-Y12'       # default value
@@ -100,6 +103,8 @@ class MainWindow(QMainWindow):
     def dataset_changed(self):
         self.fitter.empty_cache()
         self.navigator.update_file_list(self.loader.dut_files)
+        for a in [self.act_save_session, self.act_save_session_as, self.act_save_image, self.act_save_allimages]:
+            a.setEnabled(True)
 
     def deembedding_changed(self):
         # TODO: reduce redundancy with selection_changed()

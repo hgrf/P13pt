@@ -1,4 +1,5 @@
-- when no data is loaded, menu functions like "Save spectrum", "Save session" etc. should be disabled
+- show units in Fitting tab in plotter
+
 - add automatic folder monitor
 - spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
   save on same drive)
@@ -11,7 +12,6 @@
 - add reset button for layout
 
 - improve initial data display (ax limits)
-- show units in Fitting tab in plotter
 - try to block interface with modal progress dialog for fitting and saving all spectra
 
 - enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
