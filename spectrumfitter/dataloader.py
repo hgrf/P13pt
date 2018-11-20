@@ -3,7 +3,7 @@ from glob import glob
 import numpy as np
 from matplotlib import pyplot as plt
 from P13pt.rfspectrum import Network
-from PyQt5.QtCore import QSignalMapper, pyqtSignal
+from PyQt5.QtCore import QSignalMapper, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QLabel,
                              QFileDialog, QMessageBox, QDialog)
@@ -20,6 +20,8 @@ class DataLoader(QWidget):
     deembedding_changed = pyqtSignal()
     dut_folder = None
     dut_files = None
+    dummy_raw = None
+    dummy_deem = None
     dummy = None
     dummy_file = None
     dummy_toggle_status = True
@@ -32,34 +34,48 @@ class DataLoader(QWidget):
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent)
 
-        browse_icon = QIcon('../icons/folder.png')
+        file_icon = QIcon('../icons/file.png')
+        folder_icon = QIcon('../icons/folder.png')
         plot_icon = QIcon('../icons/plot.png')
         self.toggleon_icon = QIcon('../icons/on.png')
         self.toggleoff_icon = QIcon('../icons/off.png')
+
         self.txt_dut = QLineEdit()
-        self.btn_browsedut = QPushButton(browse_icon, '')
+        self.btn_browsedut_file = QPushButton(file_icon, '')
+        self.btn_browsedut_folder = QPushButton(folder_icon, '')
+
         self.txt_thru = QLineEdit()
-        self.btn_browsethru = QPushButton(browse_icon, '')
+        self.btn_browsethru_file = QPushButton(file_icon, '')
+        self.btn_browsethru_folder = QPushButton(folder_icon, '')
         self.btn_togglethru = QPushButton(self.toggleon_icon, '')
-        self.btn_togglethru.setEnabled(False)
         self.btn_plotthru = QPushButton(plot_icon, '')
-        self.btn_plotthru.setToolTip('Plot')
-        self.btn_plotthru.setEnabled(False)
+
         self.txt_dummy = QLineEdit()
-        self.btn_browsedummy = QPushButton(browse_icon, '')
+        self.btn_browsedummy_file = QPushButton(file_icon, '')
+        self.btn_browsedummy_folder = QPushButton(folder_icon, '')
         self.btn_toggledummy = QPushButton(self.toggleon_icon, '')
-        self.btn_toggledummy.setEnabled(False)
         self.btn_plotdummy = QPushButton(plot_icon, '')
-        self.btn_plotdummy.setToolTip('Plot')
-        self.btn_plotdummy.setEnabled(False)
+
+        for w in [self.btn_browsedut_file, self.btn_browsethru_file, self.btn_browsedummy_file]:
+            w.setToolTip('Browse file')
+        for w in [self.btn_browsedut_folder, self.btn_browsethru_folder, self.btn_browsedummy_folder]:
+            w.setToolTip('Browse folder')
+        for w in [self.btn_togglethru, self.btn_toggledummy]:
+            w.setEnabled(False)
+        for w in [self.btn_plotthru, self.btn_plotdummy]:
+            w.setToolTip('Plot')
+            w.setEnabled(False)
+
         self.btn_load = QPushButton('Load dataset')
         self.clear()
 
         self.txt_ra = QLineEdit('0')
         l = QVBoxLayout()
-        for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut],
-                      [QLabel('Thru:'), self.txt_thru, self.btn_browsethru, self.btn_togglethru, self.btn_plotthru],
-                      [QLabel('Dummy:'), self.txt_dummy, self.btn_browsedummy, self.btn_toggledummy, self.btn_plotdummy]]:
+        for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut_file, self.btn_browsedut_folder],
+                      [QLabel('Thru:'), self.txt_thru, self.btn_browsethru_file, self.btn_browsethru_folder,
+                       self.btn_togglethru, self.btn_plotthru],
+                      [QLabel('Dummy:'), self.txt_dummy, self.btn_browsedummy_file, self.btn_browsedummy_folder,
+                       self.btn_toggledummy, self.btn_plotdummy]]:
             hl = QHBoxLayout()
             for w in field:
                 hl.addWidget(w)
@@ -73,8 +89,10 @@ class DataLoader(QWidget):
         # make connections
         self.map_browse = QSignalMapper(self)
         for x in ['dut', 'thru', 'dummy']:
-            self.__dict__['btn_browse'+x].clicked.connect(self.map_browse.map)
-            self.map_browse.setMapping(self.__dict__['btn_browse'+x], x)
+            self.__dict__['btn_browse'+x+'_folder'].clicked.connect(self.map_browse.map)
+            self.__dict__['btn_browse'+x+'_file'].clicked.connect(self.map_browse.map)
+            self.map_browse.setMapping(self.__dict__['btn_browse'+x+'_folder'], x+'_folder')
+            self.map_browse.setMapping(self.__dict__['btn_browse' + x + '_file'], x + '_file')
         self.map_browse.mapped[str].connect(self.browse)
         self.btn_togglethru.clicked.connect(self.toggle_thru)
         self.btn_toggledummy.clicked.connect(self.toggle_dummy)
@@ -84,72 +102,114 @@ class DataLoader(QWidget):
 
     def browse(self, x):
         # open browser and update the text field
-        folder = QFileDialog.getExistingDirectory(self, 'Choose dataset')
-        if folder:
-            self.__dict__['txt_'+str(x)].setText(folder)
+        field, type = x.split('_')
+        if type == 'folder':
+            folder = QFileDialog.getExistingDirectory(self, 'Choose folder')
+            if folder:
+                self.__dict__['txt_'+field].setText(folder)
+        elif type == 'file':
+            filename, filter = QFileDialog.getOpenFileName(self, 'Choose file', filter='*.txt *.s2p *.dat')
+            if filename:
+                self.__dict__['txt_'+field].setText(filename)
 
-    def load_dataset(self):
-        # This function inspects the provided folders and will try to load the
-        # dummy and thru spectra for de-embedding.
-        # It does not load the DUT spectra, since this might take a long time,
-        # they can be accessed via the get_spectrum function.
+    def get_spectra_files(self, path):
+        supported_exts = ['.txt', '.s2p', '.dat']
+        folder = None
+        files = []
 
-        self.empty_cache()
-        self.dut_folder = str(self.txt_dut.text())
-        self.dut_files = [os.path.basename(x) for x in sorted(glob(os.path.join(self.dut_folder, '*.txt')))]
-        self.dut_files += [os.path.basename(x) for x in sorted(glob(os.path.join(self.dut_folder, '*.s2p')))]
-
-        if len(self.dut_files) < 1:
-            QMessageBox.warning(self, 'Warning', 'Please select a valid DUT folder')
-            self.dut_folder = ''
-            return
-
-        dummy_files = glob(os.path.join(str(self.txt_dummy.text()), '*.txt'))
-        dummy_files += glob(os.path.join(str(self.txt_dummy.text()), '*.s2p'))
-        if len(dummy_files) != 1:
-            self.txt_dummy.setText('Please select a valid dummy folder')
-            self.dummy_file = ''
-            self.dummy = None
-            self.btn_toggledummy.setEnabled(False)
-            self.btn_plotdummy.setEnabled(False)
+        if os.path.isdir(path):
+            folder = path
+            for ext in supported_exts:
+                files += [os.path.basename(x) for x in sorted(glob(os.path.join(folder, '*'+ext)))]
+        elif os.path.isfile(path):
+            basename, ext = os.path.splitext(path)
+            if ext.lower() in supported_exts:
+                folder = os.path.dirname(path)
+                files += [path]
         else:
-            self.dummy_file, = dummy_files
+            pass
+
+        return folder, files
+
+    @pyqtSlot()
+    def load_dataset(self, dut=None, thru=None, dummy=None):
+        # This function inspects the provided folders and will try to load the dummy and thru spectra for de-embedding.
+        # It does not load the DUT spectra, since this might take a long time, they can be accessed via the get_spectrum
+        # function.
+
+        # tidy up first
+        self.empty_cache()
+        self.dut_folder = None
+        self.dut_files = None
+        self.thru_file = None
+        self.dummy_file = None
+        self.btn_toggledummy.setEnabled(False)
+        self.btn_togglethru.setEnabled(False)
+        self.btn_plotdummy.setEnabled(False)
+        self.btn_plotthru.setEnabled(False)
+
+        # take what you can from the function parameters, the rest from the text fields
+        dut = str(self.txt_dut.text()) if not dut else dut
+        thru = str(self.txt_thru.text()) if not thru else thru
+        dummy = str(self.txt_dummy.text()) if not dummy else dummy
+
+        # update the text fields
+        self.txt_dut.setText(dut)
+        self.txt_thru.setText(thru)
+        self.txt_dummy.setText(dummy)
+
+        # check provided files
+        self.dut_folder, self.dut_files = self.get_spectra_files(dut)
+        if not self.dut_files:
+            QMessageBox.warning(self, 'Warning', 'Please select a valid DUT folder or file')
+
+        thru_folder, thru_files = self.get_spectra_files(thru)
+        if len(thru_files) != 1:
+            self.txt_thru.setText('Please select a valid thru folder or file')
+        else:
+            self.thru_file = os.path.join(thru_folder, thru_files[0])
+
+        dummy_folder, dummy_files = self.get_spectra_files(dummy)
+        if len(dummy_files) != 1:
+            self.txt_dummy.setText('Please select a valid dummy folder or file')
+        else:
+            self.dummy_file = os.path.join(dummy_folder, dummy_files[0])
+
+        # load the provided files
+        if self.dummy_file:
             try:
-                self.dummy = Network(self.dummy_file)
+                self.dummy_raw = Network(self.dummy_file)
+                assert self.dummy_raw.number_of_ports == 2
+                self.btn_toggledummy.setEnabled(True)
+                self.btn_plotdummy.setEnabled(True)
             except Exception as e:
                 QMessageBox.warning(self, 'Warning',
-                                    'File: ' + self.dummy_file + ' is not a valid RF spectrum file.')
-                # TODO: should not just return, but continue execution with dummy_file = '' etc.
-                return
-            self.btn_toggledummy.setEnabled(True)
-            self.btn_plotdummy.setEnabled(True)
+                                    'File: ' + self.dummy_file + ' is not a valid 2-port RF spectrum file.')
+                self.dummy_raw = None
 
-        thru_files = glob(os.path.join(str(self.txt_thru.text()), '*.txt'))
-        thru_files += glob(os.path.join(str(self.txt_thru.text()), '*.s2p'))
-        if len(thru_files) != 1:
-            self.txt_thru.setText('Please select a valid thru folder')
-            self.thru_file = ''
-            self.thru = None
-            self.btn_togglethru.setEnabled(False)
-            self.btn_plotthru.setEnabled(False)
-        else:
-            self.thru_file, = thru_files
+        if self.thru_file:
             try:
                 self.thru = Network(self.thru_file)
-            except Exception:
+                assert self.thru.number_of_ports == 2
+                self.btn_togglethru.setEnabled(True)
+                self.btn_plotthru.setEnabled(True)
+            except Exception as e:
                 QMessageBox.warning(self, 'Warning',
-                                    'File: ' + self.thru_file + ' is not a valid RF spectrum file.')
-                return
-            if self.dummy and self.thru_toggle_status:
-                # check for mHz deviation, since sometimes the frequency value saved is
-                # not 100% equal when importing from different file formats...
-                if check_deembedding_compatibility(self.dummy, self.thru):
-                    self.dummy = self.dummy.deembed_thru(self.thru)
-                else:
-                    QMessageBox.warning(self, 'Warning', 'Could not deembed deembed thru from dummy.')
-                    return
-            self.btn_togglethru.setEnabled(True)
-            self.btn_plotthru.setEnabled(True)
+                                    'File: ' + self.thru_file + ' is not a valid 2-port RF spectrum file.')
+                self.thru = None
+
+        self.dummy_deem = None
+        if self.dummy_raw and self.thru:
+            # check for mHz deviation, since sometimes the frequency value saved is
+            # not 100% equal when importing from different file formats...
+            if not check_deembedding_compatibility(self.dummy_raw, self.thru):
+                QMessageBox.warning(self, 'Warning', 'Dummy and thru are not compatible')
+                self.dummy_raw = None
+                self.thru = None
+            else:
+                self.dummy_deem = self.dummy_raw.deembed_thru(self.thru)
+
+        self.dummy = self.dummy_deem if (self.thru_toggle_status and self.thru) else self.dummy_raw
 
         self.dataset_changed.emit()
 
@@ -191,21 +251,19 @@ class DataLoader(QWidget):
             return dut
 
     def empty_cache(self):
-        # empty the DUT dictionary
-        self.duts = {}
+        self.duts = {}          # empty the DUT dictionary
 
     def toggle_thru(self):
+        self.empty_cache()
         self.thru_toggle_status = not self.thru_toggle_status
         self.btn_togglethru.setIcon(self.toggleon_icon if self.thru_toggle_status else self.toggleoff_icon)
-        self.empty_cache()
-        # TODO: deembed thru from dummy if required
+        self.dummy = self.dummy_deem if (self.thru_toggle_status and self.thru) else self.dummy_raw
         self.deembedding_changed.emit()
 
     def toggle_dummy(self):
+        self.empty_cache()
         self.dummy_toggle_status = not self.dummy_toggle_status
         self.btn_toggledummy.setIcon(self.toggleon_icon if self.dummy_toggle_status else self.toggleoff_icon)
-        self.empty_cache()
-        # TODO: deembed thru from dummy if required
         self.deembedding_changed.emit()
 
     def plot_dummy(self):

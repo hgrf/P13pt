@@ -1,28 +1,29 @@
+- add .dat Format a la madar to rfspectrum and spectrumfitter (already works but first data point is imported as NaN)
+
+- when no data is loaded, menu functions like "Save spectrum", "Save session" etc. should be disabled
+- add automatic folder monitor
+- spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
+  save on same drive)
+- create PyPI and conda packages
+- find easy way to create link for SpectrumFitter in Anaconda and add pythonpath etc.
+
 - detect when session was modified (*)
 
 - give priority for full vertical display for fitter
 - add reset button for layout
 
-- check if thru is correctly NOT de-embeedded from dummy if thru-deembedding is deactivated
 - improve initial data display (ax limits)
 - show units in Fitting tab in plotter
 - try to block interface with modal progress dialog for fitting and saving all spectra
 
-- for all sources user should be able to define single file instead of folder
-- add .dat Format a la madar to rfspectrum and spectrumfitter
 - enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
 
 - ask user for a file format when saving all spectra images
 
-- improve management of fitted parameter (+/- S/Y 11,12,21,22)
-- fitted parameter should also be saved in results file (and loaded from it)
-
-- find easy way to create link for SpectrumFitter in Anaconda and add pythonpath etc.
 - indicate in navigator which files are in cache
 - indicate in navigator which files have been fitted
 
 - add mag/phase view for all parameters
-- add automatic folder monitor
 - add button to unload the model / remove the model curves
 - do not crash when trying to save results file without model loaded
 - add functions for fitting thru delay and dummy capacitance and for manual thru and dummy deembedding
@@ -45,7 +46,6 @@ medium priority:
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
 * reset_values should not be in the model class
-* spectrum fitter bug: when data is on C: and results file is on D:
 
 low priority:
 * make a program that can plot spectra from fitresults (by clicking on datapoints)
