@@ -1,3 +1,5 @@
+- improve initial data display (ax limits)
+
 - add automatic folder monitor
 - spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
   save on same drive)
@@ -9,7 +11,6 @@
 - give priority for full vertical display for fitter
 - add reset button for layout
 
-- improve initial data display (ax limits)
 - try to block interface with modal progress dialog for fitting and saving all spectra
 
 - enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)

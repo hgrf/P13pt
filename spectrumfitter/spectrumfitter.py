@@ -165,6 +165,7 @@ class MainWindow(QMainWindow):
                  f.write('# thru: ' + os.path.relpath(self.loader.thru_file, res_folder).replace('\\', '/') + '\n')
              if self.loader.dummy and self.loader.dummy_toggle_status:
                  f.write('# dummy: ' + os.path.relpath(self.loader.dummy_file, res_folder).replace('\\', '/') + '\n')
+             f.write('# fitted_param: ' + self.plotter.fitted_param + '\n')
              try:
                  ra = float(self.loader.txt_ra.text())
              except:
@@ -173,7 +174,6 @@ class MainWindow(QMainWindow):
                  f.write('# ra: ' + str(ra) + '\n')
              if self.fitter.model:
                  f.write('# model: ' + os.path.basename(self.fitter.model_file).replace('\\', '/') + '\n')
-                 f.write('# fitted_param: '+ self.plotter.fitted_param +'\n')
                  # determine columns
                  f.write('# filename\t')
                  for p in params_from_filename(self.loader.dut_files[0]):
