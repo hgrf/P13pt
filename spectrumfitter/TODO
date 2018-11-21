@@ -1,3 +1,8 @@
+- generalise objective function to be in BaseModel class
+- adapt all model files (also maybe edited versions on other PCs) to new "format"
+- save all images still saves even when user clicks cancel -> fix this and check if same problem occurs for single
+  image and for session saving...
+- when new spectra are detected too early (during file saving), they are not entirely read -> fix this
 - plot title disappears when changing the deembedding -> fix this
 - do not crash when file saving fails (e.g. when trying to write to read-only file)
 - improve initial data display (ax limits)
@@ -8,8 +13,6 @@
 - find easy way to create link for SpectrumFitter in Anaconda and add pythonpath etc.
 
 - detect when session was modified (*)
-
-- give priority for full vertical display for fitter
 
 - enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
 
@@ -39,12 +42,11 @@ medium priority:
 * loading the fitting parameters: verify that model params / dataset are compatible
 * allow non-integer values for fitting params
 * need to be able to modify range of sliders
-* reset_values should not be in the model class
 
 low priority:
 * make a program that can plot spectra from fitresults (by clicking on datapoints)
 * add fit result "grade"
 * put a function to export deembedded admittance spectra
 * we should impose the order of the fitting parameters
-* no need for signal mapper for sliders, can just update all model values using slider dictionary
 * the default fit method could be created automatically / be in a base class
+* give priority for full vertical display for fitter

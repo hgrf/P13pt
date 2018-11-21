@@ -1,7 +1,8 @@
 from P13pt.params_from_filename import params_from_filename
 
 def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
-    dummy = thru = dut = model = ra = fitted_param = None
+    dummy = thru = dut = ra = model = None
+    fitter_info = {}
     # read results file
     with open(filename, 'r') as f:
         # read the header
@@ -20,12 +21,17 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
                         dummy = line[6:].strip()
                     elif line.startswith('dut:'):
                         dut = line[4:].strip()
-                    elif line.startswith('model:'):
-                        model = line[6:].strip()
                     elif line.startswith('ra:'):
                         ra = float(line[3:].strip())
+                    # TODO: this dictionary could be automatically generated (more elegant)
+                    elif line.startswith('model:'):
+                        fitter_info['model'] = line[6:].strip()
                     elif line.startswith('fitted_param:'):
-                        fitted_param = line[13:].strip()
+                        fitter_info['fitted_param'] = line[13:].strip()
+                    elif line.startswith('model_func:'):
+                        fitter_info['model_func'] = line[11:].strip()
+                    elif line.startswith('fit_method:'):
+                        fitter_info['fit_method'] = line[11:].strip()
                 else:
                     # check if we reached the end of the header (or if we already had reached it previously)
                     # and if there is a last header line
@@ -57,4 +63,4 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
     if not extrainfo:
         return data
     else:
-        return data, dut, thru, dummy, model, ra, fitted_param
+        return data, dut, thru, dummy, ra, fitter_info

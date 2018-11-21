@@ -11,11 +11,8 @@ from fitter import parse_fitted_param_str
 class Plotter(QTabWidget):
     network = None
     params = None
-    model = None
     line_r = None               # matplotlib line for real part of model plot
     line_i = None               # matplotlib line for imag part of model plot
-    # TODO: this still remains a redundancy between plotter.py and fitter.py, can one of the two not simply take care
-    # of the data ? (i.e. fitter.py)
     fitted_param = None
 
     def __init__(self, parent=None):
@@ -125,21 +122,23 @@ class Plotter(QTabWidget):
         # TODO: this should be in fitter.py
         if self.network is None:
             return
-        self.model = model
+
+        sign, param, i, j = parse_fitted_param_str(self.fitted_param)
+        mult = (1e3 if param == 'Y' else 1)
 
         # update model lines on plot
         try:
-            y = model.admittance(2.*np.pi*self.f, **model.values)
+            y = model.func(2.*np.pi*self.f, **model.values)
         except Exception as e:
-            QMessageBox.critical(self, "Error", "Could not calculate model admittance: " + str(e.message))
+            QMessageBox.critical(self, "Error", "Could not evaluate model function: " + str(e.message))
             return
 
         if self.line_r:
-            self.line_r.set_ydata(y.real*1e3)
-            self.line_i.set_ydata(y.imag*1e3)
+            self.line_r.set_ydata(y.real*mult)
+            self.line_i.set_ydata(y.imag*mult)
         else:
-            self.line_r, = self.ax.plot(self.f/1e9, y.real*1e3, '-.')
-            self.line_i, = self.ax.plot(self.f/1e9, y.imag*1e3, '-.')
+            self.line_r, = self.ax.plot(self.f/1e9, y.real*mult, '-.')
+            self.line_i, = self.ax.plot(self.f/1e9, y.imag*mult, '-.')
         self.canvas.draw()
 
     def save_fig(self, filename):
@@ -179,6 +178,4 @@ class Plotter(QTabWidget):
                            '$')
         if self.network:
             self.plot(self.network, self.params)
-        if self.model:
-            self.plot_fit(self.model)
         self.canvas.draw()

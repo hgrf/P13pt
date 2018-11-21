@@ -66,9 +66,6 @@ class MainWindow(QMainWindow):
         for a in [self.act_save_image, self.act_save_allimages]:
             fileMenu.addAction(a)
 
-        for a in [self.act_save_session, self.act_save_session_as, self.act_save_image, self.act_save_allimages]:
-            a.setEnabled(False)
-
         viewMenu = self.menuBar().addMenu('View')
         for w in [self.dock_loader, self.dock_navigator, self.dock_fitter]:
             viewMenu.addAction(w.toggleViewAction())
@@ -80,7 +77,7 @@ class MainWindow(QMainWindow):
         self.loader.new_file_in_dataset.connect(self.navigator.new_file_in_dataset)
         self.loader.deembedding_changed.connect(self.deembedding_changed)
         self.navigator.selection_changed.connect(self.selection_changed)
-        self.fitter.fit_changed.connect(self.fit_changed)
+        self.fitter.fit_changed.connect(lambda: self.plotter.plot_fit(self.fitter.model))
         self.fitter.fitted_param_changed.connect(self.plotter.fitted_param_changed)
         self.fitter.btn_fitall.clicked.connect(self.fit_all)
         self.act_new_session.triggered.connect(self.new_session)
@@ -94,8 +91,10 @@ class MainWindow(QMainWindow):
         # set up fitted parameter (this has to be done after making connections, so that fitter and plotter sync)
         self.fitter.fitted_param = '-Y12'       # default value
 
-        # set window title and show
-        self.setWindowTitle('Spectrum Fitter - New session')
+        # create new session
+        self.new_session()
+
+        # show window
         self.show()
 
         self.default_state = self.saveState()
@@ -129,10 +128,12 @@ class MainWindow(QMainWindow):
         self.fitter.update_network(spectrum, self.loader.dut_files[i])
 
     def selection_changed(self, i):
+        if i < 0:       # when file_list is cleared:
+            return
+
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        # TODO: the argument here should be a filename, not the index, that way we could also put it in the
-        # window title easily
+        # TODO: the argument here should be a filename, not the index
         spectrum = self.loader.get_spectrum(i)
         if spectrum is not None:
             self.plotter.plot(spectrum, params_from_filename(self.loader.dut_files[i]))
@@ -142,16 +143,15 @@ class MainWindow(QMainWindow):
 
         QApplication.restoreOverrideCursor()
 
-    def fit_changed(self):
-        self.plotter.plot_fit(self.fitter.model)
-
     def new_session(self):
         self.session_file = None
         self.setWindowTitle('Spectrum Fitter - New session')
+        self.fitter.unload_model()
         self.loader.clear()
         self.navigator.clear()
-        self.fitter.clear()
         self.plotter.clear()
+        for a in [self.act_save_session, self.act_save_session_as, self.act_save_image, self.act_save_allimages]:
+            a.setEnabled(False)
 
     @pyqtSlot()
     def save_session_as(self, res_file=None):
@@ -185,6 +185,10 @@ class MainWindow(QMainWindow):
                  f.write('# ra: ' + str(ra) + '\n')
              if self.fitter.model:
                  f.write('# model: ' + os.path.basename(self.fitter.model_file).replace('\\', '/') + '\n')
+                 f.write('# model_func: ' + self.fitter.cmb_modelfunc.currentText() + '\n')
+                 # TODO: this all could clearly be done in a more elegant way
+                 if self.fitter.cmb_fitmethod.currentText() != 'No fit methods found':
+                     f.write('# fit_method: ' + self.fitter.cmb_fitmethod.currentText() + '\n')
                  # determine columns
                  f.write('# filename\t')
                  for p in params_from_filename(self.loader.dut_files[0]):
@@ -217,50 +221,33 @@ class MainWindow(QMainWindow):
             return
         res_folder = os.path.dirname(res_file)
 
+        self.new_session()
+
         # read the data
         try:
-            data, dut, thru, dummy, model, ra, fitted_param = load_fitresults(res_file, readfilenameparams=False, extrainfo=True)
+            data, dut, thru, dummy, ra, fitter_info = load_fitresults(res_file, readfilenameparams=False, extrainfo=True)
         except IOError as e:
             QMessageBox.warning(self, 'Error', 'Could not load data: '+str(e))
             return
-        #TODO: put this in correct place (should at least be able to load spectra even if there are no fitresults)
-        # # check at least the filename field is present in the data
-        # if not data or 'filename' not in data:
-        #     QMessageBox.warning(self, 'Error', 'Could not load data')
-        #     return
-        #
-        # load the dataset provided in the results file
-        # TODO: Loader should have a function for this
-        self.loader.txt_ra.setText(str(ra) if ra else '0')
 
         # using os.path.realpath to get rid of relative path remainders ("..")
         self.loader.load_dataset(dut=os.path.realpath(os.path.join(res_folder, dut)) if dut else None,
                                  thru=os.path.realpath(os.path.join(res_folder, thru)) if thru else None,
-                                 dummy=os.path.realpath(os.path.join(res_folder, dummy)) if dummy else None)
-        if fitted_param:
-            self.fitter.fitted_param = fitted_param
+                                 dummy=os.path.realpath(os.path.join(res_folder, dummy)) if dummy else None,
+                                 ra=ra if ra else None)
 
-        # try to load the model provided in the results file
-        #TODO: Fitter should have a function for this
-        if model:
-            self.fitter.txt_model.setText(os.path.join(os.path.dirname(__file__), 'models', model))
-            if self.fitter.load_model():
-                 # get a list of parameter names
-                 params = [p for p in data]
-                 unusable = []
-                 # now check float conversion compatibility of the data columns, removing the ones that we cannot use
-                 for p in params:
-                     try:
-                         data[p] = [float(x) for x in data[p]]
-                     except ValueError:
-                         unusable.append(p)
-                 for p in unusable:
-                     params.remove(p)
+        # if a fitted_param was provided in the session file, set it up
+        if 'fitted_param' in fitter_info:
+            self.fitter.fitted_param = fitter_info['fitted_param']
 
-                 for i, f in enumerate(data['filename']):
-                     values = [float(data[p][i]) for p in params]
-                     self.fitter.model_params[f] = dict(zip(params, values))
-            self.fitter.update_network(self.loader.get_spectrum(0), self.loader.dut_files[0])
+        # if a model was provided in the session file, load this model and the provided data
+        if 'model' in fitter_info:
+            self.fitter.load_model(filename=fitter_info['model'],
+                                   info=fitter_info,
+                                   data=data if data else None)
+
+        # update the fitter with the first spectrum in the list
+        self.fitter.update_network(self.loader.get_spectrum(0), self.loader.dut_files[0])
 
         self.update_recent_list(res_file)
         self.setWindowTitle('Spectrum Fitter - '+res_file)
@@ -286,9 +273,6 @@ class MainWindow(QMainWindow):
              progressdialog.setValue(i)
 
     def save_image(self):
-        # TODO: the menu action should just be deactivated when no data is loaded
-        if not self.loader.dut_files:
-            return
         basename, ext = os.path.splitext(self.loader.dut_files[self.navigator.file_list.currentRow()])
         filename, filter = QFileDialog.getSaveFileName(self, 'Choose file',
                                                        os.path.join(self.loader.dut_folder, basename+'.png'),

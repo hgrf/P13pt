@@ -1,21 +1,18 @@
 import numpy as np
 from lmfit import Parameters, minimize
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QWidget, QLineEdit
+from P13pt.spectrumfitter.basemodel import BaseModel
 
-class Model:
-    # dictionary of the model's parameters
-    # for each parameter, we store the minimum and maximum value,
-    # an initial value, a multiplier value and a unit
+class Model(BaseModel):
     params = {
-        'c': [1., 400., 200., 1e-15, 'fF'],
-        'fres': [1., 1000., 300., 1e8, 'dGHz'],
-        'q': [1., 1500, 600, 1e-3, 'm'],
-        'rcont': [0., 100., 0., 1, 'Ohm'],
+        'c':     [1,  400, 200, 1e-15, 'fF'],
+        'fres':  [1, 1000, 300, 1e8,   'dGHz'],
+        'q':     [1, 1500, 600, 1e-3,  'm'],
+        'rcont': [0,  300,   0, 1,     'Ohm'],
     }
 
-    values = {}    # this is where the fitter will store the values
-
     def __init__(self):
+        super(Model, self).__init__()
         self.infowidget = QWidget()
         self.txt_length = QLineEdit()
         self.txt_width = QLineEdit()
@@ -30,27 +27,8 @@ class Model:
         self.txt_length.textChanged.connect(self.update_info_widget)
         self.txt_width.textChanged.connect(self.update_info_widget)
         self.infowidget.setLayout(l2)
-        self.reset_values()
 
-    def reset_values(self):
-        for p in self.params:
-            self.values[p] = self.params[p][2]*self.params[p][3]
-
-    def admittance(self, w, c, fres, q, rcont):
-        """Admittance of a Field Effect Capacitor
-
-        Parameters
-        ----------
-        w : float or np.array
-            Pulsation at which to compute the admitance
-            
-        TODO...
-
-        Returns
-        -------
-        float : computed admittance
-
-        """
+    def func_admittance(self, w, c, fres, q, rcont):
         w0 = fres*4.
         
         r = 1./(w0*c*q)
@@ -77,7 +55,7 @@ class Model:
         """
         c, fres, q, rcont = (params['c'].value, params['fres'].value,
                              params['q'].value, params['rcont'].value) 
-        computed_admittance = self.admittance(x_data, c, fres, q, rcont)
+        computed_admittance = self.func_admittance(x_data, c, fres, q, rcont)
         np.nan_to_num(computed_admittance)
         res = np.empty((2, len(y_data)))
         res[0] = y_data.real - computed_admittance.real

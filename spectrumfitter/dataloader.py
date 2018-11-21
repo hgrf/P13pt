@@ -68,9 +68,8 @@ class DataLoader(QWidget):
             w.setEnabled(False)
 
         self.btn_load = QPushButton('Load dataset')
-        self.clear()
+        self.txt_ra = QLineEdit()
 
-        self.txt_ra = QLineEdit('0')
         l = QVBoxLayout()
         for field in [[QLabel('DUT:'), self.txt_dut, self.btn_browsedut_file, self.btn_browsedut_folder],
                       [QLabel('Thru:'), self.txt_thru, self.btn_browsethru_file, self.btn_browsethru_folder,
@@ -86,6 +85,9 @@ class DataLoader(QWidget):
             hl.addWidget(w)
         l.addLayout(hl)
         self.setLayout(l)
+
+        # initialise data loader
+        self.clear()
 
         # set up folder watcher
         self.timer = QTimer()
@@ -143,7 +145,7 @@ class DataLoader(QWidget):
             return folder, files
 
     @pyqtSlot()
-    def load_dataset(self, dut=None, thru=None, dummy=None):
+    def load_dataset(self, dut=None, thru=None, dummy=None, ra=None):
         # This function inspects the provided folders and will try to load the dummy and thru spectra for de-embedding.
         # It does not load the DUT spectra, since this might take a long time, they can be accessed via the get_spectrum
         # function.
@@ -153,7 +155,11 @@ class DataLoader(QWidget):
         self.dut_folder = None
         self.dut_files = None
         self.thru_file = None
+        self.thru = None
         self.dummy_file = None
+        self.dummy_raw = None
+        self.dummy_deem = None
+        self.dummy = None
         self.btn_toggledummy.setEnabled(False)
         self.btn_togglethru.setEnabled(False)
         self.btn_plotdummy.setEnabled(False)
@@ -163,11 +169,13 @@ class DataLoader(QWidget):
         dut = str(self.txt_dut.text()) if not dut else dut
         thru = str(self.txt_thru.text()) if not thru else thru
         dummy = str(self.txt_dummy.text()) if not dummy else dummy
+        ra = str(self.txt_ra.text()) if not ra else ra
 
         # update the text fields
         self.txt_dut.setText(dut)
         self.txt_thru.setText(thru)
         self.txt_dummy.setText(dummy)
+        self.txt_ra.setText(str(ra) if ra else '0')
 
         # check provided files
         self.dut_folder, self.dut_files, itsafolder = self.get_spectra_files(dut, tellmeifitsafolder=True)
@@ -324,6 +332,7 @@ class DataLoader(QWidget):
         self.txt_dut.setText('Path to DUT...')
         self.txt_thru.setText('Path to thru...')
         self.txt_dummy.setText('Path to dummy...')
+        self.txt_ra.setText('0')
 
     def watch_folder(self):
         folder, files = self.get_spectra_files(self.dut_folder)
