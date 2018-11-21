@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         viewMenu = self.menuBar().addMenu('View')
         for w in [self.dock_loader, self.dock_navigator, self.dock_fitter]:
             viewMenu.addAction(w.toggleViewAction())
-        self.act_restore_default_view = QAction('Restore default')
+        self.act_restore_default_view = QAction('Restore default', self)
         viewMenu.addAction(self.act_restore_default_view)
 
         # make connections
