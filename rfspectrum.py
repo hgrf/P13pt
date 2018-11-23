@@ -16,7 +16,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.linalg import sqrtm
 from numpy.linalg import inv
-from params_from_filename import params_from_filename
+from .params_from_filename import params_from_filename
 from copy import deepcopy
 import os
 import skrf

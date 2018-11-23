@@ -1,3 +1,7 @@
+- warn the user when a value in the results file exceeds the range of the model sliders
+- don't crash when de-embedding fails due to different number of frequency points
+- display detailed error message when model fails
+
 - generalise objective function to be in BaseModel class
 - adapt all model files (also maybe edited versions on other PCs) to new "format"
 - save all images still saves even when user clicks cancel -> fix this and check if same problem occurs for single
