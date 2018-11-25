@@ -23,8 +23,11 @@ def main():
     btn_graphulator = QToolButton()
     btn_graphulator.setIcon(QIcon('graphulator/calculator.png'))
     btn_graphulator.setText('Graphulator')
+    btn_mdb = QToolButton()
+    btn_mdb.setIcon(QIcon('mdb/kmplot-2.png'))
+    btn_mdb.setText('Mercury Data\nBrowser')
     layout = QHBoxLayout()
-    for w in [btn_spectrumfitter, btn_mascril, btn_graphulator]:
+    for w in [btn_spectrumfitter, btn_mascril, btn_graphulator, btn_mdb]:
         w.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         w.setIconSize(QSize(64,64))
         w.setMinimumWidth(150)
@@ -35,6 +38,7 @@ def main():
     btn_spectrumfitter.clicked.connect(launch_spectrumfitter)
     btn_mascril.clicked.connect(launch_mascril)
     btn_graphulator.clicked.connect(launch_graphulator)
+    btn_mdb.clicked.connect(launch_mdb)
 
     launcher.setWindowTitle('P13pt')
     launcher.show()
@@ -52,6 +56,9 @@ def launch_mascril():
 
 def launch_graphulator():
     call(["graphulator", ""])
+
+def launch_mdb():
+    call(["mdb", ""])
 
 if __name__ == '__main__':
     main()

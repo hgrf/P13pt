@@ -18,6 +18,9 @@ from glob import glob
 
 from mdbinfo import FolderInfo
 
+config = None
+root = None
+
 class FileListDelegate(QAbstractItemDelegate):
     def __init__(self):
         super(FileListDelegate, self).__init__()
@@ -182,8 +185,7 @@ class MainWindow(QSplitter):
         # Maximize the splitter.
         self.setWindowState(Qt.WindowMaximized)
 
-
-if __name__ == '__main__':
+def main():
     # CD into directory where this script is saved
     d = os.path.dirname(__file__)
     if d != '': os.chdir(d)
@@ -211,3 +213,6 @@ if __name__ == '__main__':
         config.write(configfile)
 
     sys.exit(ret)
+
+if __name__ == '__main__':
+    main()

@@ -16,7 +16,11 @@ setuptools.setup(
     url="https://github.com/green-mercury/P13pt",
     packages=setuptools.find_packages(),
     package_data={
-        '': ['icons/*.png', 'spectrumfitter/*.png', 'mascril/*.png']
+        '': ['icons/*.png',
+             'spectrumfitter/*.png',
+             'mascril/*.png',
+             'graphulator/*.png',
+             'mdb/*.png']
     },
     include_package_data=True,
     classifiers=[
@@ -28,6 +32,7 @@ setuptools.setup(
     entry_points={'gui_scripts': ['p13pt = P13pt.launcher:main',
                                   'spectrumfitter = P13pt.spectrumfitter.spectrumfitter:main',
                                   'mascril = P13pt.mascril.mascril:main',
-                                  'graphulator = P13pt.graphulator.graphulator:main'
+                                  'graphulator = P13pt.graphulator.graphulator:main',
+                                  'mdb = P13pt.mdb.mdb:main'
                                   ]}
 )
