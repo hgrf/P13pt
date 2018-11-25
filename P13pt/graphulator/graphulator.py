@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import os
 import sys
 
 from PyQt5.QtGui import QIcon
@@ -187,7 +188,11 @@ class MainWindow(QWidget):
             pass
 
 
-if __name__ == '__main__':
+def main():
+    # CD into directory where this script is saved
+    d = os.path.dirname(__file__)
+    if d != '': os.chdir(d)
+
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('calculator.png'))
 
@@ -197,3 +202,6 @@ if __name__ == '__main__':
     ret = app.exec_()
 
     sys.exit(ret)
+
+if __name__ == '__main__':
+    main()

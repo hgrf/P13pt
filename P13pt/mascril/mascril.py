@@ -459,8 +459,12 @@ def msghandler(type, context, message):
     elif type == QtFatalMsg:
         QMessageBox.critical(None, 'Fatal error', message)
 
-if __name__ == "__main__":
+def main():
     qInstallMessageHandler(msghandler)
+
+    # CD into directory where this script is saved
+    d = os.path.dirname(__file__)
+    if d != '': os.chdir(d)
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('tools-wizard.png'))
@@ -469,3 +473,6 @@ if __name__ == "__main__":
     w.show()
      
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()

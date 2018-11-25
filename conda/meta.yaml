@@ -34,7 +34,8 @@ test:
 
 app:
   entry: p13pt
-  summary: 'P13pt'
+  icon: ../P13pt/icons/P13pt.png
+  summary: P13pt
 
 about:
   home: https://github.com/green-mercury/P13pt
