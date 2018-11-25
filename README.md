@@ -1,5 +1,8 @@
 ﻿# P13 python tools
 
+[![Anaconda](https://anaconda.org/green-mercury/p13pt/badges/version.svg)](https://anaconda.org/green-mercury/p13pt)
+[![PyPI version](https://badge.fury.io/py/P13pt.svg)](https://badge.fury.io/py/P13pt)
+
 P13pt is a set of python tools (some helper scripts, rudimentary instrument drivers,
 automation software, a plotting tool and a fitting tool for vector network analyzer - VNA -
 spectra) that I have developed during my PhD thesis in the P13 lab at École Normale
@@ -17,14 +20,14 @@ algorithm.
 * Instrument drivers for Anritsu VNA MS4644B, iTest Bilt voltage sources and meters, Keithley
 2400 and 2600 SMUs, the Yokogawa 7651 source and the SI9700 temperature controller (zilockin.py
 is not a driver, just a "frontend" for the Zurich Instruments lock-in driver)
-* [SpectrumFitter](https://github.com/green-mercury/P13pt/tree/master/spectrumfitter), a
+* [SpectrumFitter](https://github.com/green-mercury/P13pt/tree/master/P13pt/spectrumfitter), a
 fitting tool for 2-port network VNA spectra.
-* [Graphulator](https://github.com/green-mercury/P13pt/tree/master/graphulator), a calculator
+* [Graphulator](https://github.com/green-mercury/P13pt/tree/master/P13pt/graphulator), a calculator
 for graphene charge carrier density, Fermi level etc.
-* [MAScriL](https://github.com/green-mercury/P13pt/tree/master/mascril), the "Mercury
+* [MAScriL](https://github.com/green-mercury/P13pt/tree/master/P13pt/mascril), the "Mercury
 Acquisition Script Launcher", which is the result of an attempt to "standardize" my
 acquisition scripts and facilitate live plotting.
-* [MDB](https://github.com/green-mercury/P13pt/tree/master/mdb), the "Mercury Data Browser",
+* [MDB](https://github.com/green-mercury/P13pt/tree/master/P13pt/mdb), the "Mercury Data Browser",
 a tool to quickly plot data from text files, not maintainted anymore.
 * fundconst.py: some fundamental physical constants for convenience
 * n_from_vg.py: to quickly calculate the graphene charge carrier density from gate voltage
