@@ -34,13 +34,24 @@ class
 * savitzky_golay.py: a smoothing filter (not my work, see in the file)
 
 
-## Dependencies
+## Installation
 
-It is recommended to use a virtual environment, ideally conda (see
-[Anaconda](https://www.anaconda.com/download/)). The specification file conda-spec-file.txt
-contains all the dependencies of this library.
+Use conda to set up a new environment (if you don't have Anaconda, get it from
+[here](https://www.anaconda.com/download/))
+
+    conda create -n P13pt python=2.7
+
+Make sure the conda-forge channel is installed and that it has the highest priority:
+
+    conda config --add channels conda-forge
     
-If you wish to use the "driver" for the Zurich Instruments lock-in amplifier, you should install version 16.04 of ziPython.
+Activate the environment and install P13pt:
+
+    conda activate P13pt
+    conda install -c green-mercury p13pt
+    
+If you wish to use the "driver" for the Zurich Instruments lock-in amplifier, you should
+install version 16.04 of ziPython.
 
 
 ## Building the doc
