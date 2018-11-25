@@ -333,7 +333,7 @@ def msghandler(type, context, message):
     elif type == QtFatalMsg:
         QMessageBox.critical(None, 'Fatal error', message)
 
-if __name__ == '__main__':
+def main():
     qInstallMessageHandler(msghandler)
 
     # CD into directory where this script is saved
@@ -349,3 +349,6 @@ if __name__ == '__main__':
     ret = app.exec_()
 
     sys.exit(ret)
+
+if __name__ == '__main__':
+    main()

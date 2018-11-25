@@ -1,0 +1,43 @@
+package:
+  name: p13pt
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') +
+             ( '' if environ.get('GIT_DESCRIBE_NUMBER', '0')  == '0' else
+              ('.post' + environ.get('GIT_DESCRIBE_NUMBER', '0' )
+               )
+           )}}
+
+source:
+  path: ..
+
+build:
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 1) }}
+  entry_points:
+    - spectrumfitter = P13pt.spectrumfitter.spectrumfitter:main
+
+requirements:
+  host:
+    - python
+  run:
+    - python
+    - scikit-rf
+    - lmfit
+    - matplotlib
+    - numpy
+
+test:
+  imports:
+    - P13pt
+    - P13pt.drivers
+    - P13pt.graphulator
+    - P13pt.mascril
+    - P13pt.spectrumfitter
+
+app:
+  entry: p13pt
+  summary: 'P13pt'
+
+about:
+  home: https://github.com/green-mercury/P13pt
+  license: MIT
+  license_file: LICENSE
+  summary: Instrument drivers, plotting and fitting tools for high frequency electronics

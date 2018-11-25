@@ -1,0 +1,23 @@
+for conda
+=========
+
+conda config --add channels conda-forge
+conda build --python 2.7 conda
+anaconda upload [PATH TO PACKAGE FILE]
+
+or use the deployment script
+
+test locally:
+conda install --use-local p13pt
+
+for PyPI
+========
+
+testing:
+TODO: still need to figure out PyQt5 installation via pip, might be easier when everything is migrated to Python 3
+
+mkdir test
+cd test
+virtualenv venv
+. venv/bin/activate
+pip install ~/P13pt
