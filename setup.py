@@ -20,7 +20,9 @@ setuptools.setup(
              'spectrumfitter/*.png',
              'mascril/*.png',
              'graphulator/*.png',
-             'mdb/*.png']
+             'mdb/*.png',
+             'spectrumfitter/models/*.py',
+             'mascril/modules/*.py']
     },
     include_package_data=True,
     classifiers=[
