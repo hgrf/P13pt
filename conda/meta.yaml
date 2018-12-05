@@ -35,7 +35,7 @@ test:
 
 app:
   entry: p13pt
-  icon: ../P13pt/icons/P13pt.png
+  icon: icon_48x48.png
   summary: P13pt
 
 about:
