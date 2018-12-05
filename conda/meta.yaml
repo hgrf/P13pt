@@ -11,8 +11,6 @@ source:
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 1) }}
-  entry_points:
-    - spectrumfitter = P13pt.spectrumfitter.spectrumfitter:main
 
 requirements:
   host:
