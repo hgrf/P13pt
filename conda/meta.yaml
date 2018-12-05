@@ -19,6 +19,7 @@ requirements:
     - python
   run:
     - python
+    - pyqt >=5
     - scikit-rf
     - lmfit
     - matplotlib
