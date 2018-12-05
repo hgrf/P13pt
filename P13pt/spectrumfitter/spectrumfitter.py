@@ -1,10 +1,12 @@
 #!/usr/bin/python
 import sys
 import os
+import shutil
+from glob import glob
 
 from PyQt5.QtCore import (Qt, qInstallMessageHandler, QtInfoMsg, QtCriticalMsg, QtDebugMsg,
-                          QtWarningMsg, QtFatalMsg, QSettings, pyqtSlot)
-from PyQt5.QtGui import QIcon
+                          QtWarningMsg, QtFatalMsg, QSettings, pyqtSlot, QStandardPaths, QUrl)
+from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtWidgets import (QApplication, QMessageBox, QMainWindow, QDockWidget, QAction,
                              QFileDialog, QProgressDialog)
 
@@ -72,6 +74,12 @@ class MainWindow(QMainWindow):
         self.act_restore_default_view = QAction('Restore default', self)
         viewMenu.addAction(self.act_restore_default_view)
 
+        toolsMenu = self.menuBar().addMenu('Tools')
+        self.act_install_builtin_models = QAction('Install built-in models', self)
+        toolsMenu.addAction(self.act_install_builtin_models)
+        self.act_open_model_folder = QAction('Open model folder', self)
+        toolsMenu.addAction(self.act_open_model_folder)
+
         # make connections
         self.loader.dataset_changed.connect(self.dataset_changed)
         self.loader.new_file_in_dataset.connect(self.navigator.new_file_in_dataset)
@@ -87,6 +95,8 @@ class MainWindow(QMainWindow):
         self.act_save_image.triggered.connect(self.save_image)
         self.act_save_allimages.triggered.connect(self.save_all_images)
         self.act_restore_default_view.triggered.connect(lambda: self.restoreState(self.default_state))
+        self.act_install_builtin_models.triggered.connect(self.install_builtin_models)
+        self.act_open_model_folder.triggered.connect(self.open_model_folder)
 
         # set up fitted parameter (this has to be done after making connections, so that fitter and plotter sync)
         self.fitter.fitted_param = '-Y12'       # default value
@@ -320,6 +330,22 @@ class MainWindow(QMainWindow):
             self.recent_menu.addAction(a)
             a.triggered.connect(self.load_recent)
 
+    def install_builtin_models(self):
+        builtin_folder = os.path.join(os.path.dirname(__file__), 'models')
+
+        for filename in sorted(glob(os.path.join(builtin_folder, '*.py'))):
+            # check if the file already exists in the models folder
+            if os.path.exists(os.path.join(self.fitter.models_dir, os.path.basename(filename))):
+                answer = QMessageBox.question(self, 'File already exists', 'The file: '+os.path.basename(filename)+
+                                              'already exists in your models folder. Would you like to replace it?')
+                if answer != QMessageBox.Yes:
+                    continue
+
+            # if file does not exist or user does not mind replacing it, let's copy:
+            shutil.copyfile(filename, os.path.join(self.fitter.models_dir, os.path.basename(filename)))
+
+    def open_model_folder(self):
+        QDesktopServices.openUrl(QUrl.fromLocalFile(self.fitter.models_dir))
 
 def msghandler(type, context, message):
     if type == QtInfoMsg:

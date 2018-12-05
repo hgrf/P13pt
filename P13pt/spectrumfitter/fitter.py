@@ -3,7 +3,7 @@ import imp
 import inspect
 from copy import copy
 
-from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QStandardPaths
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox,
                              QLineEdit, QFileDialog, QWidgetItem, QMessageBox, QCheckBox,
@@ -48,6 +48,18 @@ class Fitter(QWidget):
 
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent)
+
+        # set up models folder
+        home_dir = QStandardPaths.writableLocation(QStandardPaths.HomeLocation)
+        self.models_dir = os.path.join(home_dir, 'SpectrumFitterModels')
+        # check if models folder exists
+        if os.path.exists(self.models_dir):
+            # check if this path is a folder
+            if not os.path.isdir(self.models_dir):
+                raise Exception('~/SpectrumFitterModels exists, but is not a folder')
+        else:
+            # create the models folder
+            os.mkdir(self.models_dir)
 
         # set up fitting area
         browse_icon = QIcon('../icons/folder.png')
@@ -135,9 +147,7 @@ class Fitter(QWidget):
             self.fit_changed.emit()
 
     def browse_model(self):
-        model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model',
-                                                         directory=os.path.join(os.path.dirname(__file__), 'models'),
-                                                         filter='*.py')
+        model_file, filter = QFileDialog.getOpenFileName(self, 'Choose model', directory=self.models_dir, filter='*.py')
 
         if model_file:
             self.txt_model.setText(model_file)
@@ -172,10 +182,14 @@ class Fitter(QWidget):
         self.unload_model()
 
         if filename:
-            self.txt_model.setText(os.path.join(os.path.dirname(__file__), 'models', filename))
+            self.txt_model.setText(os.path.join(self.models_dir, filename))
 
         # check if we are dealing with a valid module and load it
         filename = str(self.txt_model.text())
+        if not os.path.exists(filename) or not os.path.isfile(filename):
+            QMessageBox.critical(self, "Error", "The file "+filename+" does not exist.")
+            return False
+
         mod_name, file_ext = os.path.splitext(os.path.split(filename)[-1])
         try:
             mod = imp.load_source(mod_name, filename)
