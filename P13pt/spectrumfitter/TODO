@@ -1,7 +1,14 @@
+- figure out why SpectrumFitter GUI looks different in different environments:
+  - Anaconda Python 2.7 with PyQt 5.6.0, Qt 5.6.2
+  - Anaconda Python 3.7 with PyQt 5.6.0, Qt 5.6.2
+  - jinx "native", Python 2.7 with PyQt 5.10.1, Qt 5.9.5
+- latest version of PyQt on anaconda channel is 5.9.2, on conda-forge: 5.6.0
+=> by forcing new version of PyQt with conda install pyqt==5.9.2, we get correct display for both python 2.7 and 3.7
+
+- fix Erwann's bug (i.e. when saving sessions with files that contain formats like _Vg_0.1_ instead of _Vg=0.1_)
 - warn the user when a value in the results file exceeds the range of the model sliders
 - don't crash when de-embedding fails due to different number of frequency points
 - display detailed error message when model fails
-
 - generalise objective function to be in BaseModel class
 - adapt all model files (also maybe edited versions on other PCs) to new "format"
 - save all images still saves even when user clicks cancel -> fix this and check if same problem occurs for single
@@ -12,19 +19,13 @@
 - improve initial data display (ax limits)
 - spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
   save on same drive)
-
-- create PyPI and conda packages
-- find easy way to create link for SpectrumFitter in Anaconda and add pythonpath etc.
-
+- check if for the fitting, the data array is correctly copied and not only referenced (in which case calculation time
+  would be significantly higher)
 - detect when session was modified (*)
-
 - enable the user to change contact resistance without reloading everything (i.e. like changing de-embedding)
-
 - ask user for a file format when saving all spectra images
-
 - indicate in navigator which files are in cache
 - indicate in navigator which files have been fitted
-
 - add mag/phase view for all parameters
 - add button to unload the model / remove the model curves
 - do not crash when trying to save results file without model loaded

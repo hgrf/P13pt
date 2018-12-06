@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-from fitter import parse_fitted_param_str
+from .fitter import parse_fitted_param_str
 
 class Plotter(QTabWidget):
     network = None

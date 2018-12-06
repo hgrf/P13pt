@@ -41,7 +41,7 @@ def load_fitresults(filename, readfilenameparams=True, extrainfo=False):
                             column_header = previous_line.split('\t')
                     data.append(line.split('\t'))
                 previous_line = line
-        data = zip(*data)  # transpose array
+        data = list(zip(*data))  # transpose array, the list(...) is for python 3
 
         # remove file name parameter columns if requested
         # (only try this if a column_header was detected)

@@ -122,11 +122,12 @@ class Network(skrf.Network):
             the deembedded DUT network
         """
         dut_abcd = s2abcd(self.s)
-        half_thru_abcd = np.array(map(sqrtm, s2abcd(thru.s)))
-        half_thru_inv = np.array(map(inv, half_thru_abcd))
+        # the list(...) in the following are for python 3
+        half_thru_abcd = np.array(list(map(sqrtm, s2abcd(thru.s))))
+        half_thru_inv = np.array(list(map(inv, half_thru_abcd)))
         three_mat_multiplication = lambda x,y,z: np.dot(np.dot(x,y),z)
-        deembedded_abcd = np.array(map(three_mat_multiplication,
-                                      half_thru_inv, dut_abcd, half_thru_inv))
+        deembedded_abcd = np.array(list(map(three_mat_multiplication,
+                                      half_thru_inv, dut_abcd, half_thru_inv)))
         dut_deembedded = deepcopy(self)
         dut_deembedded.s = abcd2s(deembedded_abcd)
         

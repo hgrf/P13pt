@@ -10,11 +10,11 @@ from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtWidgets import (QApplication, QMessageBox, QMainWindow, QDockWidget, QAction,
                              QFileDialog, QProgressDialog)
 
-from dataloader import DataLoader
-from navigator import Navigator
-from fitter import Fitter
-from plotter import Plotter
-from load_fitresults import load_fitresults
+from P13pt.spectrumfitter.dataloader import DataLoader
+from P13pt.spectrumfitter.navigator import Navigator
+from P13pt.spectrumfitter.fitter import Fitter
+from P13pt.spectrumfitter.plotter import Plotter
+from P13pt.spectrumfitter.load_fitresults import load_fitresults
 from P13pt.params_from_filename import params_from_filename
 
 class MainWindow(QMainWindow):

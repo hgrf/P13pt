@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 from lmfit import Parameters, minimize
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QWidget, QLineEdit
@@ -97,10 +98,10 @@ class Model(BaseModel):
         if len(f_below_thresh):
             fc = f_below_thresh[0]
         else:
-            print "Threshold detection did not work"
+            print("Threshold detection did not work")
             fc = base_f[mask][np.argmin(np.abs(base_y[mask].real-base_y[mask].imag))]
         
-        print "Detected fc:", fc/1e9, "GHz"
+        print("Detected fc:", fc/1e9, "GHz")
         
         # define masks
         masks = [base_f > 0.]    # fit everything except for Q
