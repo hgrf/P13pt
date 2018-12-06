@@ -3,6 +3,7 @@ This script uses the following driver for the Rohde and Schwarz VNA:
     https://github.com/Terrabits/rohdeschwarz
 '''
 
+from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
@@ -42,14 +43,14 @@ class Measurement(MeasurementBase):
 
     def measure(self, data_dir, Vgs, Rg, comment, stabilise_time, use_vna,
                 use_chuck, init_bilt, **kwargs):
-        print "==================================="        
-        print "Starting acquisition script..."
+        print("===================================")
+        print("Starting acquisition script...")
 
         chuck_string = ''
         vna_string = ''
 
         # initialise instruments
-        print "Setting up DC sources and voltmeters..."
+        print("Setting up DC sources and voltmeters...")
         bilt = Bilt('TCPIP0::192.168.0.2::5025::SOCKET')
         if init_bilt:
             # source (bilt, channel, range, filter, slope in V/ms, label):
@@ -58,19 +59,19 @@ class Measurement(MeasurementBase):
             self.sourceVg = sourceVg = BiltVoltageSource(bilt, "I1", initialise=False)
         # voltmeter (bilt, channel, filt, label=None)
         self.meterVg = meterVg = BiltVoltMeter(bilt, "I5;C1", "2", "Vgm")
-        print "DC sources and voltmeters are set up."
+        print("DC sources and voltmeters are set up.")
             
         if use_chuck:
-           print "Setting up Yokogawa for chuck voltage..."
+           print("Setting up Yokogawa for chuck voltage...")
            # connect to the Yoko without initialising, this will lead to
            # an exception if the Yoko is not properly configured (voltage
            # source, range 30V, output ON)
            yoko = Yoko7651('GPIB::3::INSTR', initialise=False, rang=30)
            chuck_string = '_Vchuck={:.1f}'.format(yoko.get_voltage())
-           print "Yokogawa is set up."
+           print("Yokogawa is set up.")
 
         if use_vna:
-            print "Setting up VNA"
+            print("Setting up VNA")
             self.vna = vna = RohdeSchwarzVNA()
             vna.open('GPIB', '20')
             
@@ -109,7 +110,7 @@ class Measurement(MeasurementBase):
                 raise Exception("Please select the same attenuators for both ports")
             vna_string = '_pwr={:.0f}'.format(vna_pow)
             
-            print "VNA is set up."
+            print("VNA is set up.")
 
         # prepare saving DC data
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
@@ -137,10 +138,10 @@ class Measurement(MeasurementBase):
 
         for Vg in Vgs:
             if self.flags['quit_requested']:
-                print "Stopping acquisition."
+                print("Stopping acquisition.")
                 return locals()            
             
-            print "Setting Vg = {}".format(Vg)
+            print("Setting Vg = {}".format(Vg))
         
             # set Vg
             sourceVg.set_voltage(Vg)
@@ -159,7 +160,7 @@ class Measurement(MeasurementBase):
 
             if use_vna:
                 # save VNA data
-                print "Getting VNA spectra..."
+                print("Getting VNA spectra...")
                 
                 vna.write("INIT1:IMM; *OPC")
                 # display sweep progress
@@ -188,14 +189,14 @@ class Measurement(MeasurementBase):
                 vna.file.download_file(unique_filename, spectrum_file)
                 vna.file.delete(unique_filename)
 
-        print "Acquisition done."
+        print("Acquisition done.")
         
         return locals()
 
     def tidy_up(self):
         self.vna.close()
         self.end_saving()
-        print "Driving all voltages back to zero..."
+        print("Driving all voltages back to zero...")
         self.sourceVg.set_voltage(0.)
 
 

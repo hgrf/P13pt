@@ -6,6 +6,7 @@ for PyVISA 1.8
 @author: Holger Graef
 """
 
+from __future__ import print_function
 import visa
 from time import sleep
 
@@ -14,7 +15,7 @@ class BiltVoltMeter:
         self.bilt = bilt
         self.channel = channel
         
-        print "Initialising Bilt voltmeter on channel "+channel+("" if label is None else " ("+label+")")+"..."
+        print("Initialising Bilt voltmeter on channel "+channel+("" if label is None else " ("+label+")")+"...")
         
         # configure filter
         bilt.write(channel+";MEAS:FIL "+filt)
@@ -31,7 +32,7 @@ class BiltVoltageSource:
         self.bilt = bilt
         self.channel = channel
         
-        print "Initialising Bilt voltage source on channel "+channel+("" if label is None else " ("+label+")")+"..."
+        print("Initialising Bilt voltage source on channel "+channel+("" if label is None else " ("+label+")")+"...")
 
         if initialise:        
             # switch off voltage source

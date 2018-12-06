@@ -10,6 +10,7 @@ https://github.com/Exopy/exopy_hqc_legacy/blob/master/exopy_hqc_legacy
     /instruments/drivers/visa/yokogawa.py
 """
 
+from __future__ import print_function
 import visa
 import numpy as np
 from time import sleep
@@ -59,10 +60,9 @@ class Yoko7651:
 
         unit = "V" if curr_func == "VOLT" else "A"
         if verbose:
-            print "Yokogawa 7651 function:", curr_func, "/ range:", curr_rang,\
-                  unit
-            print "Current set point:", curr_valu, unit
-            print "Output is:", curr_outp
+            print("Yokogawa 7651 function:", curr_func, "/ range:", curr_rang, unit)
+            print("Current set point:", curr_valu, unit)
+            print("Output is:", curr_outp)
             
         if not initialise and (self.func != curr_func
                                or self.rang != curr_rang
@@ -71,8 +71,7 @@ class Yoko7651:
             
         if initialise:
             if verbose:
-                print "Initialising function:", self.func, "/ range:",\
-                      self.rang, "V" if self.func == "VOLT" else "A"
+                print("Initialising function:", self.func, "/ range:", self.rang, "V" if self.func == "VOLT" else "A")
             self.yoko.clear()       # this command resets the yoko
             sleep(1.)               # give the yoko some time
             self.set_output('OFF')

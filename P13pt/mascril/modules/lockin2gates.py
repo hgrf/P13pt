@@ -1,3 +1,4 @@
+from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.zilockin import ZILockin
@@ -29,28 +30,28 @@ class Measurement(MeasurementBase):
     ]
 
     def measure(self, data_dir, Vg1s, Vg2s, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
-        print "==================================="        
-        print "Starting acquisition script..."
+        print("===================================")
+        print("Starting acquisition script...")
 
         # initialise instruments
         try:
-            print "Setting up DC sources and voltmeters..."
+            print("Setting up DC sources and voltmeters...")
             bilt = Bilt('TCPIP0::192.168.0.2::5025::SOCKET')
             self.sourceVg1 = sourceVg1 = BiltVoltageSource(bilt, "I2", "12", "1", 0.01, "Vg1")
             self.sourceVg2 = sourceVg2 = BiltVoltageSource(bilt, "I3", "12", "1", 0.01, "Vg2")
             self.meterVg1 = meterVg1 = BiltVoltMeter(bilt, "I5;C2", "2", "Vg1m")
             self.meterVg2 = meterVg2 = BiltVoltMeter(bilt, "I5;C3", "2", "Vg2m")
-            print "DC sources and voltmeters are set up."
+            print("DC sources and voltmeters are set up.")
         except:
-            print "There has been an error setting up DC sources and voltmeters."
+            print("There has been an error setting up DC sources and voltmeters.")
             raise
             
         try:
-            print "Setting up lock-in amplifier"
+            print("Setting up lock-in amplifier")
             self.lockin = lockin = ZILockin()
-            print "Lock in amplifier is set up."
+            print("Lock in amplifier is set up.")
         except:
-            print "There has been an error setting up the lock-in amplifier."
+            print("There has been an error setting up the lock-in amplifier.")
             raise
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
@@ -88,14 +89,14 @@ class Measurement(MeasurementBase):
                 # save data
                 self.save_row(locals())
 
-        print "Acquisition done."
+        print("Acquisition done.")
         
         return locals()
 
     def tidy_up(self):
         self.end_saving()
 
-        print "Driving all voltages back to zero..."
+        print("Driving all voltages back to zero...")
 
         self.sourceVg1.set_voltage(0.)
         self.sourceVg2.set_voltage(0.)

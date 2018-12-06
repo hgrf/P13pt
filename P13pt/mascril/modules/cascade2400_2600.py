@@ -1,3 +1,4 @@
+from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.mascril.parameter import Sweep, Folder, Boolean, String
 from P13pt.drivers.keithley2400 import K2400
@@ -24,19 +25,19 @@ class Measurement(MeasurementBase):
     ]
 
     def measure(self, Vds, Vgs, Rg, stabilise_time, init, data_dir, comment, **kwargs):
-        print "==================================="        
-        print "Starting acquisition script..."
+        print("===================================")
+        print("Starting acquisition script...")
 
         # initialise instruments
         try:
-            print "Setting up DC sources..."
+            print("Setting up DC sources...")
             self.sourceVg = sourceVg = K2400('GPIB::24::INSTR', sourcemode='v',
                 vrang=200, irang=10e-6, slope=1, initialise=init)
             self.sourceVds = sourceVds = K2600('GPIB::26::INSTR', slope=0.005,
                 initialise=init)
-            print "DC sources and voltmeters are set up."
+            print("DC sources and voltmeters are set up.")
         except:
-            print "There has been an error setting up DC sources and voltmeters."
+            print("There has been an error setting up DC sources and voltmeters.")
             raise
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
@@ -51,7 +52,7 @@ class Measurement(MeasurementBase):
             if self.flags['quit_requested']:
                 return locals()
 
-            print 'Setting Vg='+str(Vg)+' V...'
+            print('Setting Vg='+str(Vg)+' V...')
             sourceVg.set_voltage(Vg)
             time.sleep(stabilise_time)
 
@@ -67,14 +68,14 @@ class Measurement(MeasurementBase):
             # save data
             self.save_row(locals())
 
-        print "Acquisition done."
+        print("Acquisition done.")
         
         return locals()
 
     def tidy_up(self):
         self.end_saving()
 
-        print "Driving all voltages back to zero..."
+        print("Driving all voltages back to zero...")
 
         self.sourceVds.set_voltage(0.)
         self.sourceVg.set_voltage(0.)

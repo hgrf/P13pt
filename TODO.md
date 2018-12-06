@@ -14,6 +14,7 @@ MAScriL
 =======
 
 - enable saving and loading of parameters
+- add note on rohdeschwarz python module in README.md
 
 SpectrumFitter
 ==============

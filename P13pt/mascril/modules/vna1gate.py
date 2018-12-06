@@ -1,3 +1,4 @@
+from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.anritsuvna import AnritsuVNA
@@ -25,12 +26,12 @@ class Measurement(MeasurementBase):
     ]
 
     def measure(self, data_dir, Vgs, Vds, Rg, Rds, comment, stabilise_time, **kwargs):
-        print "==================================="        
-        print "Starting acquisition script..."
+        print("===================================")
+        print("Starting acquisition script...")
 
         # initialise instruments
         try:
-            print "Setting up DC sources and voltmeters..."
+            print("Setting up DC sources and voltmeters...")
             bilt = Bilt('TCPIP0::192.168.0.2::5025::SOCKET')
             # source (bilt, channel, range, filter, slope in V/ms, label):
             self.sourceVg = sourceVg = BiltVoltageSource(bilt, "I2", "12", "1", 0.005, "Vg")
@@ -38,18 +39,18 @@ class Measurement(MeasurementBase):
             # voltmeter (bilt, channel, filt, label=None)
             self.meterVg = meterVg = BiltVoltMeter(bilt, "I5;C2", "2", "Vgm")
             self.meterVds = meterVds = BiltVoltMeter(bilt, "I5;C3", "2", "Vdsm")
-            print "DC sources and voltmeters are set up."
+            print("DC sources and voltmeters are set up.")
         except:
-            print "There has been an error setting up DC sources and voltmeters."
+            print("There has been an error setting up DC sources and voltmeters.")
             raise
             
         try:
-            print "Setting up VNA"
+            print("Setting up VNA")
             vna = AnritsuVNA('GPIB::6::INSTR')
             self.freqs = vna.get_freq_list()         # get frequency list
-            print "VNA is set up."
+            print("VNA is set up.")
         except:
-            print "There has been an error setting up the VNA."
+            print("There has been an error setting up the VNA.")
             raise
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
@@ -69,10 +70,10 @@ class Measurement(MeasurementBase):
         sourceVds.set_voltage(Vds)       
         for Vg in Vgs:
             if self.flags['quit_requested']:
-                print "Stopping acquisition."
+                print("Stopping acquisition.")
                 return locals()            
             
-            print "Setting Vg = {}".format(Vg)
+            print("Setting Vg = {}".format(Vg))
         
             # set Vg1 and 2
             sourceVg.set_voltage(Vg)
@@ -92,21 +93,21 @@ class Measurement(MeasurementBase):
             self.save_row(locals())
         
             # save VNA data
-            print "Getting VNA spectra..."
+            print("Getting VNA spectra...")
             vna.single_sweep()
             table = vna.get_table([1,2,3,4])
             timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')  
             spectrum_file = timestamp+'_Vg1_%2.4f'%(Vg)+'_Vds_%2.4f'%(Vds)+'.txt'
             np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
 
-        print "Acquisition done."
+        print("Acquisition done.")
         
         return locals()
 
     def tidy_up(self):
         self.end_saving()
 
-        print "Driving all voltages back to zero..."
+        print("Driving all voltages back to zero...")
 
         self.sourceVg.set_voltage(0.)
         self.sourceVds.set_voltage(0.)

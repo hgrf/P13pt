@@ -1,3 +1,4 @@
+from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.mascril.progressbar import progressbar_wait
@@ -39,13 +40,13 @@ class Measurement(MeasurementBase):
 
     def measure(self, data_dir, Vgs, pwrs, Rg, comment, Vg_stabilise_time,
                 pwr_stabilise_time, use_chuck, use_vna, init_bilt, **kwargs):
-        print "==================================="        
-        print "Starting acquisition script..."
+        print("===================================")
+        print("Starting acquisition script...")
 
         chuck_string = ''
 
         # initialise instruments
-        print "Setting up DC sources and voltmeters..."
+        print("Setting up DC sources and voltmeters...")
         bilt = Bilt('TCPIP0::192.168.0.2::5025::SOCKET')
         if init_bilt:
             # source (bilt, channel, range, filter, slope in V/ms, label):
@@ -54,28 +55,28 @@ class Measurement(MeasurementBase):
             self.sourceVg = sourceVg = BiltVoltageSource(bilt, "I1", initialise=False)
         # voltmeter (bilt, channel, filt, label=None)
         self.meterVg = meterVg = BiltVoltMeter(bilt, "I5;C1", "2", "Vgm")
-        print "DC sources and voltmeters are set up."
+        print("DC sources and voltmeters are set up.")
 
         if use_chuck:
-           print "Setting up Yokogawa for chuck voltage..."
+           print("Setting up Yokogawa for chuck voltage...")
            # connect to the Yoko without initialising, this will lead to
            # an exception if the Yoko is not properly configured (voltage
            # source, range 30V, output ON)
            yoko = Yoko7651('GPIB::3::INSTR', initialise=False, rang=30)
            chuck_string = '_Vchuck={:.1f}'.format(yoko.get_voltage())
-           print "Yokogawa is set up."
+           print("Yokogawa is set up.")
         
-        print "Setting up VNA..."
+        print("Setting up VNA...")
         vna = AnritsuVNA('GPIB::6::INSTR')
         sweeptime = vna.get_sweep_time()
         source_att = vna.get_source_att(1)
         source_att2 = vna.get_source_att(2)
         if not source_att == source_att2:
-            print "This module should only be used when the two sources use the same attenuator."
+            print("This module should only be used when the two sources use the same attenuator.")
             raise Exception
-        print "Detected same source attenuator on ports 1 and 2:"
-        print source_att, "dB"
-        print "VNA is set up."
+        print("Detected same source attenuator on ports 1 and 2:")
+        print(source_att, "dB")
+        print("VNA is set up.")
 
         # prepare saving DC data
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
@@ -87,14 +88,14 @@ class Measurement(MeasurementBase):
             spectra_fol = os.path.join(data_dir, filename)
             create_path(spectra_fol)
             if vna.get_sweep_type() != 'FSEGM':
-                print "This module should only be used when the VNA is in segmented sweep mode."
+                print("This module should only be used when the VNA is in segmented sweep mode.")
                 raise Exception
 #            if vna.get_sweep_type() == 'FSEGM':
 #                with open(os.path.join(spectra_fol, 'VNAconfig'), 'w') as f:
 #                    vna.dump_freq_segments(f)
 
         for Vg in Vgs:           
-            print "Setting Vg = {}".format(Vg)
+            print("Setting Vg = {}".format(Vg))
         
             # set Vg
             sourceVg.set_voltage(Vg)
@@ -115,10 +116,10 @@ class Measurement(MeasurementBase):
                 # sweep power
                 for pwr in pwrs:
                     if self.flags['quit_requested']:
-                        print "Stopping acquisition."
+                        print("Stopping acquisition.")
                         return locals()    
                     
-                    print "Setting pwr = {} dBm".format(pwr)
+                    print("Setting pwr = {} dBm".format(pwr))
                     
                     # set power on VNA for all frequency segments
                     pwr_to_set = pwr+source_att
@@ -131,7 +132,7 @@ class Measurement(MeasurementBase):
                     time.sleep(pwr_stabilise_time)                    
                     
                     # save VNA data
-                    print "Getting VNA spectra..."
+                    print("Getting VNA spectra...")
                     vna.single_sweep(wait=False)
                     # display sweep progress
                     progressbar_wait(sweeptime)
@@ -143,13 +144,13 @@ class Measurement(MeasurementBase):
                     spectrum_file = timestamp+'_Vg={:.3f}_pwr={:.0f}.format(Vg).txt'.format(Vg, pwr)
                     np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
 
-        print "Acquisition done."
+        print("Acquisition done.")
         
         return locals()
 
     def tidy_up(self):
         self.end_saving()
-        print "Driving all voltages back to zero..."
+        print("Driving all voltages back to zero...")
         self.sourceVg.set_voltage(0.)
 
 

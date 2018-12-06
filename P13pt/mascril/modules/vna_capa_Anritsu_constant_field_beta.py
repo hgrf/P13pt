@@ -1,3 +1,4 @@
+from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.mascril.progressbar import progressbar_wait
@@ -35,12 +36,12 @@ class Measurement(MeasurementBase):
     def measure(self, data_dir, Vgs, Vg0, Vchuck0, Vchuckmax, CapaRatio, Rg,
                 comment, stabilise_time, use_vna, init_bilt, init_yoko,
                 **kwargs):
-        print "==================================="        
-        print "Starting acquisition script..."
+        print("===================================")
+        print("Starting acquisition script...")
 
         # initialise instruments
         try:
-            print "Setting up DC sources and voltmeters..."
+            print("Setting up DC sources and voltmeters...")
             bilt = Bilt('TCPIP0::192.168.0.2::5025::SOCKET')
             if init_bilt:
                 # source (bilt, channel, range, filter, slope in V/ms, label):
@@ -53,18 +54,18 @@ class Measurement(MeasurementBase):
             self.yoko = yoko = Yoko7651("GPIB::3::INSTR", func="VOLT",
                                         rang=30., slope=1.,
                                         initialise=init_yoko, verbose=True)
-            print "DC sources and voltmeters are set up."
+            print("DC sources and voltmeters are set up.")
         except:
-            print "There has been an error setting up DC sources and voltmeters:"
+            print("There has been an error setting up DC sources and voltmeters:")
             raise
             
         try:
-            print "Setting up VNA..."
+            print("Setting up VNA...")
             vna = AnritsuVNA('GPIB::6::INSTR')
             sweeptime = vna.get_sweep_time()
-            print "VNA is set up."
+            print("VNA is set up.")
         except:
-            print "There has been an error setting up the VNA:"
+            print("There has been an error setting up the VNA:")
             raise
 
         timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
@@ -87,10 +88,10 @@ class Measurement(MeasurementBase):
 
         for Vg in Vgs:
             if self.flags['quit_requested']:
-                print "Stopping acquisition."
+                print("Stopping acquisition.")
                 return locals()            
             
-            print "Setting Vg = {}".format(Vg)
+            print("Setting Vg = {}".format(Vg))
         
             # calculate new chuck voltage to keep field constant
         
@@ -99,11 +100,11 @@ class Measurement(MeasurementBase):
             
             Vchuck = Vchuck0+CapaRatio*(Vg-Vg0)
             if np.abs(Vchuck) <= Vchuckmax:
-                print "Set chuck voltage:", Vchuck
+                print("Set chuck voltage:", Vchuck)
                 yoko.set_voltage(Vchuck)
             else:
-                print "Chuck voltage too high:", Vchuck
-                print "Not changing chuck voltage."
+                print("Chuck voltage too high:", Vchuck)
+                print("Not changing chuck voltage.")
                 Vchuck = yoko.get_voltage()
             
             # wait
@@ -120,7 +121,7 @@ class Measurement(MeasurementBase):
 
             if use_vna:
                 # save VNA data
-                print "Getting VNA spectra..."
+                print("Getting VNA spectra...")
                 vna.single_sweep(wait=False)
                 # display sweep progress
                 progressbar_wait(sweeptime)
@@ -132,13 +133,13 @@ class Measurement(MeasurementBase):
                 spectrum_file = timestamp+'_Vg=%2.4f_Vchuck=%2.4f'%(Vg, Vchuck)+'.txt'
                 np.savetxt(os.path.join(spectra_fol, spectrum_file), np.transpose(table))
 
-        print "Acquisition done."
+        print("Acquisition done.")
         
         return locals()
 
     def tidy_up(self):
         self.end_saving()
-        print "Driving all voltages back to zero..."
+        print("Driving all voltages back to zero...")
         self.sourceVg.set_voltage(0.)
         self.yoko.set_voltage(0.)
 

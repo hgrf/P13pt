@@ -11,6 +11,7 @@ PN: 10410-00322 Rev. H
 @author: Holger Graef and Andreas Inhofer
 """
 
+from __future__ import print_function
 import visa
 import time
 
@@ -59,9 +60,9 @@ class AnritsuVNA:
             raise Exception('Device error')
    
     def read_registers(self):
-        print "Status byte:", self.query('*STB?')
-        print "Standard event status register:", self.query('*ESR?')
-        print "Operation status register:", self.query(':STAT:OPER:COND?')
+        print("Status byte:", self.query('*STB?'))
+        print("Standard event status register:", self.query('*ESR?'))
+        print("Operation status register:", self.query(':STAT:OPER:COND?'))
         #print "Data transfer at sweep end:", self.query(':TRIG:SEDT?')
 
     def ask_values(self, q):
