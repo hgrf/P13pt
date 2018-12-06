@@ -18,8 +18,11 @@ setuptools.setup(
     package_data={
         '': ['icons/*.png',
              'spectrumfitter/*.png',
+             'spectrumfitter/*.ico',
              'mascril/*.png',
+             'mascril/*.ico',
              'graphulator/*.png',
+             'graphulator/*.ico',
              'mdb/*.png',
              'spectrumfitter/models/*.py',
              'mascril/modules/*.py']
