@@ -1,3 +1,23 @@
+P13pt
+=====
+
+- make MAScriL Python 3 compatible and install as conda package on BRUIT and Cascade
+- write instructions to create development environment
+- find easy way of creating app icon in Windows, Mac and Linux (maybe in setup.py ?)
+- add importance of adding the green-mercury channel for seeing the p13pt application to README.md
+- P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
+- add pyvisa to requirements
+- write instructions for developer to create new release
+- make new version for PyPI or "discontinue" PyPI releases (i.e. remove everything from PyPI)
+
+MAScriL
+=======
+
+- enable saving and loading of parameters
+
+SpectrumFitter
+==============
+
 - on Erwann's MacOS with Python 3, plots are displayed huge -> check qtpy and matplotlib version
 
 - fix Erwann's bug (i.e. when saving sessions with files that contain formats like _Vg_0.1_ instead of _Vg=0.1_)
@@ -27,25 +47,25 @@
 - add functions for fitting thru delay and dummy capacitance and for manual thru and dummy deembedding
 
 distribution for windows:
-* make sure "updating" works
-* figure out icons and models folder for exe file creation
-* there is an error message when we execute and close in Win10
+- make sure "updating" works
+- figure out icons and models folder for exe file creation
+- there is an error message when we execute and close in Win10
 
 high priority:
-* file and folder fields should be reset to previous value when browse is cancelled, not to nothing
-* enable displaying model on a broader frequency range
-* let the user also decide a frequency range in which he wants to fit
+- file and folder fields should be reset to previous value when browse is cancelled, not to nothing
+- enable displaying model on a broader frequency range
+- let the user also decide a frequency range in which he wants to fit
 
 medium priority:
-* when saving the results, make sure there is no KeyError for filename parameters
-* loading the fitting parameters: verify that model params / dataset are compatible
-* allow non-integer values for fitting params
-* need to be able to modify range of sliders
+- when saving the results, make sure there is no KeyError for filename parameters
+- loading the fitting parameters: verify that model params / dataset are compatible
+- allow non-integer values for fitting params
+- need to be able to modify range of sliders
 
 low priority:
-* make a program that can plot spectra from fitresults (by clicking on datapoints)
-* add fit result "grade"
-* put a function to export deembedded admittance spectra
-* we should impose the order of the fitting parameters
-* the default fit method could be created automatically / be in a base class
-* give priority for full vertical display for fitter
+- make a program that can plot spectra from fitresults (by clicking on datapoints)
+- add fit result "grade"
+- put a function to export deembedded admittance spectra
+- we should impose the order of the fitting parameters
+- the default fit method could be created automatically / be in a base class
+- give priority for full vertical display for fitter
