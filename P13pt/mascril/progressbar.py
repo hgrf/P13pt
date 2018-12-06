@@ -2,7 +2,7 @@ import sys
 import time
 
 def progressbar(value=0, length=20):
-    sys.stdout.write('\r[' + value*'#' + (length-value) * '.' + '] {:>3d}%'.format(value*100/length))
+    sys.stdout.write('\r[' + value*'#' + (length-value) * '.' + '] {:>3d}%'.format(int(value*100/length)))
     if value == length:
         sys.stdout.write('\n')
     sys.stdout.flush()

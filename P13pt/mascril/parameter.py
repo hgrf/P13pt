@@ -194,7 +194,7 @@ class Sweep(MeasurementParameter):
         self.btn_apply.clicked.connect(self.apply)
 
     def parseValue(self, value):
-        if isinstance(value, str) or isinstance(value, QString) or isinstance(value, unicode):
+        if isinstance(value, str) or isinstance(value, QString):
             text = str(value)
             try:
                 values = eval(text, {'np': np, 'r': np.arange, 'l': np.linspace})

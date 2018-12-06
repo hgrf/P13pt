@@ -1,12 +1,13 @@
+from __future__ import print_function
 import time
 
 class VoltageSource:
     def set_voltage(self, voltage):
-        print "setting voltage to ", voltage
+        print("setting voltage to ", voltage)
 
 
 class VoltMeter:
     def get_voltage(self):
         v = time.time()
-        print "current 'voltage' is ", v
+        print("current 'voltage' is ", v)
         return v

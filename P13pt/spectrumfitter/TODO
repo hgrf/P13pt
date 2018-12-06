@@ -1,9 +1,4 @@
-- figure out why SpectrumFitter GUI looks different in different environments:
-  - Anaconda Python 2.7 with PyQt 5.6.0, Qt 5.6.2
-  - Anaconda Python 3.7 with PyQt 5.6.0, Qt 5.6.2
-  - jinx "native", Python 2.7 with PyQt 5.10.1, Qt 5.9.5
-- latest version of PyQt on anaconda channel is 5.9.2, on conda-forge: 5.6.0
-=> by forcing new version of PyQt with conda install pyqt==5.9.2, we get correct display for both python 2.7 and 3.7
+- on Erwann's MacOS with Python 3, plots are displayed huge -> check qtpy and matplotlib version
 
 - fix Erwann's bug (i.e. when saving sessions with files that contain formats like _Vg_0.1_ instead of _Vg=0.1_)
 - warn the user when a value in the results file exceeds the range of the model sliders
@@ -30,7 +25,6 @@
 - add button to unload the model / remove the model curves
 - do not crash when trying to save results file without model loaded
 - add functions for fitting thru delay and dummy capacitance and for manual thru and dummy deembedding
-
 
 distribution for windows:
 * make sure "updating" works

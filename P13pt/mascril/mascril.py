@@ -32,7 +32,7 @@ class ReadOnlyConsole(QTextEdit):
         font.setPointSize(10)
         self.setFont(font)
 
-    @pyqtSlot(unicode)
+    @pyqtSlot(str)
     def write(self, data):
         """
             This uses insertPlainText (maybe in a later version HTML, so that we can change

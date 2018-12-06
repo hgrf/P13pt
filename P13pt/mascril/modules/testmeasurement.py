@@ -1,3 +1,4 @@
+from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.mascril.parameter import Folder, String, Sweep, Boolean
 from P13pt.mascril.progressbar import progressbar_wait
@@ -35,9 +36,9 @@ class Measurement(MeasurementBase):
         time.sleep(0.5)      # take some time to load
 
     def measure(self, data_dir, Vg1s, Vg2s, Vds, commongate, Rg1, Rg2, Rds, stabilise_time, **kwargs):
-        print "Starting acquisition script..."
-        print "Because I need to save my data somewhere, I will save it in the following directory:"
-        print data_dir
+        print("Starting acquisition script...")
+        print("Because I need to save my data somewhere, I will save it in the following directory:")
+        print(data_dir)
 
         # initialise instruments
         try:
@@ -48,7 +49,7 @@ class Measurement(MeasurementBase):
             self.meterVg2 = meterVg2 = VoltMeter()
             self.meterVds = meterVds = VoltMeter()
         except:
-            print "There has been an error setting up one of the instruments."
+            print("There has been an error setting up one of the instruments.")
             raise
 
         # prepare saving data
@@ -81,14 +82,14 @@ class Measurement(MeasurementBase):
                 # save data
                 self.save_row(locals())
 
-        print "Acquisition done."
+        print("Acquisition done.")
         
         return locals()
 
     def tidy_up(self):
         self.end_saving()
 
-        print "Driving all voltages back to zero..."
+        print("Driving all voltages back to zero...")
 
         self.sourceVg1.set_voltage(0.)
         self.sourceVg2.set_voltage(0.)

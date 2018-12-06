@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import os
 import errno
@@ -61,13 +62,13 @@ class MeasurementBase(QThread):
         try:
             l = self.measure(**params)
         except Exception as e:
-            print "An exception occured during the acquisition\n-------------------------"
+            print("An exception occured during the acquisition\n-------------------------")
             traceback.print_exc(file=sys.stdout)
 
         try:
             self.tidy_up()
         except Exception as e:
-            print "An exception occured during the clean-up\n-------------------------"
+            print("An exception occured during the clean-up\n-------------------------")
             traceback.print_exc(file=sys.stdout)
 
         self.reset_console()
