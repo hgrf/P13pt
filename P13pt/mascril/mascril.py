@@ -13,7 +13,7 @@ from P13pt.mascril.measurement import MeasurementBase       # we have to import 
                                                             # otherwise they will not be recognised as the same
                                                             # class
 from P13pt.mascril.measurement import MeasurementParameter  # idem
-from plotter import Plotter
+from P13pt.mascril.plotter import Plotter
 try:
     from PyQt5.QtCore import QString
 except ImportError:
