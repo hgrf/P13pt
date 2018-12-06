@@ -40,13 +40,17 @@ class
 ## Installation
 
 Use conda to set up a new environment (if you don't have Anaconda, get it from
-[here](https://www.anaconda.com/download/))
+[here](https://www.anaconda.com/download/)). It should be a Python 2.7, 3.6 or 3.7 environment.
 
-    conda create -n P13pt python=2.7
+    conda create -n P13pt
 
-Make sure the conda-forge channel is installed and that it has the highest priority:
+Make sure the conda-forge channel is installed:
 
-    conda config --add channels conda-forge
+    conda config --append channels conda-forge
+    
+If you want the P13pt application to show up in Anaconda-Navigator, add the green-mercury channel:
+
+    conda config --append channels green-mercury
     
 Activate the environment and install P13pt:
 
