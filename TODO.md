@@ -15,6 +15,8 @@ MAScriL
 
 - enable saving and loading of parameters
 - add note on rohdeschwarz python module in README.md
+- make measurement scripts lighter by creating default parameters like data_dir and comment and automating the saving a bit more (e.g. the parameter list should automatically be saved); keep in mind that there are sometimes additional params to add like chuck voltage... 
+- move instrument initialisation to separate part and standardise more
 
 SpectrumFitter
 ==============

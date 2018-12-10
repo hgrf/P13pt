@@ -142,6 +142,7 @@ class mainwindow(QWidget):
         self.tbl_alarms.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tbl_alarms.verticalHeader().hide()
         self.btn_addalarm = QPushButton("Add alarm", observablesinterfacewidget)
+        self.btn_addalarm.setEnabled(False)
         # put everything in a layout
         l = QVBoxLayout(observablesinterfacewidget)
         for w in [self.lbl_observables, self.tbl_observables, self.lbl_alarm, self.tbl_alarms, self.btn_addalarm]:
@@ -153,6 +154,7 @@ class mainwindow(QWidget):
         self.btn_run.clicked.connect(self.run_module)
         self.btn_help.clicked.connect(lambda: self.update_step_help(reinit=True))
         self.btn_addalarm.clicked.connect(self.add_alarm)
+        self.tbl_alarms.cellChanged.connect(self.alarm_modified)
 
         # set window size.
         self.setWindowState(Qt.WindowMaximized)
@@ -262,8 +264,9 @@ class mainwindow(QWidget):
         self.plotter.yvar.clear()
         self.tbl_observables.clearContents()
         self.tbl_alarms.clearContents()
-        for w in [self.btn_run, self.btn_browse, self.btn_load, self.btn_help]:
+        for w in [self.btn_run, self.btn_browse, self.btn_load, self.btn_help, self.btn_addalarm]:
             w.setEnabled(False)
+        self.tbl_alarms.blockSignals(True)      # we will modify the alarms table, so disable signals
 
         # indicate we are loading
         self.btn_load.setIcon(QIcon('../icons/wait.png'))
@@ -305,9 +308,6 @@ class mainwindow(QWidget):
                 else:
                     self.tbl_params.setItem(i, 1, QTableWidgetItem(str(value)))
 
-            # activate run button
-            self.btn_run.setEnabled(True)
-
             # set up plotter
             self.plotter.set_header(self.m.observables)
 
@@ -324,19 +324,26 @@ class mainwindow(QWidget):
             for i, alarm in enumerate(self.m.alarms):
                 self.add_alarm() # this has the advantage of directly setting up the combobox as well
                 self.tbl_alarms.item(i, 0).setText(self.m.alarms[i][0])
-                self.tbl_alarms.cellWidget(i, 1).setCurrentIndex(self.m.alarms[i][1])
+                cmb = self.tbl_alarms.cellWidget(i, 1)
+                cmb.setCurrentIndex(cmb.findData(self.m.alarms[i][1]))
 
             # connect signals
             self.m.new_observables_data[list].connect(self.new_data_handler)
+            self.m.new_alarm_data[list].connect(self.new_alarm_data_handler)
             self.m.new_console_data[QString].connect(self.readonlyconsole.write)
             self.btn_stopmod.clicked.connect(self.m.quit)
             self.btn_stopmod.clicked.connect(self.quit_requested)
             self.btn_forcestopmod.clicked.connect(self.m.terminate)
             self.m.finished.connect(self.module_done)
+            self.tbl_alarms.blockSignals(False)
+
+            # activate run button and add alarm button
+            for w in [self.btn_run, self.btn_addalarm]:
+                w.setEnabled(True)
 
             self.module_loaded.emit()
-            self.btn_run.setEnabled(True)
 
+        # activate some other buttons regardless of if the module was successfully loaded
         self.btn_load.setIcon(QIcon('tools-wizard.png'))
         for w in [self.btn_browse, self.btn_load, self.btn_help]:
             w.setEnabled(True)
@@ -368,14 +375,6 @@ class mainwindow(QWidget):
                     QMessageBox.critical(self, "Error", "Parameter '"+key+"' could not be evaluated: "+str(e.args[0]))
                     return
 
-        # set up the alarms (this will only be necessary once the alarms will be dealt with by MeasurementBase)
-        #alarms = []
-        #for i in range(self.tbl_alarms.rowCount()):
-        #    condition = str(self.tbl_alarms.item(i, 0).text())
-        #    action = self.tbl_alarms.cellWidget(i, 1).currentIndex()
-        #    alarms.append([condition, action])
-        #self.m.alarms = alarms
-
         # disable parameter editing
         self.tbl_params.setEnabled(False)
 
@@ -403,15 +402,45 @@ class mainwindow(QWidget):
 
     @pyqtSlot()
     def add_alarm(self):
-        cmb = QComboBox()
-        cmb.addItems(['show value', 'stop acquisition', 'call the cops'])
-        self.tbl_alarms.setRowCount(self.tbl_alarms.rowCount()+1)
-        i = self.tbl_alarms.rowCount()-1
+        # temporarily block the signals while we set up the new row in the alarms table
+        blocked = self.tbl_alarms.signalsBlocked()
+        self.tbl_alarms.blockSignals(True)
+
+        # create a new row in the alarms table
+        self.tbl_alarms.setRowCount(self.tbl_alarms.rowCount() + 1)
+        i = self.tbl_alarms.rowCount() - 1
+
+        # create an editable field for the alarm condition
         self.tbl_alarms.setItem(i, 0, QTableWidgetItem())
+
+        # create a combo box for the alarm action
+        cmb = QComboBox()
+        for value, text in [(MeasurementBase.ALARM_SHOWVALUE, 'show value'),
+                            (MeasurementBase.ALARM_QUIT, 'stop acquisition'),
+                            (MeasurementBase.ALARM_CALLCOPS, 'call the cops')]:
+            cmb.addItem(text, value)
+        self.tbl_alarms.setCellWidget(i, 1, cmb)
+
+        # create a non-editable field for the alarm info
         item = QTableWidgetItem()
         item.setFlags(item.flags()^Qt.ItemIsEditable)
         self.tbl_alarms.setItem(i, 2, item)
-        self.tbl_alarms.setCellWidget(i, 1, cmb)
+
+        # when the QComboBox is changed, we want to emit the cellChanged signal correspondingly
+        cmb.currentIndexChanged.connect(lambda: self.tbl_alarms.cellChanged.emit(i, 1))
+
+        # unblock the signals, if they were previously unblocked
+        self.tbl_alarms.blockSignals(blocked)
+
+    @pyqtSlot(int, int)
+    def alarm_modified(self, row, column):
+        # update the alarms
+        alarms = []
+        for i in range(self.tbl_alarms.rowCount()):
+            condition = str(self.tbl_alarms.item(i, 0).text())
+            action = self.tbl_alarms.cellWidget(i, 1).currentData()
+            alarms.append([condition, action])
+        self.m.alarms = alarms
 
     @pyqtSlot(list)
     def new_data_handler(self, data):
@@ -419,33 +448,28 @@ class mainwindow(QWidget):
             self.tbl_observables.item(i, 1).setText(str(value))
         self.plotter.new_data_handler(data)
 
-        self.evaluate_alarms(dict(zip(self.m.observables, data)))
-
-    def evaluate_alarms(self, vars):
-        vars['np'] = np
-        for i in range(self.tbl_alarms.rowCount()):
+    @pyqtSlot(list)
+    def new_alarm_data_handler(self, data):
+        for i,d in enumerate(data):
+            action = self.tbl_alarms.cellWidget(i, 1).currentData()
+            result_field = self.tbl_alarms.item(i, 2)
             self.tbl_alarms.item(i, 2).setBackground(Qt.white)
-            condition = str(self.tbl_alarms.item(i, 0).text())
-            if condition.strip() == '':
+            if isinstance(d, Exception):
+                result_field.setText('could not evaluate: '+str(d))
                 continue
-            try:
-                result = eval(condition, vars)
-            except Exception as e:
-                self.tbl_alarms.item(i, 2).setText("could not evaluate expression: "+str(e.args[0]))
-            else:
-                cmb_index = self.tbl_alarms.cellWidget(i, 1).currentIndex()
-                if cmb_index == 0:  # just show result
-                    self.tbl_alarms.item(i, 2).setText(str(result))
-                elif cmb_index == 1:  # quit acquisition if result is True
-                    if result:
-                        self.m.quit()
-                elif cmb_index == 2:  # "call the cops" if result is True (just show colour code)
-                    if result:
-                        self.tbl_alarms.item(i, 2).setText("calling the cops...")
-                        self.tbl_alarms.item(i, 2).setBackground(Qt.red)
-                    else:
-                        self.tbl_alarms.item(i, 2).setText("OK...")
-                        self.tbl_alarms.item(i, 2).setBackground(Qt.green)
+            if action == MeasurementBase.ALARM_SHOWVALUE:
+                result_field.setText(str(d))
+            elif action == MeasurementBase.ALARM_QUIT:
+                if data[i]:
+                    result_field.setText('stopping acquisition...')
+                    result_field.setBackground(Qt.red)
+            elif action == MeasurementBase.ALARM_CALLCOPS:
+                if data[i]:
+                    result_field.setText('calling the cops...')
+                    result_field.setBackground(Qt.red)
+                else:
+                    result_field.setText('OK...')
+                    result_field.setBackground(Qt.green)
 
 def msghandler(type, context, message):
     if type == QtInfoMsg:

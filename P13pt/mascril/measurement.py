@@ -3,6 +3,7 @@ import sys
 import os
 import errno
 import traceback
+import numpy as np
 from io import BytesIO as StringIO
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot
 from P13pt.mascril.parameter import MeasurementParameter
@@ -24,18 +25,11 @@ class MeasurementBase(QThread):
 
     new_observables_data = pyqtSignal(list)
     new_console_data = pyqtSignal(QString)
+    new_alarm_data = pyqtSignal(list)
 
     params = {}
     observables = []
     alarms = []
-    """ As of now, alarms can be defined in the measurement class (as a list of lists, where the nested lists contain
-    pairs of condition (string) and action (integer ALARM_*), but they will be handled by the launcher, not in the
-    detached execution mode (i.e. running the script directly from the console). The reason is primarily that it is
-    much easier to dynamically modify the alarms if they are checked on the GUI side. If we want to evaluate the alarms
-    in the MeasurementBase class, then we have to (a) find a thread-safe way to send modifications of the alarms to the
-    running acquisition thread and (b) find a way to inform the GUI that an alarm is activated / re-evaluate the alarm
-    conditions in the GUI.
-    """
 
     def __init__(self, redirect_console=False, parent=None):
         super(MeasurementBase, self).__init__(parent)
@@ -87,6 +81,33 @@ class MeasurementBase(QThread):
         else:
             raise Exception("The last data file has not been properly closed.")
 
+    def evaluate_alarms(self, locals):
+        locals['np'] = np
+        alarm_data = [0]*len(self.alarms)
+        for i,alarm in enumerate(self.alarms):
+            condition = alarm[0]
+            action = alarm[1]
+            if condition.strip() == '':
+                continue
+            try:
+                result = eval(condition, locals)
+            except Exception as e:
+                if not self.redirect_console: print('Alarm could not be evaluated: '+condition+' / error: '+str(e))
+                alarm_data[i] = e
+            else:
+                if action == self.ALARM_SHOWVALUE:
+                    if not self.redirect_console: print(condition+' =', result)
+                    alarm_data[i] = result
+                elif action == self.ALARM_CALLCOPS:
+                    if not self.redirect_console: print('Calling the cops: '+condition)
+                    alarm_data[i] = True
+                elif action == self.ALARM_QUIT:
+                    if result:
+                        if not self.redirect_console: print('Stopping the acquisition: '+condition)
+                        alarm_data[i] = True
+                        self.quit()
+        self.new_alarm_data.emit(alarm_data)
+
     def save_row(self, locals):
         if self.data_file is None:
             raise Exception("No data file has been opened.")
@@ -102,6 +123,7 @@ class MeasurementBase(QThread):
         self.data_file.flush()
 
         self.new_observables_data.emit(row)
+        self.evaluate_alarms(locals)
 
     def end_saving(self):
         if self.data_file is not None:
