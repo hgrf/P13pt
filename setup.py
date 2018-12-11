@@ -41,6 +41,7 @@ setuptools.setup(
                                   'spectrumfitter = P13pt.spectrumfitter.spectrumfitter:main',
                                   'mascril = P13pt.mascril.mascril:main',
                                   'graphulator = P13pt.graphulator.graphulator:main',
-                                  'mdb = P13pt.mdb.mdb:main'
+                                  'mdb = P13pt.mdb.mdb:main',
+                                  'p13pt-makelinks = P13pt.make_links:main'
                                   ]}
 )
