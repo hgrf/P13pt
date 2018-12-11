@@ -21,15 +21,15 @@ def main():
     script_path = os.path.dirname(os.path.realpath(__file__))
     print('Current script location:', script_path)
 
-    mdb_script = os.path.join(script_path, 'P13pt', 'mdb', 'mdb.py')
-    spectrumfitter_script = os.path.join(script_path, 'P13pt', 'spectrumfitter', 'spectrumfitter.py')
-    mascril_script = os.path.join(script_path, 'P13pt', 'mascril', 'mascril.py')
-    graphulator_script = os.path.join(script_path, 'P13pt', 'graphulator', 'graphulator.py')
+    mdb_script = os.path.join(script_path, 'mdb', 'mdb.py')
+    spectrumfitter_script = os.path.join(script_path, 'spectrumfitter', 'spectrumfitter.py')
+    mascril_script = os.path.join(script_path, 'mascril', 'mascril.py')
+    graphulator_script = os.path.join(script_path, 'graphulator', 'graphulator.py')
 
-    mdb_icon = os.path.join(script_path, 'P13pt', 'mdb', 'kmplot-2.ico')
-    spectrumfitter_icon = os.path.join(script_path, 'P13pt', 'spectrumfitter', 'audacity.ico')
-    mascril_icon = os.path.join(script_path, 'P13pt', 'mascril', 'tools-wizard.ico')
-    graphulator_icon = os.path.join(script_path, 'P13pt', 'graphulator', 'calculator.ico')
+    mdb_icon = os.path.join(script_path, 'mdb', 'kmplot-2.ico')
+    spectrumfitter_icon = os.path.join(script_path, 'spectrumfitter', 'audacity.ico')
+    mascril_icon = os.path.join(script_path, 'mascril', 'tools-wizard.ico')
+    graphulator_icon = os.path.join(script_path, 'graphulator', 'calculator.ico')
 
     # check for existence of these files
     for f in [mdb_script, spectrumfitter_script, mascril_script, graphulator_script, mdb_icon, spectrumfitter_icon,
