@@ -8,12 +8,17 @@ from PyQt5.QtWidgets import (QApplication, QFileSystemModel, QSplitter, QTreeVie
                              QTextEdit, QAbstractItemDelegate, QStyle)
 from PyQt5.QtCore import QDir, Qt, QSize
 
-from plotter import Plotter
-from analyser import Analyser
-from modifier import Modifier
+from P13pt.mdb.plotter import Plotter
+from P13pt.mdb.analyser import Analyser
+from P13pt.mdb.modifier import Modifier
 
 import os
-import ConfigParser
+try:
+    import ConfigParser
+except ImportError:                 # for Python 3 compatibility
+    import configparser
+    ConfigParser = configparser
+
 from glob import glob
 
 from mdbinfo import FolderInfo
@@ -186,6 +191,8 @@ class MainWindow(QSplitter):
         self.setWindowState(Qt.WindowMaximized)
 
 def main():
+    global config, root
+
     # CD into directory where this script is saved
     d = os.path.dirname(__file__)
     if d != '': os.chdir(d)
@@ -209,7 +216,7 @@ def main():
     ret = app.exec_()
 
     # Writing our configuration file to 'mdb.cfg'
-    with open('mdb.cfg', 'wb') as configfile:
+    with open('mdb.cfg', 'w') as configfile:
         config.write(configfile)
 
     sys.exit(ret)

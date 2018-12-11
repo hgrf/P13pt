@@ -24,6 +24,7 @@ setuptools.setup(
              'graphulator/*.png',
              'graphulator/*.ico',
              'mdb/*.png',
+             'mdb/*.ico',
              'spectrumfitter/models/*.py',
              'mascril/modules/*.py']
     },
