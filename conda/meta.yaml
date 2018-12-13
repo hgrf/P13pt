@@ -23,7 +23,7 @@ requirements:
     - matplotlib
     - numpy
     - pyvisa
-    - pywin32       [win]
+    - pywin32     # [win]
 
 test:
   imports:
