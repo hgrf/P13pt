@@ -2,7 +2,8 @@ P13pt
 =====
 
 - find easy way of creating app icon on Mac
-
+- pywin32 dependency is not automatically installed on Windows systems !!
+- fix DLL load issue, c.f. installation on David's PC and on Janis
 - make new version for PyPI or "discontinue" PyPI releases (i.e. remove everything from PyPI)
 - P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
 - write instructions to create development environment
