@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import json
 import subprocess
@@ -15,7 +16,10 @@ def main():
         return
 
     result = json.loads(result)
+    conda_root = result['root_prefix']
     conda_prefix = result['active_prefix']
+    conda_prefix_name = result['active_prefix_name']
+    conda_version = result['conda_version']
     print('Detected conda prefix:', conda_prefix)
 
     script_path = os.path.dirname(os.path.realpath(__file__))
@@ -51,6 +55,28 @@ def main():
             shortcut.IconLocation = icon
             shortcut.WindowStyle = 1  # 7 - Minimized, 3 - Maximized, 1 - Normal
             shortcut.save()
+    elif platform.system() == 'Linux':
+        # check conda version is compatible with the way we activate the environment (circumventing the implementation
+        # in ~/.bashrc, which is not used when we call the script via bash -c ...)
+        maj, min, patch = map(int, conda_version.split('.', 3))
+        if not (maj >= 4 and (maj > 4 or min >= 4)):    # version should be >= 4.4
+            print('Cannot create links for your conda version, please use conda >= 4.4')
+        else:
+            for script, icon, link_name, name in [
+                (mdb_script, mdb_icon, 'mdb', 'Mercury Data Browser'),
+                (spectrumfitter_script, spectrumfitter_icon, 'spectrumfitter', 'SpectrumFitter'),
+                (mascril_script, mascril_icon, 'mascril', 'MAScriL'),
+                (graphulator_script, graphulator_icon, 'graphulator', 'Graphulator')]:
+                link_folder = os.environ['HOME']+'/.local/share/applications/'
+                with open(link_folder+link_name+'.desktop', 'w') as link_file:
+                    link_file.write("""
+[Desktop Entry]
+Type=Application
+Terminal=false
+Exec=bash -c ". {}/etc/profile.d/conda.sh && conda activate {} && python {}"
+Name={}
+Icon={}
+                    """.format(conda_root, conda_prefix_name, script, name, icon))
     else:
         print('Cannot create links for your system: ' + platform.system())
 

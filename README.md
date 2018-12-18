@@ -57,9 +57,12 @@ Activate the environment and install P13pt:
     conda activate P13pt
     conda install -c green-mercury p13pt
 
-If you are installing P13pt on a Windows system, you can now automatically create Desktop icons by typing:
+If you want to automatically create links for the applications in P13pt, you can use the following command:
 
     p13pt-makelinks
+    
+On a Windows system, this will create shortcuts on the Desktop, on a Linux system, it will create links in
+~/.local/share/applications.
 
 If you wish to use the "driver" for the Zurich Instruments lock-in amplifier, you should
 install version 16.04 of ziPython.

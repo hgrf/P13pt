@@ -1,14 +1,12 @@
 P13pt
 =====
 
-- make MAScriL Python 3 compatible and install as conda package on BRUIT and Cascade
-- write instructions to create development environment
-- find easy way of creating app icon in Windows, Mac and Linux (maybe in setup.py ?)
-- add importance of adding the green-mercury channel for seeing the p13pt application to README.md
-- P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
-- add pyvisa to requirements
-- write instructions for developer to create new release
+- find easy way of creating app icon on Mac
+
 - make new version for PyPI or "discontinue" PyPI releases (i.e. remove everything from PyPI)
+- P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
+- write instructions to create development environment
+- write instructions for developer to create new release
 
 MAScriL
 =======
