@@ -17,7 +17,6 @@ MAScriL
 
 SpectrumFitter
 ==============
-- do not crash when file saving fails (e.g. when trying to write to read-only file)
 - don't crash when de-embedding fails due to different number of frequency points
 - add function to disable automatic fitting of specific spectra (checkbox or something)
 
