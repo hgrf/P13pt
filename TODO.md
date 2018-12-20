@@ -17,18 +17,19 @@ MAScriL
 
 SpectrumFitter
 ==============
+- do not crash when file saving fails (e.g. when trying to write to read-only file)
+- don't crash when de-embedding fails due to different number of frequency points
+
 - on Erwann's MacOS with Python 3, plots are displayed huge -> check qtpy and matplotlib version
 
 - fix Erwann's bug (i.e. when saving sessions with files that contain formats like _Vg_0.1_ instead of _Vg=0.1_)
 - warn the user when a value in the results file exceeds the range of the model sliders
-- don't crash when de-embedding fails due to different number of frequency points
 - generalise objective function to be in BaseModel class
 - adapt all model files (also maybe edited versions on other PCs) to new "format"
 - save all images still saves even when user clicks cancel -> fix this and check if same problem occurs for single
   image and for session saving...
 - when new spectra are detected too early (during file saving), they are not entirely read -> fix this
 - plot title disappears when changing the deembedding -> fix this
-- do not crash when file saving fails (e.g. when trying to write to read-only file)
 - improve initial data display (ax limits)
 - spectrum fitter bug: when data is on C: and results file is on D: (make sure this does not happen, i.e. tell user to
   save on same drive)
@@ -41,7 +42,6 @@ SpectrumFitter
 - indicate in navigator which files have been fitted
 - add mag/phase view for all parameters
 - add button to unload the model / remove the model curves
-- do not crash when trying to save results file without model loaded
 - add functions for fitting thru delay and dummy capacitance and for manual thru and dummy deembedding
 
 distribution for windows:
