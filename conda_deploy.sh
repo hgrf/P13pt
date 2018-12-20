@@ -15,7 +15,7 @@ do
 
     for PLATFORM in win-32 win-64
     do
-        conda convert --platform $PLATFORM --dependencies pywin32 $PKG_FILE -o $CONDA_BLD_DIR
+        conda convert --platform $PLATFORM --dependencies pywin32 -o $CONDA_BLD_DIR $PKG_FILE
         anaconda upload $CONDA_BLD_DIR/$PLATFORM/$PKG_BASENAME
     done
 
