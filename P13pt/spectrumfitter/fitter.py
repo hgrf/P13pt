@@ -1,6 +1,7 @@
 import os
 import imp
 import inspect
+import traceback
 from copy import copy
 
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QStandardPaths
@@ -197,8 +198,8 @@ class Fitter(QWidget):
                 QMessageBox.critical(self, "Error", "Could not get correct class from file.")
                 return False
             self.model = getattr(mod, 'Model')()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", "Could not load module: " + str(e.message))
+        except Exception:
+            QMessageBox.critical(self, "Error", "Could not load module: " + traceback.format_exc())
             return False
         self.model_file = filename
 
@@ -335,8 +336,8 @@ class Fitter(QWidget):
                 fit_method(self.network.f, sign*param, self.checkboxes)
             else:
                 fit_method(self.network.f, sign*param)
-        except Exception as e:
-            QMessageBox.critical(self, "Error", "Error during fit: " + str(e))
+        except Exception:
+            QMessageBox.critical(self, "Error", "Error during fit: " + traceback.format_exc())
             return
 
         self.update_values(self.model.values)

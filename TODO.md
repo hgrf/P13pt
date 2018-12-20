@@ -1,6 +1,5 @@
 P13pt
 =====
-
 - find easy way of creating app icon on Mac
 - pywin32 dependency is not automatically installed on Windows systems !!
 - fix DLL load issue, c.f. installation on David's PC and on Janis
@@ -11,7 +10,6 @@ P13pt
 
 MAScriL
 =======
-
 - enable saving and loading of parameters
 - add note on rohdeschwarz python module in README.md
 - make measurement scripts lighter by creating default parameters like data_dir and comment and automating the saving a bit more (e.g. the parameter list should automatically be saved); keep in mind that there are sometimes additional params to add like chuck voltage... 
@@ -19,13 +17,11 @@ MAScriL
 
 SpectrumFitter
 ==============
-
 - on Erwann's MacOS with Python 3, plots are displayed huge -> check qtpy and matplotlib version
 
 - fix Erwann's bug (i.e. when saving sessions with files that contain formats like _Vg_0.1_ instead of _Vg=0.1_)
 - warn the user when a value in the results file exceeds the range of the model sliders
 - don't crash when de-embedding fails due to different number of frequency points
-- display detailed error message when model fails
 - generalise objective function to be in BaseModel class
 - adapt all model files (also maybe edited versions on other PCs) to new "format"
 - save all images still saves even when user clicks cancel -> fix this and check if same problem occurs for single
