@@ -13,7 +13,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 def check_deembedding_compatibility(ntwk1, ntwk2):
     # TODO: careful when de-embedding thru from thru
-    return ntwk1.number_of_ports == ntwk2.number_of_ports and np.max(np.abs(ntwk1.f - ntwk2.f)) < 1e-3
+    return ntwk1.number_of_ports == ntwk2.number_of_ports and len(ntwk1.f) == len(ntwk2.f) and np.max(np.abs(ntwk1.f - ntwk2.f)) < 1e-3
 
 class DataLoader(QWidget):
     dataset_changed = pyqtSignal()
@@ -231,6 +231,8 @@ class DataLoader(QWidget):
                 QMessageBox.warning(self, 'Warning', 'Dummy and thru are not compatible')
                 self.dummy_raw = None
                 self.thru = None
+                for w in [self.btn_toggledummy, self.btn_togglethru, self.btn_plotdummy, self.btn_plotthru]:
+                    w.setEnabled(False)
             else:
                 self.dummy_deem = self.dummy_raw.deembed_thru(self.thru)
 
@@ -255,11 +257,15 @@ class DataLoader(QWidget):
                     dut = dut.deembed_thru(self.thru)
                 else:
                     QMessageBox.warning(self, 'Warning', 'Could not deembed thru.')
+                    self.thru_toggle_status = False
+                    self.btn_togglethru.setIcon(self.toggleoff_icon)
             if self.dummy and self.dummy_toggle_status:
                 if check_deembedding_compatibility(dut, self.dummy):
                     dut.y -= self.dummy.y
                 else:
                     QMessageBox.warning(self, 'Warning', 'Could not deembed dummy.')
+                    self.dummy_toggle_status = False
+                    self.btn_toggledummy.setIcon(self.toggleoff_icon)
             try:
                 ra = float(self.txt_ra.text())
             except:

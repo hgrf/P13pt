@@ -17,9 +17,7 @@ MAScriL
 
 SpectrumFitter
 ==============
-- don't crash when de-embedding fails due to different number of frequency points
 - add function to disable automatic fitting of specific spectra (checkbox or something)
-
 - on Erwann's MacOS with Python 3, plots are displayed huge -> check qtpy and matplotlib version
 
 - fix Erwann's bug (i.e. when saving sessions with files that contain formats like _Vg_0.1_ instead of _Vg=0.1_)
