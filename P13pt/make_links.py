@@ -50,8 +50,11 @@ def main():
             shell = win32com.client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(os.path.join(os.environ['USERPROFILE'], 'Desktop',
                                                          name + '.lnk'))
-            shortcut.Targetpath = os.path.join(conda_prefix, 'pythonw.exe')
-            shortcut.Arguments = script
+            shortcut.Targetpath = os.path.join(conda_root, 'pythonw.exe')
+            # the following approach is adapted from how the Spyder shortcut works on Anaconda installations on Windows
+            # cwp.py will set up the environment variables (important so that required DLLs can be found)
+            # TODO: does this work if any of the paths contains spaces?
+            shortcut.Arguments = os.path.join(conda_root, 'cwp.py')+' '+conda_prefix+' '+os.path.join(conda_prefix, 'pythonw.exe')+' '+script
             shortcut.IconLocation = icon
             shortcut.WindowStyle = 1  # 7 - Minimized, 3 - Maximized, 1 - Normal
             shortcut.save()
