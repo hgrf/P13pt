@@ -1,9 +1,6 @@
 P13pt
 =====
 - find easy way of creating app icon on Mac
-- fix DLL load issue, c.f. installation on David's PC and on Janis
-  -> a possible solution is creating a link to: C:\Users\ENS-PHYS\Anaconda3\Scripts\activate.bat P13pt_test && mascril
-     but this leaves a terminal window open
 - make new version for PyPI or "discontinue" PyPI releases (i.e. remove everything from PyPI)
 - P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
 - write instructions to create development environment
