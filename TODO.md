@@ -1,5 +1,8 @@
 P13pt
 =====
+- test with Travis CI
+- code coverage report
+- check if "random conda plans" are still an issue and if yes post it on the conda issue tracker
 - find easy way of creating app icon on Mac
 - make new version for PyPI or "discontinue" PyPI releases (i.e. remove everything from PyPI)
 - P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
