@@ -126,12 +126,12 @@ class Yoko7651:
         return function_dict[data[0:4]][1]
     
     def set_range(self, rang):
-        rang = self.determine_range(self.func, rang)
-        if rang is None:
+        rang_str = self.determine_range(self.func, rang)
+        if rang_str is None:
             raise Exception('No compatible range could be found')
-        self.write(rang[2::]+'E')
+        self.write(rang_str[2::]+'E')
+        self.rang = rang
         #TODO: check that range was correctly set a Dartiailh
-        #TODO: update self.rang
     
     def get_output(self):
         mess = self.query('OC')[5::]
@@ -193,12 +193,14 @@ class Yoko7651:
         return self.set_setpoint(value)
     
     def get_current(self):
-        #TODO: implement this
-        raise Exception('Not implemented')
+        if self.func != 'CURR':
+            raise Exception('Wrong mode selected')
+        return self.get_setpoint()
     
     def set_current(self, value):
-        #TODO: implement this
-        raise Exception('Not implemented')
+        if self.func != 'CURR':
+            raise Exception('Wrong mode selected')
+        return self.set_setpoint(value)
 
     # just wrapping the main functions of self.yoko
     def query(self, q):
