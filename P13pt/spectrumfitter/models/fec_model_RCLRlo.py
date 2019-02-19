@@ -1,8 +1,10 @@
+from __future__ import print_function
 import numpy as np
 from lmfit import Parameters, minimize
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QWidget, QLineEdit
+from P13pt.spectrumfitter.basemodel import BaseModel
 
-class Model:
+class Model(BaseModel):
     # dictionary of the model's parameters
     # for each parameter, we store the minimum and maximum value,
     # an initial value, a multiplier value and a unit
@@ -38,11 +40,7 @@ class Model:
         self.infowidget.setLayout(l2)
         self.reset_values()
 
-    def reset_values(self):
-        for p in self.params:
-            self.values[p] = self.params[p][2]*self.params[p][3]
-
-    def admittance(self, w, r, c, l, rlo):
+    def func_admittance(self, w, r, c, l, rlo):
         """Admittance of a Field Effect Capacitor
 
         Parameters
@@ -89,7 +87,7 @@ class Model:
         """
         r, c, l, rlo = (params['r'].value, params['c'].value,
                         params['l'].value, params['rlo'].value) 
-        computed_admittance = self.admittance(x_data, r, c, l, rlo)
+        computed_admittance = self.func_admittance(x_data, r, c, l, rlo)
         np.nan_to_num(computed_admittance)
         res = np.empty((2, len(y_data)))
         res[0] = y_data.real - computed_admittance.real
@@ -132,10 +130,10 @@ class Model:
         if len(f_below_thresh):
             fc = f_below_thresh[0]
         else:
-            print "Threshold detection did not work"
+            print("Threshold detection did not work")
             fc = base_f[mask][np.argmin(np.abs(base_y[mask].real-base_y[mask].imag))]
         
-        print "Detected fc:", fc/1e9, "GHz"
+        print("Detected fc:", fc/1e9, "GHz")
         #if fc < 3.1e8: fc = 1e9
         
         # define masks
@@ -191,10 +189,10 @@ class Model:
         if len(f_below_thresh):
             fc = f_below_thresh[0]
         else:
-            print "Threshold detection did not work"
+            print("Threshold detection did not work")
             fc = base_f[mask][np.argmin(np.abs(base_y[mask].real-base_y[mask].imag))]
         
-        print "Detected fc:", fc/1e9, "GHz"
+        print("Detected fc:", fc/1e9, "GHz")
         #if fc < 3.1e8: fc = 1e9
         
         # define masks
@@ -250,10 +248,10 @@ class Model:
         if len(f_below_thresh):
             fc = f_below_thresh[0]
         else:
-            print "Threshold detection did not work"
+            print("Threshold detection did not work")
             fc = base_f[mask][np.argmin(np.abs(base_y[mask].real-base_y[mask].imag))]
         
-        print "Detected fc:", fc/1e9, "GHz"
+        print("Detected fc:", fc/1e9, "GHz")
         #if fc < 3.1e8: fc = 1e9
         
         # define masks
@@ -309,10 +307,10 @@ class Model:
         if len(f_below_thresh):
             fc = f_below_thresh[0]
         else:
-            print "Threshold detection did not work"
+            print("Threshold detection did not work")
             fc = base_f[mask][np.argmin(np.abs(base_y[mask].real-base_y[mask].imag))]
         
-        print "Detected fc:", fc/1e9, "GHz"
+        print("Detected fc:", fc/1e9, "GHz")
         
         # define masks
         masks = [base_f < fc]
@@ -320,7 +318,7 @@ class Model:
 
         # fit
         for i, mask in enumerate(masks):
-            print "Fitting step ", i+1
+            print("Fitting step ", i+1)
             w = 2.*np.pi*base_f[mask]
             y = base_y[mask]  # minus sign because Y12 and not Y11
 
