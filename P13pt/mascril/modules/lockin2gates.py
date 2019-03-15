@@ -1,5 +1,6 @@
 from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
+from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.zilockin import ZILockin
 
@@ -9,15 +10,15 @@ import os
 
 class Measurement(MeasurementBase):
     params = {
-        'Vg1s': np.linspace(-1., 1., 101),
-        'Vg2s': [0.],
-        'commongate': False,
+        'Vg1s': Sweep([0.0]),
+        'Vg2s': Sweep([0.0]),
+        'commongate': Boolean(False),
         'Rg1': 100e3,
         'Rg2': 100e3,
         'Rds': 2.2e3,
         'stabilise_time': 0.5,
-        'comment': None,
-        'data_dir': r'D:\meso\Desktop\testdata'
+        'comment': String(''),
+        'data_dir': Folder(r'D:\meso\Desktop\testdata')
     }
 
     observables = ['Vg1', 'Vg1m', 'Ileak1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Vdsm_std', 'Rs']

@@ -1,5 +1,6 @@
 from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
+from P13pt.mascril.parameter import Sweep, String, Folder
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.anritsuvna import AnritsuVNA
 
@@ -10,13 +11,13 @@ import errno
 
 class Measurement(MeasurementBase):
     params = {
-        'Vgs': np.linspace(-1., 1., 101),
+        'Vgs': Sweep([0.0]),
         'Vds': 0.01,
         'Rg': 100e3,
         'Rds': 2.2e3,
         'stabilise_time': 0.3,
-        'comment': None,
-        'data_dir': r'D:\meso\Desktop\testdata'
+        'comment': String(''),
+        'data_dir': Folder(r'D:\meso\Desktop\testdata')
     }
 
     observables = ['Vg', 'Vgm', 'Ileak', 'Vds', 'Vdsm', 'Rs']
