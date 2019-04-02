@@ -1,5 +1,6 @@
 from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
+from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 from P13pt.drivers.anritsuvna import AnritsuVNA
 from P13pt.drivers.si9700 import SI9700
@@ -12,16 +13,16 @@ import errno
 
 class Measurement(MeasurementBase):
     params = {
-        'Vdss': [10e-3],
-        'Vg1s': [0.1],
-        'Vg2s': [0.],
-        'commongate': False,
+        'Vdss': Sweep([10e-3]),
+        'Vg1s': Sweep([0.1]),
+        'Vg2s': Sweep([0.]),
+        'commongate': Boolean(False),
         'Rg2': 100e3,
         'Rds': 2.2e3,
         'stabilise_time': 0.05,
-        'comment': None,
-        'data_dir': r'D:\MeasurementJANIS\Holger\test',
-        'useVNA': False
+        'comment': String(''),
+        'data_dir': Folder(r'D:\MeasurementJANIS\Holger\test'),
+        'useVNA': Boolean(False),
     }
 
     observables = ['Vg1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs', 'Ta', 'Tb']
