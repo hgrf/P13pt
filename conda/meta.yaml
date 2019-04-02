@@ -39,7 +39,7 @@ app:
   summary: P13pt
 
 about:
-  home: https://github.com/green-mercury/P13pt
+  home: https://github.com/HolgerGraef/P13pt
   license: MIT
   license_file: LICENSE
   summary: Instrument drivers, plotting and fitting tools for high frequency electronics
