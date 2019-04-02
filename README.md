@@ -1,7 +1,6 @@
 ﻿# P13 python tools
 
 [![Anaconda](https://anaconda.org/green-mercury/p13pt/badges/version.svg)](https://anaconda.org/green-mercury/p13pt)
-[![PyPI version](https://badge.fury.io/py/P13pt.svg)](https://badge.fury.io/py/P13pt)
 
 P13pt is a set of python tools (some helper scripts, rudimentary instrument drivers,
 automation software, a plotting tool and a fitting tool for vector network analyzer - VNA -
