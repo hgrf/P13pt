@@ -1,5 +1,6 @@
 from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
+from P13pt.mascril.parameter import Sweep, String, Folder, Boolean
 from P13pt.drivers.bilt import Bilt, BiltVoltageSource, BiltVoltMeter
 
 import time
@@ -8,17 +9,16 @@ import os
 
 class Measurement(MeasurementBase):
     params = {
-        'Vdss': [10e-3, 20e-3, 30e-3, 40e-3, 50e-3, 60e-3, 70e-3, 80e-3, 90e-3, 100e-3,
-                 120e-3, 140e-3, 160e-3, 180e-3, 200e-3],
-        'Vg1s': np.concatenate((np.linspace(0,-2,201),np.linspace(-2,0,201))),
-        'Vg2s': np.arange(0.2, 0.4, 0.02),
-        'commongate': False,
+        'Vdss': Sweep([0.0]),
+        'Vg1s': Sweep([0.0]),
+        'Vg2s': Sweep([0.0]),
+        'commongate': Boolean(False),
         'Rg1': 100e3,
         'Rg2': 100e3,
         'Rds': 22e3,
         'stabilise_time': 0.05,
-        'comment': None,
-        'data_dir': r'D:\MeasurementJANIS\Holger\KTW H5 2x3\2017-11-09 LHe'
+        'comment': String(''),
+        'data_dir': Folder(r'D:\MeasurementJANIS\Holger\KTW H5 2x3\2017-11-09 LHe')
     }
 
     observables = ['Vg1', 'Vg1m', 'Ileak1', 'Vg2', 'Vg2m', 'Ileak2', 'Vds', 'Vdsm', 'Rs']

@@ -85,7 +85,7 @@ class Bilt:
         self.bilt.write_termination = '\n'
         self.bilt.read_termination = '\n'
         
-        if self.ask('I0;*IDN?')[:13] != '"FRAME/BN722B': # if we just ask *IDN? we're probably talking to one of the modules, not the Bilt frame
+        if not self.ask('I0;*IDN?').startswith('"FRAME/BN72'): # if we just ask *IDN? we're probably talking to one of the modules, not the Bilt frame
             raise Exception("Bilt does not respond or is incompatible with this driver")
         if self.ask('SYST:ERROR?')[:4] != '+000':
             raise Exception("Bilt signals error")
