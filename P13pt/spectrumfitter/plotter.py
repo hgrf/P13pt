@@ -22,9 +22,13 @@ class Plotter(QTabWidget):
         self.plotting_yandfit = QWidget()
         self.plotting_s = QWidget()
         self.plotting_y = QWidget()
+        self.plotting_s_db = QWidget()
+        self.plotting_y_db = QWidget()
         self.addTab(self.plotting_yandfit, 'Fitting')
-        self.addTab(self.plotting_y, 'All Y')
-        self.addTab(self.plotting_s, 'All S')
+        self.addTab(self.plotting_y, 'Y (Real Imag)')
+        self.addTab(self.plotting_s, 'S (Real Imag)')
+        self.addTab(self.plotting_y_db, 'Y (Mag Phase)')
+        self.addTab(self.plotting_s_db, 'S (Mag Phase)')
 
         # set up default plotting (Y and fit)
         self.figure = plt.figure()
@@ -37,7 +41,7 @@ class Plotter(QTabWidget):
             l.addWidget(w)
         self.plotting_yandfit.setLayout(l)
 
-        # set up plotting of all Y parameters
+        # set up plotting of Y (real imag) parameters
         self.figure_y = plt.figure()
         self.ax_y_list = [self.figure_y.add_subplot(221+i) for i in range(4)]
         for i, ax in enumerate(self.ax_y_list):
@@ -51,7 +55,7 @@ class Plotter(QTabWidget):
         self.plotting_y.setLayout(l)
         self.figure_y.tight_layout()
 
-        # set up plotting of all S parameters
+        # set up plotting of S (real imag) parameters
         self.figure_s = plt.figure()
         self.ax_s_list = [self.figure_s.add_subplot(221+i) for i in range(4)]
         for i, ax in enumerate(self.ax_s_list):
@@ -64,6 +68,34 @@ class Plotter(QTabWidget):
             l.addWidget(w)
         self.plotting_s.setLayout(l)
         self.figure_s.tight_layout()
+        
+        # set up plotting of Y (mag phase) parameters
+        self.figure_y_db = plt.figure()
+        self.ax_y_list_db = [self.figure_y_db.add_subplot(221+i) for i in range(4)]
+        for i, ax in enumerate(self.ax_y_list_db):
+            ax.set_xlabel(r'$f [GHz]$')
+            ax.set_ylabel(r'$Y_{'+['11', '12', '21', '22'][i]+r'}$')
+        self.canvas_y_db = FigureCanvas(self.figure_y_db)
+        self.toolbar_y_db = NavigationToolbar(self.canvas_y_db, self.plotting_y_db)
+        l = QVBoxLayout()
+        for w in [self.toolbar_y_db, self.canvas_y_db]:
+            l.addWidget(w)
+        self.plotting_y_db.setLayout(l)
+        self.figure_y_db.tight_layout()
+
+        # set up plotting of S (mag phase) parameters
+        self.figure_s_db = plt.figure()
+        self.ax_s_list_db = [self.figure_s_db.add_subplot(221+i) for i in range(4)]
+        for i, ax in enumerate(self.ax_s_list_db):
+            ax.set_xlabel(r'$f [GHz]$')
+            ax.set_ylabel(r'$S_{'+['11', '12', '21', '22'][i]+r'}$')
+        self.canvas_s_db = FigureCanvas(self.figure_s_db)
+        self.toolbar_s_db = NavigationToolbar(self.canvas_s_db, self.plotting_s_db)
+        l = QVBoxLayout()
+        for w in [self.toolbar_s_db, self.canvas_s_db]:
+            l.addWidget(w)
+        self.plotting_s_db.setLayout(l)
+        self.figure_s_db.tight_layout()
 
     def plot(self, network, params):
         self.clear()
@@ -85,24 +117,38 @@ class Plotter(QTabWidget):
             self.ax.plot(self.f/1e9, sign*self.s[:,i,j].imag, label='Im')
         self.ax.legend()
 
-        # plot all Y parameters
+        # plot Y parameters (real imag)
         for i,ax in enumerate(self.ax_y_list):
             ax.plot(self.f/1e9, self.y[:,i//2,i%2].real*1e3, label='Re')
             ax.plot(self.f/1e9, self.y[:,i//2,i%2].imag*1e3, label='Im')
             if not i:
                 ax.legend()
 
-        # plot all S parameters
+        # plot S parameters (real imag)
         for i,ax in enumerate(self.ax_s_list):
             ax.plot(self.f/1e9, self.s[:,i//2,i%2].real, label='Re')
             ax.plot(self.f/1e9, self.s[:,i//2,i%2].imag, label='Im')
             if not i:
                 ax.legend()
 
+        # plot Y parameters (mag phase)
+        for i,ax in enumerate(self.ax_y_list_db):
+            ax.plot(self.f/1e9, 20*np.log10(self.y[:,i//2,i%2]), label='dB')
+            ax.plot(self.f/1e9, 180*np.angle(self.y[:,i//2,i%2])/np.pi, label='Rad')
+            if not i:
+                ax.legend()
+
+        # plot S parameters (mag phase)
+        for i,ax in enumerate(self.ax_s_list_db):
+            ax.plot(self.f/1e9, 20*np.log10(self.s[:,i//2,i%2]), label='dB')
+            ax.plot(self.f/1e9, 180*np.angle(self.s[:,i//2,i%2])/np.pi, label='Rad')
+            if not i:
+                ax.legend()
+
         # update titles
         title = ', '.join([key + '=' + str(params[key]) for key in params])
         self.ax.set_title(title)
-        for fig in [self.figure_y, self.figure_s]:
+        for fig in [self.figure_y, self.figure_s, self.figure_y_db, self.figure_s_db]:
             fig.suptitle(title)
             fig.subplots_adjust(top=0.9)
 
@@ -115,7 +161,7 @@ class Plotter(QTabWidget):
         #         toolbar.push_current()
 
         # update canvas
-        for canvas in [self.canvas, self.canvas_y, self.canvas_s]:
+        for canvas in [self.canvas, self.canvas_y, self.canvas_s, self.canvas_y_db, self.canvas_s_db]:
             canvas.draw()
 
     def plot_fit(self, model):
@@ -146,21 +192,25 @@ class Plotter(QTabWidget):
         # TODO: could probably do this better with a dictionary or by creating subwidgets with figure property
         if self.currentIndex() == 0:     # fitting
             figure = self.figure
-        elif self.currentIndex() == 1:   # all Y
+        elif self.currentIndex() == 1:   # Y (real imag)
             figure = self.figure_y
-        elif self.currentIndex() == 2:   # all S
+        elif self.currentIndex() == 2:   # S (real imag)
             figure = self.figure_s
+        elif self.currentIndex() == 3:   # Y (mag phase)
+            figure = self.figure_y_db
+        elif self.currentIndex() == 4:   # S (magphase)
+            figure = self.figure_s_db
         else:
             return
         figure.savefig(filename)
 
     def clear(self):
-        for ax in [self.ax] + self.ax_y_list + self.ax_s_list:
+        for ax in [self.ax] + self.ax_y_list + self.ax_s_list + self.ax_y_list_db + self.ax_s_list_db:
             for artist in ax.lines + ax.collections:
                 artist.remove()
             ax.set_prop_cycle(None)
             ax.set_title('')
-        for canvas in [self.canvas, self.canvas_y, self.canvas_s]:
+        for canvas in [self.canvas, self.canvas_y, self.canvas_s, self.canvas_y_db, self.canvas_s_db]:
             canvas.draw()
         self.line_r = None
         self.line_i = None
