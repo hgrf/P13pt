@@ -32,6 +32,7 @@ before_install:
 
 # Install packages
 install:
+  - cd $TRAVIS_BUILD_DIR
   - conda build conda -q
   - conda install p13pt --use-local -q
 
