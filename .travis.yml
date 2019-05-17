@@ -22,8 +22,10 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p ~/anaconda
   - export PATH=~/anaconda/bin:$PATH
-  - travis_retry conda update --yes conda
   - conda config --set always_yes yes
+  - travis_retry conda update conda
+  - conda install conda-build anaconda-client -q  
+  
   # set up environment
   - conda create -n travisci python=$PYTHON
   - source activate travisci
