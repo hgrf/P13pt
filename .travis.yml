@@ -1,9 +1,3 @@
-# Adapted from:
-# https://github.com/Exopy/exopy/blob/master/.travis.yml
-# https://gist.github.com/dan-blanchard/7045057
-
-language: python
-
 sudo: false
 dist: trusty
 
@@ -13,36 +7,43 @@ branches:
 
 matrix:
   include:
-    - env: PYTHON=2.7 CONDA_PY=27 QT_VERSION=5
-    - env: PYTHON=3.7 CONDA_PY=37 QT_VERSION=5
+    - env: PYTHON=3.5 CONDA_PY=35 QT_VERSION=5
+    - env: PYTHON=3.6 CONDA_PY=36 QT_VERSION=5
 
 before_install:
-  # install Miniconda
-  - travis_retry wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+
+  # Install Miniconda
+  - travis_retry wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p ~/anaconda
   - export PATH=~/anaconda/bin:$PATH
+
+  # Setup environment
+  - travis_retry conda update --yes conda
   - conda config --set always_yes yes
-  - travis_retry conda update conda
-  - conda install conda-build anaconda-client -q  
-  
-  # set up environment
-  - conda create -n travisci python=$PYTHON
+  #- conda config --append channels exopy
+  - conda install conda-build anaconda-client -q
+  - conda info -a
+  - conda create -n travisci python=$PYTHON pip
   - source activate travisci
-  #- conda config --append channels conda-forge
-  #- conda install -q pyqt=$QT_VERSION numpy matplotlib lmfit scikit-rf
-  - conda install -q pyqt=$QT_VERSION numpy matplotlib scikit-rf
+  - CONDA_INSTALL="conda install -q"
+  - PIP_INSTALL="pip install -q"
 
-# Install packages
+  # Setup conda build output directory
+  - cd ~
+  - mkdir conda-bld-out
+  - cd conda-bld-out
+  - export CONDA_BLD_PATH=$(pwd)
+
+  # Install exopy dependencies
+  - $CONDA_INSTALL pyqt=$QT_VERSION numpy
+
 install:
+  # Build conda package and install it (check that build script is not broken)
   - cd $TRAVIS_BUILD_DIR
-  - conda build conda -q
-  - conda install p13pt --use-local -q
+  - conda build conda -q  # Package building does run only very minimal tests
+  - conda install exopy --use-local -q
+  - cd ~
 
-# Run test
 script:
   - echo "Test test test"
-
-# Calculate coverage
-after_success:
-  - echo "Success woohoo"
