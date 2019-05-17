@@ -1,11 +1,15 @@
+# References https://gist.github.com/dan-blanchard/7045057
+# and https://docs.travis-ci.com/user/trusty-ci-environment/
+# and https://github.com/Exopy/exopy/blob/master/.travis.yml
+
 language: python
 
 sudo: false
 dist: trusty
 
-branches:
-  only:
-    - master
+#branches:
+#  only:
+#    - master
 
 matrix:
   include:
