@@ -66,6 +66,34 @@ On a Windows system, this will create shortcuts on the Desktop, on a Linux syste
 If you wish to use the "driver" for the Zurich Instruments lock-in amplifier, you should
 install version 16.04 of ziPython.
 
+## Creating a development environment
+
+Use these instructions to create a conda environment for development, i.e. where the P13pt package is imported from its GitHub source, so that you can make changes and test them immediately. Start by cloning the P13pt environment you have created in the previous section or by creating an equivalent one, that we will call P13pt_dev in the following. The first step is to remove the P13pt conda package from this environment (installing it in the first place only serves to install all the dependencies automatically):
+
+    conda activate P13pt_dev
+    conda uninstall p13pt
+
+Now we want to clone the P13pt GitHub repository, e.g. in the home folder:
+
+    cd ~
+    git clone git@github.com:HolgerGraef/P13pt.git
+    
+Finally, we want to set up the PYTHONPATH to contain P13pt's path. This should be set automatically whenever we activate the P13pt_dev environment. For that, we create the file: \[conda root\]/envs/P13pt_dev/etc/conda/activate.d/env_vars.sh and add the following content:
+
+    #!/bin/bash
+    
+    export OLDPYTHONPATH=$PYTHONPATH
+    export PYTHONPATH=$PYTHONPATH:$HOME/P13pt/
+    
+    alias spectrumfitter='bash -c ". \[conda root\]/etc/profile.d/conda.sh && conda activate P13pt_dev && python $HOME/P13pt/P13pt/spectrumfitter/spectrumfitter.py"'
+    
+Obviously, you should replace \[conda root\] by Anaconda's root directory. If you wish to create aliases for the other scripts, e.g. for MAScriL, just add the corresponding lines. Now, if you switch to a different conda environment, you also want the terminal to "forget" the modifications to PYTHONPATH and the aliases, so we also create the file: \[conda root\]/envs/P13pt_dev/etc/conda/deactivate.d/env_vars.sh with the content:
+
+    #!/bin/bash
+    
+    export PYTHONPATH=$OLDPYTHONPATH
+    
+    unalias spectrumfitter
 
 ## Building the doc
 
