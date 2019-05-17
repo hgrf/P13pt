@@ -21,7 +21,7 @@ before_install:
   # Setup environment
   - travis_retry conda update --yes conda
   - conda config --set always_yes yes
-  #- conda config --append channels exopy
+  - conda config --append channels conda-forge
   - conda install conda-build anaconda-client -q
   - conda info -a
   - conda create -n travisci python=$PYTHON pip
@@ -36,7 +36,7 @@ before_install:
   - export CONDA_BLD_PATH=$(pwd)
 
   # Install exopy dependencies
-  - $CONDA_INSTALL pyqt=$QT_VERSION numpy
+  - $CONDA_INSTALL pyqt=$QT_VERSION numpy lmfit pyvisa
 
 install:
   # Build conda package and install it (check that build script is not broken)
