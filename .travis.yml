@@ -60,7 +60,7 @@ install:
 script:
   - cd ~
   - export COVERAGE_DATAFILE=$TRAVIS_BUILD_DIR/.coverage
-  - pytest $TRAVIS_BUILD_DIR/tests --cov
+  - pytest $TRAVIS_BUILD_DIR/tests --cov P13pt
 
 after_success:
   - cd $TRAVIS_BUILD_DIR
