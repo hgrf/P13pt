@@ -44,6 +44,10 @@ before_install:
   # Install dependencies
   - $CONDA_INSTALL pyqt=$QT_VERSION numpy lmfit pyvisa
 
+  # Intall test tools
+  - $CONDA_INSTALL pytest
+  - $PIP_INSTALL pytest-cov
+
   # Install codecov report tools
   - $PIP_INSTALL codecov
 
@@ -52,11 +56,9 @@ install:
   - cd $TRAVIS_BUILD_DIR
   - conda build conda -q  # Package building does run only very minimal tests
   - conda install p13pt --use-local -q
-  - cd ~
 
 script:
-  - echo "Test test test"
+  - pytest tests --cov=./
 
 after_success:
-  - cd $TRAVIS_BUILD_DIR
   - codecov

@@ -96,6 +96,19 @@ Obviously, you should replace \[conda root\] by Anaconda's root directory. If yo
     
     unalias spectrumfitter
 
+## Testing
+
+In the development environment, it makes sense to install testing tools:
+
+    conda install pytest
+    pip install pytest-cov
+
+Tests can then be run using:
+
+    pytest tests --cov=./
+
+Which saves the coverage report in .coverage
+
 ## Building the doc
 
 The documentation is work in progress, but in principle you can build it by cd'ing
