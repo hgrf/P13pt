@@ -58,7 +58,10 @@ install:
   - conda install p13pt --use-local -q
 
 script:
-  - pytest tests --cov=./
+  - cd ~
+  - export COVERAGE_DATAFILE=$TRAVIS_BUILD_DIR/.coverage
+  - pytest $TRAVIS_BUILD_DIR/tests --cov
 
 after_success:
+  - cd $TRAVIS_BUILD_DIR
   - codecov
