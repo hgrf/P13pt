@@ -1,5 +1,6 @@
 ﻿# P13 python tools
 
+[![Build Status](https://travis-ci.org/HolgerGraef/P13pt.svg?branch=master)](https://travis-ci.org/HolgerGraef/P13pt)
 [![Anaconda](https://anaconda.org/green-mercury/p13pt/badges/version.svg)](https://anaconda.org/green-mercury/p13pt)
 
 P13pt is a set of python tools (some helper scripts, rudimentary instrument drivers,
