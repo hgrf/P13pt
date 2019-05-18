@@ -8,7 +8,7 @@ P13pt
 - P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
 - write instructions to create development environment
 - write instructions for developer to create new release
-- 
+
 MAScriL
 =======
 - enable saving and loading of parameters

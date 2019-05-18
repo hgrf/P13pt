@@ -41,8 +41,11 @@ before_install:
   - cd conda-bld-out
   - export CONDA_BLD_PATH=$(pwd)
 
-  # Install exopy dependencies
+  # Install dependencies
   - $CONDA_INSTALL pyqt=$QT_VERSION numpy lmfit pyvisa
+
+  # Install codecov report tools
+  - $PIP_INSTALL codecov
 
 install:
   # Build conda package and install it (check that build script is not broken)
@@ -53,3 +56,7 @@ install:
 
 script:
   - echo "Test test test"
+
+after_success:
+  - cd $TRAVIS_BUILD_DIR
+  - codecov
