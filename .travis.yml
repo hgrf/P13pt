@@ -41,15 +41,27 @@ before_install:
   - cd conda-bld-out
   - export CONDA_BLD_PATH=$(pwd)
 
-  # Install exopy dependencies
+  # Install dependencies
   - $CONDA_INSTALL pyqt=$QT_VERSION numpy lmfit pyvisa
+
+  # Intall test tools
+  - $CONDA_INSTALL pytest
+  - $PIP_INSTALL pytest-cov
+
+  # Install codecov report tools
+  - $PIP_INSTALL codecov
 
 install:
   # Build conda package and install it (check that build script is not broken)
   - cd $TRAVIS_BUILD_DIR
   - conda build conda -q  # Package building does run only very minimal tests
   - conda install p13pt --use-local -q
-  - cd ~
 
 script:
-  - echo "Test test test"
+  - cd ~
+  - export COVERAGE_DATAFILE=$TRAVIS_BUILD_DIR/.coverage
+  - pytest $TRAVIS_BUILD_DIR/tests --cov P13pt --cov-report xml:$TRAVIS_BUILD_DIR/coverage.xml
+
+after_success:
+  - cd $TRAVIS_BUILD_DIR
+  - codecov

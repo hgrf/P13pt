@@ -1,5 +1,6 @@
 ﻿# P13 python tools
 
+[![Build Status](https://travis-ci.org/HolgerGraef/P13pt.svg?branch=master)](https://travis-ci.org/HolgerGraef/P13pt)
 [![Anaconda](https://anaconda.org/green-mercury/p13pt/badges/version.svg)](https://anaconda.org/green-mercury/p13pt)
 
 P13pt is a set of python tools (some helper scripts, rudimentary instrument drivers,
@@ -94,6 +95,19 @@ Obviously, you should replace \[conda root\] by Anaconda's root directory. If yo
     export PYTHONPATH=$OLDPYTHONPATH
     
     unalias spectrumfitter
+
+## Testing
+
+In the development environment, it makes sense to install testing tools:
+
+    conda install pytest
+    pip install pytest-cov
+
+Tests can then be run using:
+
+    pytest tests --cov=./
+
+Which saves the coverage report in .coverage
 
 ## Building the doc
 
