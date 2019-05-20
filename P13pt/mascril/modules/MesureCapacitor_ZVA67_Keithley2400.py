@@ -1,7 +1,9 @@
 from __future__ import print_function
 from P13pt.mascril.measurement import MeasurementBase
 from P13pt.mascril.parameter import Sweep, Folder, Boolean, String
+
 from P13pt.drivers.keithley2400 import K2400
+
 from rohdeschwarz.instruments.vna import Vna as RohdeSchwarzVNA
 
 import time
@@ -39,12 +41,12 @@ class Measurement(MeasurementBase):
 
         # initialise instruments
         try:
-            print("Setting up DC sources...")
-            self.sourceVg = sourceVg = K2400('GPIB::24::INSTR', sourcemode='v',
-                vrang=200, irang=10e-6, slope=1, initialise=init)
-            print("DC sources and voltmeters are set up.")
+            print("----------------------------------------")
+            print("Setting up Keithley DC sources...")
+            self.sourceVg = sourceVg = K2400('GPIB::24::INSTR', sourcemode='v', vrang=200, irang=10e-6, slope=1, initialise=init)
+            print("DC sources are set up.")
         except:
-            print("There has been an error setting up DC sources and voltmeters.")
+            print("There has been an error setting up DC sources.")
             raise
         
         if use_vna:
@@ -103,7 +105,7 @@ class Measurement(MeasurementBase):
         create_path(spectra_fol)
 
         # prepare saving DC data
-        self.prepare_saving(os.path.join(spectra_fol, filename + '.txt'))
+        self.prepare_saving(os.path.join(data_dir, filename + '.txt'))
 
         # save config
         if use_vna:

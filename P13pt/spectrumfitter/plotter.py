@@ -14,6 +14,7 @@ class Plotter(QTabWidget):
     line_r = None               # matplotlib line for real part of model plot
     line_i = None               # matplotlib line for imag part of model plot
     fitted_param = None
+    display_style = 'MP'        # RI: real/imaginary, MP: magnitude/phase
 
     def __init__(self, parent=None):
         super(QTabWidget, self).__init__(parent)
@@ -29,6 +30,7 @@ class Plotter(QTabWidget):
         # set up default plotting (Y and fit)
         self.figure = plt.figure()
         self.ax = self.figure.add_subplot(111)
+        self.ax2 = self.ax.twinx()
         self.ax.set_xlabel('f [GHz]')
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar(self.canvas, self.plotting_yandfit)
@@ -40,6 +42,7 @@ class Plotter(QTabWidget):
         # set up plotting of all Y parameters
         self.figure_y = plt.figure()
         self.ax_y_list = [self.figure_y.add_subplot(221+i) for i in range(4)]
+        self.ax2_y_list = [ax.twinx() for ax in self.ax_y_list]
         for i, ax in enumerate(self.ax_y_list):
             ax.set_xlabel(r'$f [GHz]$')
             ax.set_ylabel(r'$Y_{'+['11', '12', '21', '22'][i]+r'} [mS]$')
@@ -54,6 +57,7 @@ class Plotter(QTabWidget):
         # set up plotting of all S parameters
         self.figure_s = plt.figure()
         self.ax_s_list = [self.figure_s.add_subplot(221+i) for i in range(4)]
+        self.ax2_s_list = [ax.twinx() for ax in self.ax_s_list]
         for i, ax in enumerate(self.ax_s_list):
             ax.set_xlabel(r'$f [GHz]$')
             ax.set_ylabel(r'$S_{'+['11', '12', '21', '22'][i]+r'}$')
@@ -76,28 +80,69 @@ class Plotter(QTabWidget):
 
         sign, param, i, j = parse_fitted_param_str(self.fitted_param)
 
+        if self.display_style == 'RI':
+            for ax2 in [self.ax2] + self.ax2_s_list + self.ax2_y_list:
+                ax2.get_yaxis().set_visible(False)
+        else:
+            for ax2 in [self.ax2] + self.ax2_s_list + self.ax2_y_list:
+                ax2.get_yaxis().set_visible(True)
+                ax2.set_ylabel('Phase [deg]', color='red')
+
         # plot parameter to be fitted
         if param == 'Y':
-            self.ax.plot(self.f/1e9, sign*self.y[:,i,j].real*1e3, label='Re')
-            self.ax.plot(self.f/1e9, sign*self.y[:,i,j].imag*1e3, label='Im')
+            if self.display_style == 'RI':
+                ln1, = self.ax.plot(self.f/1e9, sign*self.y[:,i,j].real*1e3, label='Re')
+                ln2, = self.ax.plot(self.f/1e9, sign*self.y[:,i,j].imag*1e3, label='Im')
+            else:
+                ln1, = self.ax.plot(self.f/1e9, 20.*np.log10(np.abs(self.y[:,i,j])), label='Mag')
+                ln2, = self.ax2.plot(self.f/1e9, np.angle(self.y[:,i,j], deg=True), 'r', label='Phase')
         else:
-            self.ax.plot(self.f/1e9, sign*self.s[:,i,j].real, label='Re')
-            self.ax.plot(self.f/1e9, sign*self.s[:,i,j].imag, label='Im')
-        self.ax.legend()
+            if self.display_style == 'RI':
+                ln1, = self.ax.plot(self.f/1e9, sign*self.s[:,i,j].real, label='Re')
+                ln2, = self.ax.plot(self.f/1e9, sign*self.s[:,i,j].imag, label='Im')
+            else:
+                ln1, = self.ax.plot(self.f/1e9, 20.*np.log10(np.abs(self.s[:,i,j])), label='Mag')
+                ln2, = self.ax2.plot(self.f/1e9, np.angle(self.s[:,i,j], deg=True), 'r', label='Phase')
+
+        lns = [ln1, ln2]
+        self.ax.legend(lns, [l.get_label() for l in lns])
 
         # plot all Y parameters
-        for i,ax in enumerate(self.ax_y_list):
-            ax.plot(self.f/1e9, self.y[:,i//2,i%2].real*1e3, label='Re')
-            ax.plot(self.f/1e9, self.y[:,i//2,i%2].imag*1e3, label='Im')
-            if not i:
-                ax.legend()
+        if self.display_style == 'RI':
+            for i,ax in enumerate(self.ax_y_list):
+                ln1, = ax.plot(self.f/1e9, self.y[:,i//2,i%2].real*1e3, label='Re')
+                ln2, = ax.plot(self.f/1e9, self.y[:,i//2,i%2].imag*1e3, label='Im')
+                if not i:
+                    lns = [ln1, ln2]
+                    ax.legend(lns, [l.get_label() for l in lns])
+        else:
+            for i,ax in enumerate(self.ax_y_list):
+                ax2 = self.ax2_y_list[i]
+                ln1, = ax.plot(self.f/1e9, 20.*np.log10(np.abs(self.y[:,i//2,i%2])), label='Mag')
+                ln2, = ax2.plot(self.f/1e9, np.angle(self.y[:,i//2,i%2], deg=True), 'r', label='Phase')
+                if not i:
+                    lns = [ln1, ln2]
+                    ax.legend(lns, [l.get_label() for l in lns])
 
         # plot all S parameters
-        for i,ax in enumerate(self.ax_s_list):
-            ax.plot(self.f/1e9, self.s[:,i//2,i%2].real, label='Re')
-            ax.plot(self.f/1e9, self.s[:,i//2,i%2].imag, label='Im')
-            if not i:
-                ax.legend()
+        if self.display_style == 'RI':
+            for i,ax in enumerate(self.ax_s_list):
+                ln1, = ax.plot(self.f/1e9, self.s[:,i//2,i%2].real, label='Re')
+                ln2, = ax.plot(self.f/1e9, self.s[:,i//2,i%2].imag, label='Im')
+                if not i:
+                    lns = [ln1, ln2]
+                    ax.legend(lns, [l.get_label() for l in lns])
+        else:
+            for i,ax in enumerate(self.ax_s_list):
+                ax2 = self.ax2_s_list[i]
+                ln1, = ax.plot(self.f/1e9, 20.*np.log10(np.abs(self.s[:,i//2,i%2])), label='Mag')
+                ln2, = ax2.plot(self.f/1e9, np.angle(self.s[:,i//2,i%2], deg=True), 'r', label='Phase')
+                if not i:
+                    lns = [ln1, ln2]
+                    ax.legend(lns, [l.get_label() for l in lns])
+        
+        for fig in [self.figure, self.figure_y, self.figure_s]:
+            fig.tight_layout()
 
         # update titles
         title = ', '.join([key + '=' + str(params[key]) for key in params])
@@ -134,11 +179,19 @@ class Plotter(QTabWidget):
             return
 
         if self.line_r:
-            self.line_r.set_ydata(y.real*mult)
-            self.line_i.set_ydata(y.imag*mult)
+            if self.display_style == 'RI':
+                self.line_r.set_ydata(y.real*mult)
+                self.line_i.set_ydata(y.imag*mult)
+            else:
+                self.line_r.set_ydata(20.*np.log10(np.abs(y)))
+                self.line_i.set_ydata(np.angle(y, deg=True))
         else:
-            self.line_r, = self.ax.plot(self.f/1e9, y.real*mult, '-.')
-            self.line_i, = self.ax.plot(self.f/1e9, y.imag*mult, '-.')
+            if self.display_style == 'RI':
+                self.line_r, = self.ax.plot(self.f/1e9, y.real*mult, '-.')
+                self.line_i, = self.ax.plot(self.f/1e9, y.imag*mult, '-.')
+            else:
+                self.line_r, = self.ax.plot(self.f/1e9, 20.*np.log10(np.abs(y)), '-.')
+                self.line_i, = self.ax.plot(self.f/1e9, np.angle(y, deg=True), '-.')
         self.canvas.draw()
 
     def save_fig(self, filename):
@@ -155,7 +208,7 @@ class Plotter(QTabWidget):
         figure.savefig(filename)
 
     def clear(self):
-        for ax in [self.ax] + self.ax_y_list + self.ax_s_list:
+        for ax in [self.ax, self.ax2] + self.ax_y_list + self.ax2_y_list + self.ax_s_list + self.ax2_s_list:
             for artist in ax.lines + ax.collections:
                 artist.remove()
             ax.set_prop_cycle(None)

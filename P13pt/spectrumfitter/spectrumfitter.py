@@ -73,6 +73,9 @@ class MainWindow(QMainWindow):
             viewMenu.addAction(w.toggleViewAction())
         self.act_restore_default_view = QAction('Restore default', self)
         viewMenu.addAction(self.act_restore_default_view)
+        self.act_toggle_display_style = QAction('Toggle display style', self)
+        self.act_toggle_display_style.setShortcut(Qt.Key_F8)
+        viewMenu.addAction(self.act_toggle_display_style)
 
         toolsMenu = self.menuBar().addMenu('Tools')
         self.act_install_builtin_models = QAction('Install built-in models', self)
@@ -95,6 +98,7 @@ class MainWindow(QMainWindow):
         self.act_save_image.triggered.connect(self.save_image)
         self.act_save_allimages.triggered.connect(self.save_all_images)
         self.act_restore_default_view.triggered.connect(lambda: self.restoreState(self.default_state))
+        self.act_toggle_display_style.triggered.connect(self.toggle_display_style)
         self.act_install_builtin_models.triggered.connect(self.install_builtin_models)
         self.act_open_model_folder.triggered.connect(self.open_model_folder)
 
@@ -125,6 +129,13 @@ class MainWindow(QMainWindow):
         self.navigator.update_file_list(self.loader.dut_files)
         for a in [self.act_save_session, self.act_save_session_as, self.act_save_image, self.act_save_allimages]:
             a.setEnabled(True)
+
+    def toggle_display_style(self):
+        if self.plotter.display_style == 'MP':
+            self.plotter.display_style = 'RI'
+        else:
+            self.plotter.display_style = 'MP'
+        self.deembedding_changed()  # TODO: rename and/or remove redundancies, c.f. deembedding_changed()
 
     def deembedding_changed(self):
         # TODO: reduce redundancy with selection_changed()
