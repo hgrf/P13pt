@@ -100,9 +100,13 @@ class K2400:
         return float(self.query(':SOUR:VOLT?'))
         
     def get_voltage(self):
+        self.query(':SENS:FUNC:OFF "CURR:DC"')
+        self.query(':SENS:FUNC:ON "VOLT:DC"')
         return float(self.query(':read?').split(',')[0])
         
     def get_current(self):
+        self.query(':SENS:FUNC:OFF "VOLT:DC"')
+        self.query(':SENS:FUNC:ON "CURR:DC"')
         return float(self.query(':read?').split(',')[1])
 
     # just wrapping the main functions of self.k2400
