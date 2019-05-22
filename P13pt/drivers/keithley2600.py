@@ -13,7 +13,7 @@ import numpy as np
 from time import sleep
 
 class K2600:
-    def __init__(self, connection, channel='A', slope=0.01, initialise=True):
+    def __init__(self, connection, channel='A', slope=0.01, initialise=True, reset=True):
         # TODO: check for error at end of init
         # TODO: implement range setting
         
@@ -28,17 +28,19 @@ class K2600:
         self.k2600 = self.rm.open_resource(connection)
         self.k2600.write_termination = '\n'
         self.k2600.read_termination = '\n'   
-        self.k2600.clear()
+        if reset:
+            self.k2600.clear()   # if a different channel was set up previously and we execute this, the other channel is switched off
         
         if not self.query('print(localnode.model)').startswith('260'):
             raise Exception('Instrument not compatible with Keithley 2600 driver')
             
-        if initialise:        
-            self.write("reset()")
-            self.write("display.smua.measure.func = display.MEASURE_DCAMPS")
+        if initialise:
+            if reset:
+                self.write("reset()")
+            self.write("display.smu"+self.channel+".measure.func = display.MEASURE_DCAMPS")
             
-            self.write("smua.source.func = smua.OUTPUT_DCVOLTS")
-            self.write("smua.source.output = smua.OUTPUT_ON")
+            self.write("smu"+self.channel+".source.func = smu"+self.channel+".OUTPUT_DCVOLTS")
+            self.write("smu"+self.channel+".source.output = smu"+self.channel+".OUTPUT_ON")
         
     def set_voltage(self, value):
         # set voltage
