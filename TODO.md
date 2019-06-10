@@ -1,11 +1,13 @@
 P13pt
 =====
-- test with Travis CI
-- code coverage report
+- make a first Qt GUI example test for P13pt, then increase code coverage
 - check if "random conda plans" are still an issue and if yes post it on the conda issue tracker
 - find easy way of creating app icon on Mac
 - make new version for PyPI or "discontinue" PyPI releases (i.e. remove everything from PyPI)
 - P13pt version should be in a well defined place (e.g. version.py, c.f. numpy)
+- combine all deployment instructions somewhere (i.e. for conda but also for windows .exe files)
+- add info about launcher, setup.py entry points and make_links.py script in deployment info
+- figure out small standalone .exe creation (c.f. e.g. electrum)
 - write instructions to create development environment
 - write instructions for developer to create new release
 
@@ -16,8 +18,19 @@ MAScriL
 - make measurement scripts lighter by creating default parameters like data_dir and comment and automating the saving a bit more (e.g. the parameter list should automatically be saved); keep in mind that there are sometimes additional params to add like chuck voltage... 
 - move instrument initialisation to separate part and standardise more
 
+sscAlign
+========
+- add sscalign to P13pt launcher
+- enable user to edit the values for stretch etc. directly in the text field and choose reasonable number of digits
+- display corresponding numbers next to the markers on the image
+- should deactivate zooming or panning before activating flagging andvice versa flagging should be disabled when those are activated
+- make undo possible (create a history array for values)
+- should be possible to quickly set fixed square dimensions for crosses
+- remove unnecessary imports
+
 SpectrumFitter
 ==============
+- reduce redundancy in plotting function and add scale control (new data should reinitialize scale)
 - add function to disable automatic fitting of specific spectra (checkbox or something)
 - on Erwann's MacOS with Python 3, plots are displayed huge -> check qtpy and matplotlib version
 

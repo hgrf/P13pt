@@ -29,11 +29,13 @@ def main():
     spectrumfitter_script = os.path.join(script_path, 'spectrumfitter', 'spectrumfitter.py')
     mascril_script = os.path.join(script_path, 'mascril', 'mascril.py')
     graphulator_script = os.path.join(script_path, 'graphulator', 'graphulator.py')
+    sscalign_script = os.path.join(script_path, 'sscalign', 'sscalign.py')
 
     mdb_icon = os.path.join(script_path, 'mdb', 'kmplot-2.ico')
     spectrumfitter_icon = os.path.join(script_path, 'spectrumfitter', 'audacity.ico')
     mascril_icon = os.path.join(script_path, 'mascril', 'tools-wizard.ico')
     graphulator_icon = os.path.join(script_path, 'graphulator', 'calculator.ico')
+    sscalign_icon = os.path.join(script_path, 'mdb', 'kmplot-2.ico')
 
     # check for existence of these files
     for f in [mdb_script, spectrumfitter_script, mascril_script, graphulator_script, mdb_icon, spectrumfitter_icon,
@@ -46,7 +48,8 @@ def main():
         for script, icon, name in [(mdb_script, mdb_icon, 'Mercury Data Browser'),
                                    (spectrumfitter_script, spectrumfitter_icon, 'SpectrumFitter'),
                                    (mascril_script, mascril_icon, 'MAScriL'),
-                                   (graphulator_script, graphulator_icon, 'Graphulator')]:
+                                   (graphulator_script, graphulator_icon, 'Graphulator'),
+                                   (sscalign_script, sscalign_icon, 'sscAlign')]:
             shell = win32com.client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(os.path.join(os.environ['USERPROFILE'], 'Desktop',
                                                          name + '.lnk'))
@@ -69,7 +72,8 @@ def main():
                 (mdb_script, mdb_icon, 'mdb', 'Mercury Data Browser'),
                 (spectrumfitter_script, spectrumfitter_icon, 'spectrumfitter', 'SpectrumFitter'),
                 (mascril_script, mascril_icon, 'mascril', 'MAScriL'),
-                (graphulator_script, graphulator_icon, 'graphulator', 'Graphulator')]:
+                (graphulator_script, graphulator_icon, 'graphulator', 'Graphulator'),
+                (sscalign_script, sscalign_icon, 'sscalign', 'sscAlign')]:
                 link_folder = os.environ['HOME']+'/.local/share/applications/'
                 with open(link_folder+link_name+'.desktop', 'w') as link_file:
                     link_file.write("""

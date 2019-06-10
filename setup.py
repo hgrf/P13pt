@@ -42,6 +42,7 @@ setuptools.setup(
                                   'mascril = P13pt.mascril.mascril:main',
                                   'graphulator = P13pt.graphulator.graphulator:main',
                                   'mdb = P13pt.mdb.mdb:main',
+                                  'sscalign = P13pt.sscalign.sscalign:main',
                                   'p13pt-makelinks = P13pt.make_links:main'
                                   ]}
 )

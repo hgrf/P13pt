@@ -23,6 +23,7 @@ requirements:
     - matplotlib
     - numpy
     - pyvisa
+    - pillow
     - pywin32 # [win]
 
 test:
@@ -32,6 +33,7 @@ test:
     - P13pt.graphulator
     - P13pt.mascril
     - P13pt.spectrumfitter
+    - P13pt.sscalign
 
 app:
   entry: p13pt
