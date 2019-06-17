@@ -170,7 +170,9 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.Yes:
                 self.stretch[1] = self.stretch[0]
 
-        self.im = self.ax.imshow(self.img)    # extent=[lowerleftuv[0], upperrightuv[0], lowerleftuv[1], upperrightuv[1]]
+        # put the origin in the lower left corner and flip the y-axis of the matrix self.img around accordingly
+        # extent is not specified here, that part is taken care of by the transformations in self.show_im()
+        self.im = self.ax.imshow(self.img[-1:0:-1,:,:], origin='lower')
         self.show_im()                   # apply transforms and draw image
 
     def show_im(self):
@@ -196,6 +198,18 @@ class MainWindow(QMainWindow):
         if not bmpfile:
             return
 
+        # check if correct file format was chosen and check if file
+        # exists in this case (otherwise already checked by the file dialog)
+        filename, ext = os.path.splitext(bmpfile)
+        if ext.lower() != '.bmp':
+            bmpfile += '.bmp'
+            if os.path.isfile(bmpfile):
+                reply = QMessageBox.question(self, 'Overwrite file?', 
+                                            'File already exists: {} Overwrite?'.format(bmpfile),
+                                            QMessageBox.Yes, QMessageBox.No)
+                if reply == QMessageBox.No:
+                    return
+
         # figure out if there is already an associated .ssc file
         f, ext = os.path.splitext(bmpfile)
         sscfile = f+'.ssc'
@@ -210,12 +224,11 @@ class MainWindow(QMainWindow):
 
         # save bmp
         img = Image.fromarray(self.img)
-        img = img.rotate(-self.rotation*180./np.pi, expand=True)
+        img = img.rotate(self.rotation*180./np.pi, expand=True)
         img.save(bmpfile)
 
         # calculate bounding rectangle
-        lowerleftuv = self.transformation.transform_point((0,img.height))
-        upperrightuv = self.transformation.transform_point((img.width,0))
+        u1, u2, v1, v2 = self.get_extent()
         # TODO: what are these following good for ?
         localoriginuv = [0.,0.]
         stageuv = [0.,0.]
@@ -226,24 +239,29 @@ class MainWindow(QMainWindow):
         with open(sscfile, 'w') as f:
             f.write('[SLOWSCAN]\n'
                 'Bitmap='+os.path.basename(bmpfile)+'\n'+
-                'LowerLeftUV={:.6f},{:.6f}\n'.format(*lowerleftuv)+
-                'UpperRightUV={:.6f},{:.6f}\n'.format(*upperrightuv)+
+                'LowerLeftUV={:.6f},{:.6f}\n'.format(u1, v1)+
+                'UpperRightUV={:.6f},{:.6f}\n'.format(u2, v2)+
                 'LocalOriginUV={:.6f},{:.6f}\n'.format(*localoriginuv)+
                 'StageUV={:.6f},{:.6f}\n'.format(*stageuv)+
                 'RotationUV={:.6f}\n'.format(rotationuv)
             )
 
-
-    def autolims(self):
+    def get_extent(self):
         # update x and y limits (make sure all 4 corners are included in plot)
         x1, x2, y1, y2 = self.im.get_extent()
         # bl, tr, tl, br
-        corners = np.asarray([self.transformation.transform_point((x1, y1)),
-                              self.transformation.transform_point((x2, y2)),
-                              self.transformation.transform_point((x1, y2)),
-                              self.transformation.transform_point((x2, y1))])
-        self.ax.set_xlim((min(corners[:,0]), max(corners[:,0])))
-        self.ax.set_ylim((max(corners[:,1]), min(corners[:,1])))
+        corners = np.asarray([self.transformation.transform_point((x1-0.5, y1-0.5)),
+                              self.transformation.transform_point((x2+0.5, y2+0.5)),
+                              self.transformation.transform_point((x1-0.5, y2+0.5)),
+                              self.transformation.transform_point((x2+0.5, y1-0.5))])
+        
+        return min(corners[:,0]), max(corners[:,0]), min(corners[:,1]), max(corners[:,1])
+
+    def autolims(self):
+        u1, u2, v1, v2 = self.get_extent()
+
+        self.ax.set_xlim((u1, u2))
+        self.ax.set_ylim((v1, v2))
 
         self.canvas.draw()
 
@@ -424,8 +442,8 @@ def main():
     testing = False
     if testing:
         mainwindow = MainWindow('post development.tif')
-        mainwindow.set_mark(0, 0.015804, 0.061924)
-        mainwindow.set_mark(1, 0.067753, 0.058880)
+        mainwindow.set_mark(0, 0.01577, 0.01307)
+        mainwindow.set_mark(1, 0.06762, 0.01602)
         mainwindow.uvtexts[0][0].setText('-10')
         mainwindow.uvtexts[0][1].setText('-20')
         mainwindow.uvtexts[1][0].setText('0')

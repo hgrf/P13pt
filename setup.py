@@ -26,7 +26,9 @@ setuptools.setup(
              'mdb/*.png',
              'mdb/*.ico',
              'spectrumfitter/models/*.py',
-             'mascril/modules/*.py']
+             'mascril/modules/*.py',
+             'sscalign/*.tif'
+             'sscalign/*.gds']
     },
     include_package_data=True,
     classifiers=[
