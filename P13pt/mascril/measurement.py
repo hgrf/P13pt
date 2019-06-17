@@ -99,8 +99,9 @@ class MeasurementBase(QThread):
                     if not self.redirect_console: print(condition+' =', result)
                     alarm_data[i] = result
                 elif action == self.ALARM_CALLCOPS:
-                    if not self.redirect_console: print('Calling the cops: '+condition)
-                    alarm_data[i] = True
+                    if result:
+                        if not self.redirect_console: print('Calling the cops: '+condition)
+                        alarm_data[i] = True
                 elif action == self.ALARM_QUIT:
                     if result:
                         if not self.redirect_console: print('Stopping the acquisition: '+condition)
