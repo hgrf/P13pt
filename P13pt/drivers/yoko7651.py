@@ -187,9 +187,25 @@ class Yoko7651:
             raise Exception('Wrong mode selected')
         return self.get_setpoint()
 
-    def set_voltage(self, value):
+    def set_voltage(self, value, auto=False):
         if self.func != 'VOLT':
             raise Exception('Wrong mode selected')
+        
+        if auto:
+            if (value > 10.0 and value <= 30.0):
+                self.set_range(30)
+            elif (value > 1.0 and value <= 10.0):
+                self.set_range(10)
+            elif (value > 100.0e-3 and value <= 1.0):
+                self.set_range(1)
+            elif (value > 10.0e-3 and value <= 100.0e-3):
+                self.set_range(0.1)
+            elif (value >= 1.0e-7 and value <= 10.0e-3):
+                self.set_range(0.01)
+            else:
+                print('Voltage must be < 30 V and > 10 uV !')
+                return 1
+        
         return self.set_setpoint(value)
     
     def get_current(self):
@@ -197,9 +213,21 @@ class Yoko7651:
             raise Exception('Wrong mode selected')
         return self.get_setpoint()
     
-    def set_current(self, value):
+    def set_current(self, value, auto=False):
         if self.func != 'CURR':
             raise Exception('Wrong mode selected')
+            
+        if auto:
+            if (value > 10.0e-3 and value <= 100.0e-3):
+                self.set_range(0.1)
+            elif (value > 1.0e-3 and value <= 10.0e-3):
+                self.set_range(0.01)
+            elif (value >= 1.0e-8 and value <= 1.0e-3):
+                self.set_range(0.001)
+            else:
+                print('Current must be < 100 mA and > 100 uA !')
+                return 1
+        
         return self.set_setpoint(value)
 
     # just wrapping the main functions of self.yoko
