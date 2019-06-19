@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QApplication,
                              QLabel, QLineEdit, QFileDialog, QCheckBox, QDialog, QMessageBox,
-                             QGroupBox)
+                             QGroupBox, QComboBox)
 try:
     from PyQt5.QtCore import QString
 except ImportError:
@@ -103,6 +103,36 @@ class Boolean(MeasurementParameter):
         if not self.cli:
             self.widget.setChecked(val)
 
+class Select(MeasurementParameter):   
+    def __init__(self, values, defaultindex=0):
+        super(Select, self).__init__()
+        # if command line interface
+        if self.cli:
+            self.value = values[defaultindex]
+            return
+        
+        # else
+        self.widget = QComboBox()
+        self.widget.mp = self
+        for v in values:
+            if self.widget.findText(v) != -1:
+                raise Exception('Duplicate item in Select()')
+            self.widget.addItem(v)
+
+    @property
+    def value(self):
+        return self.value_ if self.cli else self.widget.currentText()
+
+    #TODO: should also check if element is in list if in CLI mode
+    @value.setter
+    def value(self, val):
+        self.value_ = val
+        if not self.cli:
+            index = self.widget.findText(val)
+            if index == -1:
+                raise Exception('Item not part of list')
+            else:
+                self.widget.setCurrentIndex(index)
 
 class Sweep(MeasurementParameter):
     def_value = np.asarray([0], dtype=float)
