@@ -126,6 +126,7 @@ class Yoko7651:
         return function_dict[data[0:4]][1]
     
     def set_range(self, rang):
+        rang = abs(rang)
         rang_str = self.determine_range(self.func, rang)
         if rang_str is None:
             raise Exception('No compatible range could be found')
@@ -192,19 +193,7 @@ class Yoko7651:
             raise Exception('Wrong mode selected')
         
         if auto:
-            if (value > 10.0 and value <= 30.0):
-                self.set_range(30)
-            elif (value > 1.0 and value <= 10.0):
-                self.set_range(10)
-            elif (value > 100.0e-3 and value <= 1.0):
-                self.set_range(1)
-            elif (value > 10.0e-3 and value <= 100.0e-3):
-                self.set_range(0.1)
-            elif (value >= 1.0e-7 and value <= 10.0e-3):
-                self.set_range(0.01)
-            else:
-                print('Voltage must be < 30 V and > 10 uV !')
-                return 1
+            self.set_range(value)
         
         return self.set_setpoint(value)
     
@@ -218,15 +207,7 @@ class Yoko7651:
             raise Exception('Wrong mode selected')
             
         if auto:
-            if (value > 10.0e-3 and value <= 100.0e-3):
-                self.set_range(0.1)
-            elif (value > 1.0e-3 and value <= 10.0e-3):
-                self.set_range(0.01)
-            elif (value >= 1.0e-8 and value <= 1.0e-3):
-                self.set_range(0.001)
-            else:
-                print('Current must be < 100 mA and > 100 uA !')
-                return 1
+            self.set_range(value)
         
         return self.set_setpoint(value)
 
