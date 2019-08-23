@@ -18,7 +18,7 @@ algorithm.
 ## Components
 
 * Instrument drivers for Anritsu VNA MS4644B, iTest Bilt voltage sources and meters, Keithley
-2400 and 2600 SMUs, the Yokogawa 7651 source and the SI9700 temperature controller (zilockin.py
+2400 and 2600 SMUs, the Yokogawa 7651 source and the SI9700 and TIC500 temperature controllers (zilockin.py
 is not a driver, just a "frontend" for the Zurich Instruments lock-in driver)
 * [SpectrumFitter](https://github.com/HolgerGraef/P13pt/tree/master/P13pt/spectrumfitter), a
 fitting tool for 2-port network VNA spectra.
