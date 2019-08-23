@@ -69,7 +69,7 @@ On a Windows system, this will create shortcuts on the Desktop, on a Linux syste
 If you wish to use the "driver" for the Zurich Instruments lock-in amplifier, you should
 install version 16.04 of ziPython. If you wish to run the MAScriL acquisition scripts using the
 Rohde & Schwarz ZVA, you should clone the python driver from the following GitHub repository:
-https://github.com/Terrabits/rohdeschwarz (do not forget to add the corresponding path to the
+https://github.com/HolgerGraef/rohdeschwarz (do not forget to add the corresponding path to the
 PYTHONPATH variable).
 
 ## Creating a development environment
