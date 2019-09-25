@@ -42,7 +42,9 @@ class AnritsuVNA:
         # VNA tries to speak binary
         self.vna.write(r':FORM:DATA ASC;')     
         
-        if not self.vna.query('*IDN?').startswith('ANRITSU,MS4644B'):
+        firstresponse = '100 Connection accepted ANRITSU,MS4644B' if connection.startswith('TCPIP') else 'ANRITSU,MS4644B'
+        
+        if not self.vna.query('*IDN?').startswith(firstresponse):
             raise Exception('Unsupported device / cannot initialise')
         # Initialisation (cf. manual, e.g. page 2-34)
         # ESE: set the standard event status register
@@ -211,6 +213,7 @@ class AnritsuVNA:
         self.write(':STAT:OPER:ENAB 2')
         self.write('*CLS;')                        # clear the registers
         self.write(':SENS1:HOLD:FUNC SING;')       # single sweep with hold
+        self.write(':TRIG:SOUR AUTO;')              # "Internal" trigger
         self.write(':TRIG;')
         self.sweeping_port = 1
         if wait:
