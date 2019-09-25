@@ -126,6 +126,7 @@ class Yoko7651:
         return function_dict[data[0:4]][1]
     
     def set_range(self, rang):
+        rang = abs(rang)
         rang_str = self.determine_range(self.func, rang)
         if rang_str is None:
             raise Exception('No compatible range could be found')
@@ -187,9 +188,13 @@ class Yoko7651:
             raise Exception('Wrong mode selected')
         return self.get_setpoint()
 
-    def set_voltage(self, value):
+    def set_voltage(self, value, auto=False):
         if self.func != 'VOLT':
             raise Exception('Wrong mode selected')
+        
+        if auto:
+            self.set_range(value)
+        
         return self.set_setpoint(value)
     
     def get_current(self):
@@ -197,9 +202,13 @@ class Yoko7651:
             raise Exception('Wrong mode selected')
         return self.get_setpoint()
     
-    def set_current(self, value):
+    def set_current(self, value, auto=False):
         if self.func != 'CURR':
             raise Exception('Wrong mode selected')
+            
+        if auto:
+            self.set_range(value)
+        
         return self.set_setpoint(value)
 
     # just wrapping the main functions of self.yoko

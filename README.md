@@ -18,7 +18,7 @@ algorithm.
 ## Components
 
 * Instrument drivers for Anritsu VNA MS4644B, iTest Bilt voltage sources and meters, Keithley
-2400 and 2600 SMUs, the Yokogawa 7651 source and the SI9700 temperature controller (zilockin.py
+2400 and 2600 SMUs, the Yokogawa 7651 source and the SI9700 and TIC500 temperature controllers (zilockin.py
 is not a driver, just a "frontend" for the Zurich Instruments lock-in driver)
 * [SpectrumFitter](https://github.com/HolgerGraef/P13pt/tree/master/P13pt/spectrumfitter), a
 fitting tool for 2-port network VNA spectra.
@@ -69,7 +69,7 @@ On a Windows system, this will create shortcuts on the Desktop, on a Linux syste
 If you wish to use the "driver" for the Zurich Instruments lock-in amplifier, you should
 install version 16.04 of ziPython. If you wish to run the MAScriL acquisition scripts using the
 Rohde & Schwarz ZVA, you should clone the python driver from the following GitHub repository:
-https://github.com/Terrabits/rohdeschwarz (do not forget to add the corresponding path to the
+https://github.com/HolgerGraef/rohdeschwarz (do not forget to add the corresponding path to the
 PYTHONPATH variable).
 
 ## Creating a development environment
