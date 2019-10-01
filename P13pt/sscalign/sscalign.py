@@ -223,7 +223,11 @@ class MainWindow(QMainWindow):
         print('Saving to:', bmpfile, sscfile)
 
         # save bmp
-        img = Image.fromarray(self.img)
+        if self.img.dtype == 'float32':
+            formatted = (self.img * 255 / np.max(self.img)).astype('uint8')
+            img = Image.fromarray(formatted)
+        else:
+            img = Image.fromarray(self.img)
         img = img.rotate(self.rotation*180./np.pi, expand=True)
         img.save(bmpfile)
 
