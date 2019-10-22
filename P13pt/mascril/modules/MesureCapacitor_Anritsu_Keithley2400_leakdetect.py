@@ -123,11 +123,10 @@ class Measurement(MeasurementBase):
                 print("Getting VNA spectra...")
                 vna.single_sweep(wait=False)
                 # display sweep progress
-                progressbar_wait(sweeptime+1.)
+                progressbar_wait(sweeptime)
                 # make sure sweep is really done
-                #while not vna.is_sweep_done():
-                    #print("Waiting for VNA to finish...")
-                #    time.sleep(0.5)
+                while not vna.is_sweep_done():
+                    time.sleep(0.5)
                 table = vna.get_table([1,2,3,4])
                 timestamp = time.strftime('%Y-%m-%d_%Hh%Mm%Ss')
                 spectrum_file = timestamp+'_Vg={:.3f}.txt'.format(Vg)
