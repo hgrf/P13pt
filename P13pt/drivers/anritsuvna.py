@@ -4,9 +4,9 @@ Driver for the Anritsu VNA MS4644B
 
 for PyVISA 1.8
 
-refer to Anritsu VNA programming handbook
-for VectorStar MS464xB series
-PN: 10410-00322 Rev. H
+refer to Anritsu VNA programming handbook for VectorStar MS464xB series
+PN: 10410-00322 Rev. W
+https://dl.cdn-anritsu.com/en-us/test-measurement/files/Manuals/Programming-Manual/10410-00322W.pdf
 
 @author: Holger Graef and Andreas Inhofer
 """
@@ -27,9 +27,8 @@ class AnritsuVNA:
     # Constants
     AVG_POINT_BY_POINT = 'POIN'
     AVG_SWEEP_BY_SWEEP = 'SWE'
-    TOTAL_PORTS = 2
     
-    sweeping_port = 0
+    is_sweeping = False
     
     def __init__(self, connection):
         self.rm = visa.ResourceManager()
@@ -46,7 +45,7 @@ class AnritsuVNA:
         
         if not self.vna.query('*IDN?').startswith(firstresponse):
             raise Exception('Unsupported device / cannot initialise')
-        # Initialisation (cf. manual, e.g. page 2-34)
+        # Initialisation (cf. manual, e.g. page 2-33)
         # ESE: set the standard event status register
         # SRE: set the service request enable register
         # CLS: clear all registers
@@ -61,12 +60,6 @@ class AnritsuVNA:
         if not self.vna.query('SYST:ERR?').startswith('No Error'):
             raise Exception('Device error')
    
-    def read_registers(self):
-        print("Status byte:", self.query('*STB?'))
-        print("Standard event status register:", self.query('*ESR?'))
-        print("Operation status register:", self.query(':STAT:OPER:COND?'))
-        #print "Data transfer at sweep end:", self.query(':TRIG:SEDT?')
-
     def ask_values(self, q):
         ''' Send a query to the VNA and retrieves the returned values.
         
@@ -141,6 +134,18 @@ class AnritsuVNA:
             table.append(simag)
         return table
     
+    def get_s2p(self):
+        self.write(':FORM:SNP:FREQ HZ')
+        self.write(':FORM:SNP:PAR REIM')
+        self.vna.read_termination = ''
+        s2p = self.query('OS2P;')
+        self.vna.read_termination = '\n'
+        return s2p
+    
+    def save_s2p(self, filename):
+        with open(filename, 'w') as f:
+            f.write(self.get_s2p().replace('\r', ''))
+    
     def is_sweep_done(self):
         '''Checks if the sweep is done.
         
@@ -148,23 +153,16 @@ class AnritsuVNA:
         status byte register is activated, so we have to iterate over all
         ports.
         '''
-        if not self.sweeping_port:
-            raise Exception('No sweep is running')
-        # note: I think this bugs if we use the read_stb() function, because
-        # possibly it might be read this way before the VNA has cleared it
-        # using the *CLS command from the previous execution of this function
-        if int(self.query('*STB?')) & 128:
-            #print 'Port ', self.sweeping_port, ' is done'
-            if self.sweeping_port == self.TOTAL_PORTS:
-                self.sweeping_port = 0
-                self.write('*CLS;')
-                return True
-            else:
-                self.sweeping_port += 1
-                self.write('*CLS;')
-                return self.is_sweep_done()   # check if the next port is ready
-        else:
-            return False
+        if not self.is_sweeping:
+            return True
+        
+        stb = self.read_stb()
+        if stb & 16:    # message available
+            res = self.read()
+            assert res == '1'
+            self.is_sweeping = False
+            return True
+        return False
     
     def get_sweep_time(self):
         '''Asks VNA for the time the sweep will take.
@@ -196,6 +194,7 @@ class AnritsuVNA:
         ''' Stops the VNA sweep.
         '''
         self.write(':SENS1:HOLD:FUNC HOLD;')
+        self.is_sweeping = False
     
     def single_sweep(self, wait=True):
         ''' Launch a single sweep (the VNA will hold at the end of the sweep).
@@ -208,14 +207,24 @@ class AnritsuVNA:
         self.stop_sweep()
         # tell the VNA to let us know when the sweep is done
         # detect positive transistion for bit 1 (sweep complete) of the
-        # operation status register see page 2-34
-        self.write(':STAT:OPER:PTR 2')
-        self.write(':STAT:OPER:ENAB 2')
+        # operation status register see page 2-33
+        # self.write(':STAT:OPER:PTR 2')
+        # self.write(':STAT:OPER:ENAB 2')
+        # NB: The "sweep complete" bit is set by the VNA every time a port
+        # finishes sweeping, which makes it tedious to reliably distinguish
+        # between an individual port finishing its sweep and all ports
+        # finishing. This is why we choose to block execution instead and
+        # wait for the "message available" flag instead.
         self.write('*CLS;')                        # clear the registers
         self.write(':SENS1:HOLD:FUNC SING;')       # single sweep with hold
-        self.write(':TRIG:SOUR AUTO;')              # "Internal" trigger
-        self.write(':TRIG;')
-        self.sweeping_port = 1
+        self.write(':TRIG:SOUR AUTO;')             # "Internal" trigger
+        # trigger sweep and block command execution (as opposed to :TRIG;)
+        # programming manual p. 5-838 ff.
+        self.write(':TRIG:SING;')
+        # when execution starts again, *OPC? will simply return 1
+        self.write('*OPC?')
+        
+        self.is_sweeping = True
         if wait:
             while not self.is_sweep_done():
                 time.sleep(0.5)
@@ -359,8 +368,100 @@ class AnritsuVNA:
     def write(self, q):
         return self.vna.write(q)
     
+    def read(self):
+        return self.vna.read()
+    
     def read_stb(self):
         return self.vna.read_stb()
+
+    def read_stb_verbose(self):
+        stb = self.read_stb()
+        print("Status byte:", stb)
+        self.interpret_stb(stb)
+        return stb
+
+    # some functions to help interpret the different status registers
+    def interpret_stb(self, stb):
+        # status byte bits: (manual rev. W p. 2-29)
+        # -----------------------------------------
+        # 0,1 not used
+        # 2 Set to indicate the Error Queue contains data. The Error Query command can then be used to read the error
+        #   message(s) from the queue.
+        # 3 Set to indicate the Questionable Status summary bit has been set. The Questionable Status Event register can
+        #   then be read to determine the specific condition that caused the bit to be set.
+        # 4 Set to indicate that the MS4640B has data ready in its output queue.
+        # 5 Set to indicate that the Standard Event Status summary bit has been set. The Standard Event Status register
+        #   can then be read to determine the specific event that caused the bit to be set.
+        # 6 Set to indicate that the MS4640B has at least one reason to require service. This bit is also called the
+        #   Master Summary Status Bit (MSS). The individual bits in the Status Byte are ANDed with their corresponding
+        #   Service Request Enable Register bits, then each bit value is ORed and input to this bit.
+        # 7 Set to indicate that the Operation Status summary bit has been set. The Operation Status Event register can
+        #   then be read to determine the specific condition that caused the bit to be set.
+        bits = {4: 'ERRQ',
+                8: 'QUEST',
+                16: 'MAV',
+                32: 'STD',
+                64: 'MSS/RQS',
+                128: 'OPER'}
+        for b in bits:
+            if stb & b:
+                print(bits[b])
+
+    def interpret_esr(self, esr):
+        # standard event status group bits:
+        # ---------------------------------
+        # 0 Set to indicate that all pending MS4640B operations were completed following execution of the “*OPC”
+        #   command. For more information, see the descriptions of the *OPC, *OPC?, and *WAI commands in Chapter 3,
+        #   “IEEE Commands”.
+        # 1 Not used.
+        # 2 Set to indicate that a query error has occurred.
+        # 3 Set to indicate that a device-dependent error has occurred.
+        # 4 Set to indicate that an execution error has occurred.
+        # 5 Set to indicate that a command error (usually a syntax error) has occurred.
+        # 6 Not used.
+        # 7 Set to indicate that the MS4640B is powered ON and in operation.
+        bits = {1: 'Operation Complete',
+                4: 'Query Error',
+                8: 'Device-Dependent Error',
+                16: 'Execution Error',
+                32: 'Command Error',
+                128: 'Power ON'}
+        for b in bits:
+            if esr & b:
+                print(bits[b])
+
+    def interpret_osr(self, osr):
+        # operation status register bits:
+        # -------------------------------
+        # 0 Set to indicate that a calibration is complete.
+        # 1 Set to indicate that a sweep is complete. Note that the Sweep Complete Bit will not be set unless the sweep
+        #   was started by an appropriate trigger commands. For examples of use, see the “TRS” command in the Lightning
+        #   37xxxx Command chapter in the Programming Manual Supplement. Also see “:TRIGger[:SEQuence] Subsystem” on
+        #   page 5-835 in Chapter 5, “SCPI Commands”.
+        # 2-3 Not used.
+        # 4 Set to indicate that the MS4640B is in an armed “wait for trigger” state.
+        # 6-15 Not used.
+        bits = {1: 'Calibration Complete',
+                2: 'Sweep Complete',
+                16: 'Waiting for Trigger'}
+        for b in bits:
+            if osr & b:
+                print(bits[b])
+
+    def read_registers(self):
+        ''' Reads the status registers of the VNA and prints them to the console.
+        '''
+        # query command seems not to work when VNA is blocking command
+        # execution whereas read_stb works...
+        stb = int(self.query('*STB?'))
+        print("Status byte:", stb)
+        self.interpret_stb(stb)
+        esr = int(self.query('*ESR?'))
+        print("Standard event status register:", esr)
+        self.interpret_esr(esr)
+        osr = int(self.query(':STAT:OPER:COND?'))
+        print("Operation status register:", osr)
+        self.interpret_osr(osr)
     
 
 if __name__ == '__main__':
