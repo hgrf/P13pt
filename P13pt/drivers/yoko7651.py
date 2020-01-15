@@ -36,7 +36,7 @@ class Yoko7651:
         self.rm = visa.ResourceManager()
         self.yoko = self.rm.open_resource(connection)
         self.yoko.write_termination = '\n'
-        self.yoko.read_termination = '\n'        
+        self.yoko.read_termination = '\n'
         
         if not self.query('OS').startswith('MDL7651REV1.'):
             raise Exception('Instrument not compatible with Yokogawa 7651 '+
@@ -72,8 +72,11 @@ class Yoko7651:
         if initialise:
             if verbose:
                 print("Initialising function:", self.func, "/ range:", self.rang, "V" if self.func == "VOLT" else "A")
+            timeout = self.yoko.timeout
+            self.yoko.timeout = 5000        # longer timeout for instrument clear
             self.yoko.clear()       # this command resets the yoko
-            sleep(1.)               # give the yoko some time
+            self.yoko.timeout = timeout
+            sleep(1.)
             self.set_output('OFF')
             self.set_function(self.func)
             self.set_range(self.rang)
