@@ -29,10 +29,16 @@ class BiltVoltMeter:
 
 class BiltVoltageSource:
     def __init__(self, bilt, channel, rang=None, filt=None, slope=None, label=None, initialise=True):
+        """
+        NB: slope is in V/ms
+        """
         self.bilt = bilt
         self.channel = channel
         
         print("Initialising Bilt voltage source on channel "+channel+("" if label is None else " ("+label+")")+"...")
+
+        # get model ID
+        self.model = bilt.query(channel+";*IDN?")[:4]
 
         if initialise:        
             # switch off voltage source
@@ -48,11 +54,19 @@ class BiltVoltageSource:
             # configure filter
             bilt.write(channel+";VOLT:FILTER "+filt)
         
+            # set up trigger for slope
+            if self.model == "2142":
+                bilt.write(channel+";TRIG:INPUT 1")   # set up RAMP mode for settling
+        
             # configure slope
             bilt.write(channel+";VOLT:SLOPE {}".format(slope))
             
-            # set voltage to zero
+            # set voltage to zero, TODO: might want to use set_voltage here
             bilt.write(channel+";VOLT 0")
+            
+            # trigger if necessary
+            if self.model == "2142":
+                self.bilt.write(self.channel+";TRIG:INPUT:INIT")
             
             # switch on source
             bilt.write(channel+";OUTPUT ON")
@@ -71,6 +85,10 @@ class BiltVoltageSource:
     
         # set voltage
         self.bilt.write(self.channel+";VOLT {}".format(value))
+        
+        # trigger if necessary
+        if self.model == "2142":
+            self.bilt.write(self.channel+";TRIG:INPUT:INIT")
     
         # wait for voltage to stabilise
         status = self.bilt.ask(self.channel+";VOLT:STATUS?")
